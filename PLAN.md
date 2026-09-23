@@ -4,9 +4,9 @@ A standalone storefront that sits alongside the Etsy shop
 ([omthreadsboutique.etsy.com](https://omthreadsboutique.etsy.com)) and sells
 shawls and stoles.
 
-This document covers the plan for the whole site. No code is written yet. Each
-section ends with the decision it needs, and the open questions for the owner
-are at the bottom.
+This document covers the plan for the whole site. Phases 0–1 are now built
+(see the roadmap in §11 and `ADMIN_GUIDE.md`). The open questions for the
+owner are at the bottom.
 
 ---
 
@@ -258,8 +258,8 @@ Payments are designed now so the rest of the site doesn't need rework when they 
 
 | Phase | Scope | Result |
 |-------|-------|--------|
-| **0. Foundations** | Confirm brand assets, domain, photos; set up the repo, Next.js, Tailwind, Sanity, Vercel | A preview link with the design system |
-| **1. Showcase site (MVP)** | Home, shop, collections, product pages, about, FAQ, care, contact, policies; admin for products and pages; "Buy on Etsy" buttons; SEO basics; analytics | **Launch.** A professional site that sends sales to Etsy |
+| **0. Foundations** ✅ | Confirm brand assets, domain, photos; set up the repo, Next.js, Tailwind, Sanity, Vercel | A preview link with the design system |
+| **1. Showcase site (MVP)** ✅ built, pending real content | Home, shop, collections, product pages, about, FAQ, care, contact, policies; admin for products and pages; "Buy on Etsy" buttons; SEO basics; analytics | **Launch.** A professional site that sends sales to Etsy |
 | **2. Shop experience** | Search, filters, cart drawer (demo mode), newsletter, Etsy bulk import, reviews and testimonials, wishlist (optional) | A full shopping experience, ready for payments |
 | **3. Payments** | Stripe Checkout, Stripe Tax, shipping rules, order emails, stock updates, Etsy stock sync, order dashboard | **Direct sales live** |
 | **4. Growth** | Google Shopping feed, discount codes, gift cards, abandoned-cart emails, Instagram shop, blog or lookbook | Marketing and repeat customers |
@@ -282,11 +282,13 @@ PLAN.md              this document
 
 ## 13. Open questions for the owner
 
-1. **Domain:** do you already own one (e.g. `omthreadsboutique.com`)?
+1. ~~**Domain:**~~ **Answered:** no custom domain yet. Launch on the free
+   `*.vercel.app` address and add a domain later in Vercel (no code changes).
 2. **Brand assets:** logo files, brand colors and any existing photography,
    or should we propose a light brand refresh?
-3. **Catalog size:** roughly how many listings, and are most items
-   one-of-a-kind or kept in stock in several colors?
+3. **Catalog size:** ~~roughly how many listings?~~ **Answered:** about 50
+   listings. That fits the Sanity free tier easily and filtering in memory
+   is fast. Still open: are most items one-of-a-kind, or kept in stock in several colors?
 4. **Where you ship from and to:** domestic only or international? This
    affects currency, tax and shipping design.
 5. **Materials and story:** key facts for the About page (origin, artisans,
