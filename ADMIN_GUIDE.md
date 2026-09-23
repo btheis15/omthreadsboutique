@@ -63,7 +63,7 @@ within seconds.
 2. Fill in:
    - **URL:** `https://omthreadsboutique.vercel.app/api/revalidate`
    - **Trigger on:** Create, Update, Delete
-   - **Filter:** `_type in ["product", "collection", "page"]`
+   - **Filter:** `_type in ["product", "collection", "page", "testimonial", "siteSettings"]`
    - **Secret:** the same value you used for `SANITY_REVALIDATE_SECRET`
 3. Save.
 
