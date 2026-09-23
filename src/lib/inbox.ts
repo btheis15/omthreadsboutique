@@ -6,7 +6,9 @@ import { apiVersion, dataset, projectId } from "@/sanity/env";
  * Stores contact messages and newsletter sign-ups in the admin's "Inbox",
  * and (optionally) emails the owner via Resend.
  *
- * Needs SANITY_WRITE_TOKEN. Email alerts also need RESEND_API_KEY + NOTIFY_EMAIL.
+ * Stored in the Om Threads admin when SHOP_API_URL + SHOP_API_TOKEN are set,
+ * otherwise in Sanity when SANITY_WRITE_TOKEN is set. Email alerts need
+ * RESEND_API_KEY + NOTIFY_EMAIL.
  */
 export type Submission = { kind: "message" | "newsletter"; email: string; name?: string; message?: string };
 
@@ -28,8 +30,26 @@ export function validate(input: unknown): Submission | string {
 
 export async function saveSubmission(s: Submission): Promise<{ stored: boolean }> {
   const token = process.env.SANITY_WRITE_TOKEN;
+  const shopApiUrl = (process.env.SHOP_API_URL ?? "").replace(/\/$/, "");
   let stored = false;
-  if (projectId && token) {
+  let storeError: unknown;
+  if (shopApiUrl) {
+    // If the Mac mini is unreachable, the email alert below still gets the message to the owner.
+    try {
+      const res = await fetch(`${shopApiUrl}/api/inbox`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.SHOP_API_TOKEN ?? ""}`, "Content-Type": "application/json" },
+        body: JSON.stringify(s),
+        cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`admin answered ${res.status}`);
+      stored = true;
+    } catch (e) {
+      storeError = e;
+      console.error("[inbox] could not save to the admin:", e);
+    }
+  } else if (projectId && token) {
     const client = createClient({ projectId, dataset, apiVersion, token, useCdn: false });
     await client.create({ _type: "submission", ...s, submittedAt: new Date().toISOString() });
     stored = true;
@@ -53,8 +73,14 @@ export async function saveSubmission(s: Submission): Promise<{ stored: boolean }
         subject,
         text,
       }),
-    }).catch((e) => console.error("[inbox] email failed", e));
-    stored = true;
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Resend answered ${res.status}`);
+        stored = true;
+      })
+      .catch((e) => console.error("[inbox] email failed", e));
   }
+  // Nowhere got the message: tell the visitor to try again rather than silently dropping it.
+  if (!stored && storeError) throw storeError;
   return { stored };
 }

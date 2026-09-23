@@ -1,7 +1,9 @@
 /**
- * Single entry point for catalog data. Pages never talk to Sanity directly:
- * when Sanity is configured, data comes from the admin; otherwise the
- * built-in sample catalog is used so the site always renders.
+ * Single entry point for catalog data. Pages never talk to a data source
+ * directly. In order of preference, data comes from:
+ *   1. the Om Threads admin on the Mac mini (SHOP_API_URL, see ADMIN_GUIDE.md)
+ *   2. Sanity (NEXT_PUBLIC_SANITY_PROJECT_ID)
+ *   3. the built-in sample catalog, so the site always renders.
  */
 import { createImageUrlBuilder } from "@sanity/image-url";
 import type { PortableTextBlock } from "next-sanity";
@@ -22,6 +24,64 @@ import type {
 
 export const CACHE_TAG = "sanity";
 const NEW_ARRIVAL_DAYS = 21;
+
+const isNewArrival = (publishedAt: string) => Date.now() - new Date(publishedAt).getTime() < NEW_ARRIVAL_DAYS * 86_400_000;
+
+// ---------------------------------------------------------------------------
+// Om Threads admin (Mac mini)
+// ---------------------------------------------------------------------------
+
+const shopApiUrl = (process.env.SHOP_API_URL ?? "").replace(/\/$/, "");
+
+/** Where the catalog comes from; the "Preview mode" banner shows for "sample". */
+export const catalogSource: "shop" | "sanity" | "sample" = shopApiUrl ? "shop" : client ? "sanity" : "sample";
+
+type ShopProduct = Omit<Product, "isNew" | "care"> & { carePreset?: keyof typeof carePresets | "custom"; care?: string };
+type ShopCatalog = {
+  products: ShopProduct[];
+  collections: (Collection & { showOnHome: boolean })[];
+  pages: ContentPage[];
+  settings: Partial<SiteSettings>;
+  testimonials: Testimonial[];
+};
+
+/**
+ * One cached request returns the whole (small) catalog. If the Mac mini is
+ * unreachable this throws, so Next keeps serving the last good pages instead
+ * of an empty shop.
+ */
+async function shopCatalog(): Promise<ShopCatalog> {
+  const res = await fetch(`${shopApiUrl}/api/catalog`, {
+    headers: { Authorization: `Bearer ${process.env.SHOP_API_TOKEN ?? ""}` },
+    next: { revalidate: 300, tags: [CACHE_TAG] },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Shop catalog request failed: ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+/** True when the admin's catalog can be fetched right now (always true for other sources). */
+export async function isShopCatalogReachable(): Promise<boolean> {
+  if (catalogSource !== "shop") return true;
+  try {
+    const res = await fetch(`${shopApiUrl}/api/catalog`, {
+      headers: { Authorization: `Bearer ${process.env.SHOP_API_TOKEN ?? ""}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function mapShopProduct({ carePreset, care, ...p }: ShopProduct): Product {
+  return {
+    ...p,
+    care: carePreset === "custom" ? care : carePreset ? carePresets[carePreset] : undefined,
+    isNew: isNewArrival(p.publishedAt),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Sanity queries
@@ -96,7 +156,7 @@ function mapProduct(p: SanityProduct): Product {
     collections: (p.collections ?? []).filter(Boolean),
     featured: Boolean(p.featured),
     care,
-    isNew: Date.now() - new Date(p.publishedAt).getTime() < NEW_ARRIVAL_DAYS * 86_400_000,
+    isNew: isNewArrival(p.publishedAt),
   };
 }
 
@@ -105,6 +165,7 @@ function mapProduct(p: SanityProduct): Product {
 // ---------------------------------------------------------------------------
 
 export async function getProducts(): Promise<Product[]> {
+  if (catalogSource === "shop") return (await shopCatalog()).products.map(mapShopProduct);
   if (!client) return sampleProducts;
   const rows = await query<SanityProduct[]>(
     `*[_type == "product" && defined(slug.current)] | order(publishedAt desc) ${productFields}`,
@@ -113,6 +174,10 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function getProduct(slug: string): Promise<Product | undefined> {
+  if (catalogSource === "shop") {
+    const p = (await shopCatalog()).products.find((x) => x.slug === slug);
+    return p ? mapShopProduct(p) : undefined;
+  }
   if (!client) return sampleProducts.find((p) => p.slug === slug);
   const row = await query<SanityProduct | null>(
     `*[_type == "product" && slug.current == $slug][0] ${productFields}`,
@@ -122,6 +187,10 @@ export async function getProduct(slug: string): Promise<Product | undefined> {
 }
 
 export async function getCollections(): Promise<Collection[]> {
+  if (catalogSource === "shop")
+    return (await shopCatalog()).collections
+      .filter((c) => c.showOnHome)
+      .map(({ slug, title, description, image }) => ({ slug, title, description, image }));
   if (!client) return sampleCollections;
   const rows = await query<(Omit<Collection, "image"> & { image?: SanityImage; fallback?: SanityImage })[]>(
     `*[_type == "collection" && showOnHome != false && defined(slug.current)] | order(title asc) {
@@ -137,6 +206,10 @@ export async function getCollections(): Promise<Collection[]> {
 }
 
 export async function getCollection(slug: string): Promise<Collection | undefined> {
+  if (catalogSource === "shop") {
+    const c = (await shopCatalog()).collections.find((x) => x.slug === slug);
+    return c ? { slug: c.slug, title: c.title, description: c.description } : undefined;
+  }
   if (!client) return sampleCollections.find((c) => c.slug === slug);
   return query<Collection | null>(
     `*[_type == "collection" && slug.current == $slug][0]{ "slug": slug.current, title, description }`,
@@ -146,6 +219,7 @@ export async function getCollection(slug: string): Promise<Collection | undefine
 
 export async function getPage(slug: string): Promise<ContentPage | undefined> {
   const fallback = samplePages.find((p) => p.slug === slug);
+  if (catalogSource === "shop") return (await shopCatalog()).pages.find((p) => p.slug === slug) ?? fallback;
   if (!client) return fallback;
   const row = await query<{ title: string; intro?: string; body?: PortableTextBlock[] } | null>(
     `*[_type == "page" && slug.current == $slug][0]{ title, intro, body }`,
@@ -156,6 +230,7 @@ export async function getPage(slug: string): Promise<ContentPage | undefined> {
 }
 
 export async function getSettings(): Promise<SiteSettings> {
+  if (catalogSource === "shop") return { ...defaultSettings, ...(await shopCatalog()).settings };
   if (!client) return defaultSettings;
   const row = await query<
     (Partial<Omit<SiteSettings, "heroImage">> & { heroImage?: SanityImage }) | null
@@ -175,6 +250,7 @@ export async function getSettings(): Promise<SiteSettings> {
 export async function getTestimonials(): Promise<Testimonial[]> {
   // Preview mode shows labelled placeholders so the layout can be seen.
   // Once the admin is connected, only real reviews added there are shown.
+  if (catalogSource === "shop") return (await shopCatalog()).testimonials;
   if (!client) return samplePlaceholderReviews;
   return query<Testimonial[]>(
     `*[_type == "testimonial"] | order(_createdAt desc)[0...9]{ "id": _id, quote, name, location, product }`,
