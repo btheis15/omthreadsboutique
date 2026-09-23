@@ -13,13 +13,16 @@ export const site = {
  * These apply until the owner saves their own values.
  */
 export const defaultSettings: SiteSettings = {
-  announcement: "Handpicked from the artisans of North India · Also on Etsy",
+  announcement: "Ships from Lake Villa, IL · Also on Etsy",
   email: "",
   instagramUrl: "",
   whatsapp: "",
   freeShippingThreshold: 75,
   returnDays: 30,
   shipsWithin: "1–2 business days",
+  // From the Etsy shop page. Update in the admin as reviews come in.
+  etsyRating: 5,
+  etsyReviewCount: 2,
 };
 
 export function siteUrl(): string {
@@ -85,6 +88,7 @@ export const materials: { value: string; label: string }[] = [
   { value: "silk", label: "Silk" },
   { value: "silk-blend", label: "Silk blend" },
   { value: "wool", label: "Wool" },
+  { value: "wool-blend", label: "Wool blend" },
   { value: "viscose", label: "Viscose" },
   { value: "modal", label: "Modal" },
   { value: "cotton", label: "Cotton" },

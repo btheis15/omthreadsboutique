@@ -5,7 +5,7 @@
  * so a fresh Vercel deploy looks complete. Once Sanity is connected, real
  * products from the admin replace everything here.
  */
-import type { Collection, ContentPage, Product, ProductImage, SwatchPattern } from "@/lib/types";
+import type { Collection, ContentPage, Product, ProductImage, SwatchPattern, Testimonial } from "@/lib/types";
 
 function swatches(
   title: string,
@@ -28,6 +28,66 @@ type Seed = Omit<Product, "id" | "images" | "featured" | "isNew" | "collections"
 
 const seeds: Seed[] = [
   {
+    slug: "om-namah-shivaya-prayer-shawl",
+    title: "Om Namah Shivaya Prayer Shawl",
+    type: "shawl",
+    price: 38,
+    shortDescription: "A saffron prayer shawl printed with ॐ and the Om Namah Shivaya mantra, for puja, meditation and yoga.",
+    description: [
+      "A lightweight saffron shawl printed with the sacred ॐ and the Om Namah Shivaya mantra. Drape it over the shoulders during puja, meditation or yoga, or give it as a meaningful gift.",
+    ],
+    colors: ["mustard", "red"],
+    material: "cotton",
+    craft: "block-print",
+    origin: "Varanasi, Uttar Pradesh",
+    dimensions: "40 × 80 in (102 × 203 cm)",
+    palette: ["#d9861c", "#8e2a18"],
+    patterns: ["block", "plain", "stripe"],
+    featured: true,
+    isNew: true,
+    collections: ["gifts", "for-him", "under-60"],
+    daysAgo: 1,
+  },
+  {
+    slug: "punjabi-oswal-lohi-wool-shawl",
+    title: "Punjabi Oswal Lohi Wool Shawl",
+    type: "shawl",
+    price: 45,
+    shortDescription:
+      "A generous Punjabi lohi in soft wool-touch fabric. Warm and elegant for men and women through the winter months.",
+    description: [
+      "The lohi is Punjab's classic winter shawl: large enough to wrap around the shoulders, and simple enough to wear every day. This one is by Oswal, a well-known Punjabi mill, in a soft wool-touch fabric.",
+      "It's unisex and versatile, good for everyday wear, meditation, prayer or a cosy winter morning. Each lohi carries the tradition of Punjab, blending everyday comfort with cultural roots.",
+    ],
+    colors: ["beige", "grey"],
+    material: "wool-blend",
+    origin: "Ludhiana, Punjab",
+    dimensions: "50 × 95 in (127 × 241 cm)",
+    palette: ["#b9a58a", "#5b4a3a"],
+    patterns: ["stripe", "plain", "jaali"],
+    featured: true,
+    collections: ["winter-warmth", "for-him", "gifts"],
+    etsyUrl: "https://www.etsy.com/listing/1832655059/punjabi-wool-shawl-indian-lohi-warm",
+    daysAgo: 2,
+  },
+  {
+    slug: "maroon-zari-wedding-shawl",
+    title: "Maroon Zari Wedding Shawl",
+    type: "shawl",
+    price: 79,
+    shortDescription: "Deep maroon with a shimmering zari border, for weddings, sangeet and festive evenings.",
+    colors: ["burgundy"],
+    material: "silk-blend",
+    craft: "banarasi",
+    origin: "Varanasi, Uttar Pradesh",
+    dimensions: "40 × 80 in (102 × 203 cm)",
+    palette: ["#5e1622", "#d6ab5e"],
+    patterns: ["paisley", "plain", "jaali"],
+    isNew: true,
+    collections: ["wedding", "evening-occasion"],
+    daysAgo: 5,
+  },
+  {
     slug: "midnight-sozni-embroidered-pashmina-shawl",
     title: "Midnight Sozni Pashmina Shawl",
     type: "shawl",
@@ -46,7 +106,7 @@ const seeds: Seed[] = [
     patterns: ["paisley", "plain", "jaali"],
     featured: true,
     collections: ["evening-occasion", "gifts"],
-    daysAgo: 3,
+    daysAgo: 9,
   },
   {
     slug: "ivory-kashmiri-cashmere-stole",
@@ -275,8 +335,8 @@ export const sampleProducts: Product[] = seeds.map(({ palette, patterns, daysAgo
 export const sampleCollections: Collection[] = [
   {
     slug: "wedding",
-    title: "Wedding & Bridal",
-    description: "Light, elegant pieces for brides, bridesmaids and guests.",
+    title: "Wedding Shawls & Wraps",
+    description: "Elegant pieces for brides, grooms, family and guests, from mehndi to reception.",
   },
   {
     slug: "evening-occasion",
@@ -289,6 +349,7 @@ export const sampleCollections: Collection[] = [
     description: "Wool, cashmere and pashmina for cold days.",
   },
   { slug: "gifts", title: "Thoughtful Gifts", description: "Easy-to-love pieces, ready to gift." },
+  { slug: "for-him", title: "For Him", description: "Lohis and shawls for men: warm, classic and easy to wear." },
   { slug: "under-60", title: "Under $60", description: "Beautiful pieces at an easy price." },
 ].map((c) => {
   const first = sampleProducts.find((p) => p.collections.includes(c.slug));
@@ -305,7 +366,7 @@ export const samplePages: ContentPage[] = [
       {
         paragraphs: [
           "Om Threads Boutique began with a love for the textiles of North India, and for the artisans who keep centuries-old crafts alive. Pashmina hand-spun in Srinagar. Kani shawls woven bobbin by bobbin. Phulkari stitched in Punjab, Banarasi silk, and Lucknow's chikankari. Each tradition has its own language of pattern and colour.",
-          "We choose every shawl and stole by hand, for how it feels, how it drapes and how long it will last. Then we bring it from its home in India to yours.",
+          "We choose every shawl and stole by hand, for how it feels, how it drapes and how long it will last. Then we bring it from its home in India to ours in Lake Villa, Illinois, and ship it on to you.",
         ],
       },
       {
@@ -363,7 +424,7 @@ export const samplePages: ContentPage[] = [
       {
         heading: "How long does shipping take?",
         paragraphs: [
-          "Orders are packed within 1–2 business days. Delivery times depend on your location and are shown at checkout.",
+          "Every order ships from Lake Villa, Illinois, and is packed within 1–2 business days. Most US orders arrive within 3–7 business days; tracking is emailed as soon as it ships.",
         ],
       },
       {
@@ -385,6 +446,18 @@ export const samplePages: ContentPage[] = [
         ],
       },
       {
+        heading: "What is a lohi?",
+        paragraphs: [
+          "A lohi is the traditional Punjabi winter shawl: large, warm and worn by men and women alike. It's ideal for cold mornings, prayer and meditation, or layering over a coat.",
+        ],
+      },
+      {
+        heading: "Do you have shawls for weddings?",
+        paragraphs: [
+          "Yes. Our Wedding Shawls & Wraps collection has pieces for brides, grooms, family and guests. Message us if you need several matching pieces for a wedding party.",
+        ],
+      },
+      {
         heading: "Do you offer gift wrapping?",
         paragraphs: ["Yes. Leave a note at checkout and we'll wrap it with a handwritten card."],
       },
@@ -396,7 +469,7 @@ export const samplePages: ContentPage[] = [
     body: [
       {
         paragraphs: [
-          "Orders are processed within 1–2 business days. You'll receive tracking details by email as soon as your order ships.",
+          "All orders ship from Lake Villa, Illinois, within 1–2 business days. You'll receive tracking details by email as soon as your order ships. Most US orders arrive within 3–7 business days.",
           "Update this page in the admin with your carriers, delivery times, international shipping and any free-shipping threshold.",
         ],
       },
@@ -436,5 +509,30 @@ export const samplePages: ContentPage[] = [
         ],
       },
     ],
+  },
+];
+
+/**
+ * Layout placeholders only, shown in preview mode. They are not real
+ * reviews. Add your actual Etsy reviews in the admin under "Customer reviews".
+ */
+export const samplePlaceholderReviews: Testimonial[] = [
+  {
+    id: "placeholder-1",
+    quote: "Your customer's review will appear here, for example how soft the shawl feels and how quickly it arrived.",
+    name: "Sample review",
+    location: "Add real reviews in the admin",
+  },
+  {
+    id: "placeholder-2",
+    quote: "A second review goes here. Short quotes of one or two sentences look best in this space.",
+    name: "Sample review",
+    product: "Punjabi Oswal Lohi Wool Shawl",
+  },
+  {
+    id: "placeholder-3",
+    quote: "A third review goes here. Wedding and gift stories work especially well.",
+    name: "Sample review",
+    product: "Maroon Zari Wedding Shawl",
   },
 ];

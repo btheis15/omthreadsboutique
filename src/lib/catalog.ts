@@ -5,7 +5,7 @@
  */
 import { createImageUrlBuilder } from "@sanity/image-url";
 import type { PortableTextBlock } from "next-sanity";
-import { sampleCollections, samplePages, sampleProducts } from "@/data/sample";
+import { sampleCollections, samplePages, samplePlaceholderReviews, sampleProducts } from "@/data/sample";
 import { client } from "@/sanity/client";
 import { carePresets } from "@/sanity/options";
 import { craftByValue } from "./crafts";
@@ -173,8 +173,9 @@ export async function getSettings(): Promise<SiteSettings> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-  // No sample reviews on purpose: only real customer words are shown.
-  if (!client) return [];
+  // Preview mode shows labelled placeholders so the layout can be seen.
+  // Once the admin is connected, only real reviews added there are shown.
+  if (!client) return samplePlaceholderReviews;
   return query<Testimonial[]>(
     `*[_type == "testimonial"] | order(_createdAt desc)[0...9]{ "id": _id, quote, name, location, product }`,
   );

@@ -253,7 +253,7 @@ export default async function HomePage() {
           <h2 className="mb-8 text-center text-3xl md:text-5xl" data-reveal>
             Shop by occasion
           </h2>
-          <ul className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-5 md:gap-6 md:px-0">
+          <ul className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-6 md:gap-5 md:px-0">
             {collections.map((c, i) => (
               <li key={c.slug} className="w-[38%] shrink-0 md:w-auto" data-reveal style={delay(i)}>
                 <Link href={`/collections/${c.slug}`} className="group block">
