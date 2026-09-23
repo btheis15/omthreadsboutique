@@ -2,7 +2,7 @@ import type { ProductType, SiteSettings } from "./types";
 
 export const site = {
   name: "Om Threads Boutique",
-  tagline: "Heirloom shawls & stoles from the looms of North India",
+  tagline: "Heirloom shawls & stoles from North India",
   description:
     "Pashmina, Kani, Jamawar, Phulkari, Banarasi and more, handpicked from the artisans of Kashmir, Himachal, Punjab, Uttar Pradesh and Rajasthan.",
   etsyUrl: "https://omthreadsboutique.etsy.com",

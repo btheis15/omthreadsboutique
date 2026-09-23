@@ -40,7 +40,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero
-        title={settings.heroTitle || "Heirlooms from the looms of North India"}
+        title={settings.heroTitle || "Handwoven treasures of North India"}
         subtitle={settings.heroSubtitle || site.description}
         image={settings.heroImage ?? heroProduct?.images[0]}
         videoUrl={settings.heroVideoUrl}
@@ -128,10 +128,10 @@ export default async function HomePage() {
         <div className="container-page py-16 md:py-24">
           <div className="max-w-2xl" data-reveal>
             <p className="font-deva text-xl text-zari-light">करघे से</p>
-            <h2 className="mt-2 text-4xl md:text-6xl">From the looms of North India</h2>
+            <h2 className="mt-2 text-4xl md:text-6xl">From Kashmir to Rajasthan</h2>
             <p className="mt-4 text-ivory/80 md:text-lg">
-              Each piece carries a living tradition, handed down through generations of weavers, embroiderers and dyers
-              from Kashmir to Rajasthan.
+              Each piece carries a living tradition, handed down through generations of weavers, embroiderers and
+              dyers.
             </p>
           </div>
           <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
