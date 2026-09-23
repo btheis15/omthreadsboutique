@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { crafts } from "@/lib/crafts";
 import { categories, nav, site } from "@/lib/site";
 import { cart, useCart } from "./cart/store";
-import { BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
+import { ArrowIcon, BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
+import { Mandala, Paisley } from "./ornaments";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,17 +65,83 @@ export function Header() {
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 justify-center gap-8 md:flex">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-sm tracking-wide transition-colors hover:text-accent ${
-                pathname === item.href ? "text-accent" : ""
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) =>
+            item.href === "/shop" ? (
+              // Desktop mega menu: opens on hover or keyboard focus.
+              <div key={item.href} className="group/mega flex items-center">
+                <Link
+                  href={item.href}
+                  aria-haspopup="true"
+                  className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
+                    pathname.startsWith("/shop") ? "text-accent" : ""
+                  }`}
+                >
+                  {item.label}
+                  <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/mega:scale-x-100" />
+                </Link>
+                <div className="invisible absolute inset-x-0 top-full -translate-y-2 border-b border-line bg-ivory opacity-0 shadow-[0_24px_48px_-24px_rgba(43,27,18,0.35)] transition duration-300 ease-soft group-focus-within/mega:visible group-focus-within/mega:translate-y-0 group-focus-within/mega:opacity-100 group-hover/mega:visible group-hover/mega:translate-y-0 group-hover/mega:opacity-100">
+                  <div className="container-page grid grid-cols-[1fr_1.6fr_1.1fr] gap-10 py-10">
+                    <div>
+                      <p className="eyebrow mb-4">Shop by type</p>
+                      <ul className="space-y-1">
+                        <li>
+                          <Link href="/shop" className="block py-1.5 font-display text-2xl hover:text-accent">
+                            Everything
+                          </Link>
+                        </li>
+                        {categories.map((c) => (
+                          <li key={c.slug}>
+                            <Link href={`/shop/${c.slug}`} className="block py-1.5 font-display text-2xl hover:text-accent">
+                              {c.title}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="eyebrow mb-4">Shop by craft</p>
+                      <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                        {crafts.map((c) => (
+                          <li key={c.value}>
+                            <Link
+                              href={`/shop?craft=${c.value}`}
+                              className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 text-[0.95rem] hover:text-accent"
+                            >
+                              {c.label}
+                              <span className="font-deva text-sm text-zari">{c.hindi}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Link
+                      href="/shop?sort=newest"
+                      className="group/card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-indigo p-7 text-ivory"
+                    >
+                      <Mandala className="animate-spin-slow absolute -top-16 -right-16 -z-10 size-72 text-zari/30" />
+                      <Paisley className="absolute top-6 left-6 -z-10 w-16 text-zari-light/60 transition-transform duration-700 group-hover/card:rotate-12" />
+                      <p className="font-deva text-lg text-zari-light">नए आगमन</p>
+                      <p className="font-display text-3xl">New arrivals</p>
+                      <span className="mt-3 inline-flex items-center gap-2 text-sm text-zari-light">
+                        Shop the latest <ArrowIcon size={16} className="transition-transform group-hover/card:translate-x-1" />
+                      </span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
+                  pathname === item.href ? "text-accent" : ""
+                } group/link`}
+              >
+                {item.label}
+                <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/link:scale-x-100" />
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">

@@ -74,24 +74,37 @@ export function ShopView({
         })}
       </nav>
 
-      <Suspense>
-        <ShopFilters
-          availableColors={availableColors}
-          availableMaterials={availableMaterials}
-          availableCrafts={availableCrafts}
-          resultCount={filtered.length}
-        />
-      </Suspense>
+      <div className="lg:grid lg:grid-cols-[15rem_1fr] lg:gap-10 xl:grid-cols-[16.5rem_1fr]">
+        <Suspense>
+          <ShopFilters
+            mode="sidebar"
+            availableColors={availableColors}
+            availableMaterials={availableMaterials}
+            availableCrafts={availableCrafts}
+            resultCount={filtered.length}
+          />
+        </Suspense>
+        <div className="min-w-0">
+          <Suspense>
+            <ShopFilters
+              availableColors={availableColors}
+              availableMaterials={availableMaterials}
+              availableCrafts={availableCrafts}
+              resultCount={filtered.length}
+            />
+          </Suspense>
 
-      <div className="pt-6">
-        {filtered.length ? (
-          <ProductGrid products={filtered} preloadFirst={4} />
-        ) : (
-          <div className="py-20 text-center">
-            <p className="font-display text-2xl">No pieces match those filters</p>
-            <p className="mt-2 text-muted">Try removing a filter or two.</p>
+          <div className="pt-6">
+            {filtered.length ? (
+              <ProductGrid products={filtered} preloadFirst={4} columns="sidebar" />
+            ) : (
+              <div className="py-20 text-center">
+                <p className="font-display text-2xl">No pieces match those filters</p>
+                <p className="mt-2 text-muted">Try removing a filter or two.</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

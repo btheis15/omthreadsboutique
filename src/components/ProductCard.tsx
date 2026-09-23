@@ -88,13 +88,17 @@ export function ProductGrid({
   products,
   preloadFirst = 0,
   morph = true,
+  columns = "full",
 }: {
   products: Product[];
   preloadFirst?: number;
   morph?: boolean;
+  /** "sidebar" leaves room for the desktop filter column. */
+  columns?: "full" | "sidebar";
 }) {
+  const cols = columns === "sidebar" ? "md:grid-cols-3 xl:grid-cols-3" : "md:grid-cols-3 lg:grid-cols-4";
   return (
-    <ul className="grid grid-cols-2 gap-x-3 gap-y-9 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
+    <ul className={`grid grid-cols-2 gap-x-3 gap-y-9 md:gap-x-6 ${cols}`}>
       {products.map((p, i) => (
         <li key={p.id}>
           <ProductCard product={p} preload={i < preloadFirst} morph={morph} index={i} />

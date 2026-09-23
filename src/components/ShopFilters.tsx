@@ -21,9 +21,17 @@ type Props = {
   availableMaterials: string[];
   availableCrafts: string[];
   resultCount: number;
+  /** "bar": top bar + drawer (phones, tablets). "sidebar": always-open panel on laptops. */
+  mode?: "bar" | "sidebar";
 };
 
-export function ShopFilters({ availableColors, availableMaterials, availableCrafts, resultCount }: Props) {
+export function ShopFilters({
+  availableColors,
+  availableMaterials,
+  availableCrafts,
+  resultCount,
+  mode = "bar",
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -71,6 +79,122 @@ export function ShopFilters({ availableColors, availableMaterials, availableCraf
     };
   }, [open]);
 
+  const fields = (focusable: boolean, className = "") => (
+    <div className={`space-y-8 ${className}`}>
+      {availableColors.length > 0 && (
+        <fieldset>
+          <legend className="eyebrow mb-3">Color</legend>
+          <div className="grid grid-cols-4 gap-3">
+            {allColors
+              .filter((c) => availableColors.includes(c.value))
+              .map((c) => {
+                const on = selectedColors.includes(c.value);
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    aria-pressed={on}
+                    tabIndex={focusable ? 0 : -1}
+                    onClick={() => toggle("color", c.value)}
+                    className="flex flex-col items-center gap-1.5 text-xs"
+                  >
+                    <span
+                      className={`size-10 rounded-full border border-ink/15 ring-offset-2 ring-offset-ivory ${on ? "ring-2 ring-ink" : ""}`}
+                      style={{ background: c.hex }}
+                    />
+                    {c.label}
+                  </button>
+                );
+              })}
+          </div>
+        </fieldset>
+      )}
+
+      {availableMaterials.length > 0 && (
+        <fieldset>
+          <legend className="eyebrow mb-3">Material</legend>
+          <div className="flex flex-wrap gap-2">
+            {allMaterials
+              .filter((m) => availableMaterials.includes(m.value))
+              .map((m) => {
+                const on = selectedMaterials.includes(m.value);
+                return (
+                  <button
+                    key={m.value}
+                    type="button"
+                    aria-pressed={on}
+                    tabIndex={focusable ? 0 : -1}
+                    onClick={() => toggle("material", m.value)}
+                    className={`h-10 rounded-full border px-4 text-sm ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+          </div>
+        </fieldset>
+      )}
+
+      {availableCrafts.length > 0 && (
+        <fieldset>
+          <legend className="eyebrow mb-3">Craft</legend>
+          <div className="flex flex-wrap gap-2">
+            {allCrafts
+              .filter((c) => availableCrafts.includes(c.value))
+              .map((c) => {
+                const on = selectedCrafts.includes(c.value);
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    aria-pressed={on}
+                    tabIndex={focusable ? 0 : -1}
+                    onClick={() => toggle("craft", c.value)}
+                    className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
+                  >
+                    {c.label}
+                    <span className={`font-deva text-xs ${on ? "text-zari-light" : "text-zari"}`}>{c.hindi}</span>
+                  </button>
+                );
+              })}
+          </div>
+        </fieldset>
+      )}
+
+      <fieldset>
+        <legend className="eyebrow mb-3">Price</legend>
+        <div className="flex flex-wrap gap-2">
+          {priceSteps.map((p) => {
+            const on = maxPrice === String(p);
+            return (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={on}
+                tabIndex={focusable ? 0 : -1}
+                onClick={() => setParam("max", on ? null : String(p))}
+                className={`h-10 rounded-full border px-4 text-sm ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
+              >
+                Under ${p}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <label className="flex items-center justify-between gap-4">
+        <span className="text-[0.95rem]">Hide sold-out pieces</span>
+        <input
+          type="checkbox"
+          checked={inStock}
+          tabIndex={focusable ? 0 : -1}
+          onChange={(e) => setParam("instock", e.target.checked ? "1" : null)}
+          className="size-5 accent-ink"
+        />
+      </label>
+    </div>
+  );
+
   const chips = [
     ...(q ? [{ label: `“${q}”`, clear: () => setParam("q", null) }] : []),
     ...selectedColors.map((c) => ({
@@ -89,18 +213,37 @@ export function ShopFilters({ availableColors, availableMaterials, availableCraf
     ...(inStock ? [{ label: "In stock", clear: () => setParam("instock", null) }] : []),
   ];
 
+  const clearFilters = () =>
+    update((p) => ["color", "material", "craft", "max", "instock"].forEach((k) => p.delete(k)));
+
+  if (mode === "sidebar") {
+    return (
+      <aside aria-label="Filters" className="sticky top-28 hidden max-h-[calc(100dvh-8rem)] overflow-y-auto pr-2 lg:block">
+        <div className="mb-6 flex items-baseline justify-between">
+          <h2 className="text-2xl">Filter</h2>
+          {activeCount > 0 && (
+            <button type="button" onClick={clearFilters} className="text-sm text-muted underline underline-offset-4">
+              Clear ({activeCount})
+            </button>
+          )}
+        </div>
+        {fields(true)}
+      </aside>
+    );
+  }
+
   return (
     <>
       <div className="flex items-center justify-between gap-3 border-y border-line py-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-white px-4 text-sm"
+          className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-white px-4 text-sm lg:hidden"
         >
           <FilterIcon size={18} />
           Filter{activeCount > 0 && ` (${activeCount})`}
         </button>
-        <p className={`hidden text-sm text-muted sm:block ${pending ? "opacity-50" : ""}`} aria-live="polite">
+        <p className={`hidden text-sm text-muted sm:block lg:mr-auto ${pending ? "opacity-50" : ""}`} aria-live="polite">
           {resultCount} {resultCount === 1 ? "piece" : "pieces"}
         </p>
         <label className="inline-flex items-center gap-2 text-sm">
@@ -143,7 +286,7 @@ export function ShopFilters({ availableColors, availableMaterials, availableCraf
       )}
 
       {/* Bottom sheet on phones, side panel on desktop */}
-      <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+      <div className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
         <div
           className={`absolute inset-0 bg-ink/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`}
           onClick={() => setOpen(false)}
@@ -169,125 +312,13 @@ export function ShopFilters({ availableColors, availableMaterials, availableCraf
             </button>
           </div>
 
-          <div className="flex-1 space-y-8 overflow-y-auto px-5 py-6">
-            {availableColors.length > 0 && (
-              <fieldset>
-                <legend className="eyebrow mb-3">Color</legend>
-                <div className="grid grid-cols-4 gap-3">
-                  {allColors
-                    .filter((c) => availableColors.includes(c.value))
-                    .map((c) => {
-                      const on = selectedColors.includes(c.value);
-                      return (
-                        <button
-                          key={c.value}
-                          type="button"
-                          aria-pressed={on}
-                          tabIndex={open ? 0 : -1}
-                          onClick={() => toggle("color", c.value)}
-                          className="flex flex-col items-center gap-1.5 text-xs"
-                        >
-                          <span
-                            className={`size-10 rounded-full border border-ink/15 ring-offset-2 ring-offset-ivory ${on ? "ring-2 ring-ink" : ""}`}
-                            style={{ background: c.hex }}
-                          />
-                          {c.label}
-                        </button>
-                      );
-                    })}
-                </div>
-              </fieldset>
-            )}
-
-            {availableMaterials.length > 0 && (
-              <fieldset>
-                <legend className="eyebrow mb-3">Material</legend>
-                <div className="flex flex-wrap gap-2">
-                  {allMaterials
-                    .filter((m) => availableMaterials.includes(m.value))
-                    .map((m) => {
-                      const on = selectedMaterials.includes(m.value);
-                      return (
-                        <button
-                          key={m.value}
-                          type="button"
-                          aria-pressed={on}
-                          tabIndex={open ? 0 : -1}
-                          onClick={() => toggle("material", m.value)}
-                          className={`h-10 rounded-full border px-4 text-sm ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
-                        >
-                          {m.label}
-                        </button>
-                      );
-                    })}
-                </div>
-              </fieldset>
-            )}
-
-            {availableCrafts.length > 0 && (
-              <fieldset>
-                <legend className="eyebrow mb-3">Craft</legend>
-                <div className="flex flex-wrap gap-2">
-                  {allCrafts
-                    .filter((c) => availableCrafts.includes(c.value))
-                    .map((c) => {
-                      const on = selectedCrafts.includes(c.value);
-                      return (
-                        <button
-                          key={c.value}
-                          type="button"
-                          aria-pressed={on}
-                          tabIndex={open ? 0 : -1}
-                          onClick={() => toggle("craft", c.value)}
-                          className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
-                        >
-                          {c.label}
-                          <span className={`font-deva text-xs ${on ? "text-zari-light" : "text-zari"}`}>{c.hindi}</span>
-                        </button>
-                      );
-                    })}
-                </div>
-              </fieldset>
-            )}
-
-            <fieldset>
-              <legend className="eyebrow mb-3">Price</legend>
-              <div className="flex flex-wrap gap-2">
-                {priceSteps.map((p) => {
-                  const on = maxPrice === String(p);
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      aria-pressed={on}
-                      tabIndex={open ? 0 : -1}
-                      onClick={() => setParam("max", on ? null : String(p))}
-                      className={`h-10 rounded-full border px-4 text-sm ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
-                    >
-                      Under ${p}
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <label className="flex items-center justify-between gap-4">
-              <span className="text-[0.95rem]">Hide sold-out pieces</span>
-              <input
-                type="checkbox"
-                checked={inStock}
-                tabIndex={open ? 0 : -1}
-                onChange={(e) => setParam("instock", e.target.checked ? "1" : null)}
-                className="size-5 accent-ink"
-              />
-            </label>
-          </div>
+          {fields(open, "flex-1 overflow-y-auto px-5 py-6")}
 
           <div className="flex gap-3 border-t border-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <button
               type="button"
               tabIndex={open ? 0 : -1}
-              onClick={() => update((p) => ["color", "material", "craft", "max", "instock"].forEach((k) => p.delete(k)))}
+              onClick={clearFilters}
               className="btn btn-outline flex-1"
             >
               Clear
