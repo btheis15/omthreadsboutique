@@ -13,6 +13,25 @@ const sanityLoader: ImageLoader = ({ src, width, quality }) => {
   return url.toString();
 };
 
+/**
+ * Photos from the Om Threads admin (served at /media/<id>/<max>.webp) come in
+ * fixed widths; pick the smallest one at least as wide as requested.
+ */
+const ADMIN_WIDTHS = [320, 480, 640, 828, 1080, 1280, 1600, 2048];
+const ADMIN_IMAGE = /^\/media\/([0-9a-f-]{36})\/(\d+)\.webp$/;
+const adminLoader: ImageLoader = ({ src, width }) => {
+  const [, id, max] = src.match(ADMIN_IMAGE)!;
+  const largest = Number(max);
+  const w = ADMIN_WIDTHS.find((x) => x >= width && x < largest) ?? largest;
+  return `/media/${id}/${w}.webp`;
+};
+
+function loaderFor(url: string): ImageLoader | undefined {
+  if (url.includes("cdn.sanity.io")) return sanityLoader;
+  if (ADMIN_IMAGE.test(url)) return adminLoader;
+  return undefined;
+}
+
 export function ProductImage({
   image,
   sizes,
@@ -32,7 +51,7 @@ export function ProductImage({
         fill
         sizes={sizes}
         preload={preload}
-        loader={image.url.includes("cdn.sanity.io") ? sanityLoader : undefined}
+        loader={loaderFor(image.url)}
         placeholder={image.lqip ? "blur" : "empty"}
         blurDataURL={image.lqip}
         className={`object-cover ${className}`}

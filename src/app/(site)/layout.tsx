@@ -4,8 +4,7 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { RevealObserver } from "@/components/motion/RevealObserver";
-import { getSettings } from "@/lib/catalog";
-import { isSanityConfigured } from "@/sanity/env";
+import { catalogSource, getSettings } from "@/lib/catalog";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSettings();
@@ -23,7 +22,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       >
         Skip to content
       </a>
-      {!isSanityConfigured && (
+      {catalogSource === "sample" && (
         <div className="bg-marigold px-4 py-1.5 text-center text-xs font-medium text-ink">
           Preview mode: showing sample products. Connect the admin to show your own (see ADMIN_GUIDE.md).
         </div>

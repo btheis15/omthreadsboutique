@@ -32,7 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: product.title,
       description: product.shortDescription,
-      images: image ? [{ url: `${image}?w=1200&h=630&fit=crop` }] : undefined,
+      // Sanity crops to the social-card size on request; admin photos are used as-is.
+      images: image ? [{ url: image.includes("cdn.sanity.io") ? `${image}?w=1200&h=630&fit=crop` : image }] : undefined,
     },
   };
 }
@@ -60,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
     "@type": "Product",
     name: product.title,
     description: product.shortDescription,
-    image: product.images.map((i) => i.url).filter(Boolean),
+    image: product.images.flatMap((i) => (i.url ? [new URL(i.url, siteUrl()).toString()] : [])),
     material: materialLabel(product.material),
     color: product.colors.map(colorLabel).join(", ") || undefined,
     brand: { "@type": "Brand", name: site.name },
