@@ -17,6 +17,7 @@ export function parseFilters(sp: SearchParams): ProductFilters {
     q: one(sp.q),
     colors: many(sp.color),
     materials: many(sp.material),
+    crafts: many(sp.craft),
     maxPrice: Number.isFinite(max) && max > 0 ? max : undefined,
     sort: (one(sp.sort) as SortKey) || undefined,
     inStockOnly: one(sp.instock) === "1",
@@ -39,12 +40,20 @@ export function ShopView({
   const filtered = filterProducts(products, parseFilters(searchParams));
   const availableColors = [...new Set(products.flatMap((p) => p.colors))];
   const availableMaterials = [...new Set(products.map((p) => p.material).filter(Boolean) as string[])];
+  const availableCrafts = [...new Set(products.map((p) => p.craft).filter(Boolean) as string[])];
 
   return (
     <div className="container-page pt-8 md:pt-12">
       <header className="mb-6 max-w-2xl">
-        <h1 className="text-4xl md:text-5xl">{title}</h1>
-        {description && <p className="mt-3 text-muted md:text-lg">{description}</p>}
+        <p className="animate-rise font-deva text-lg text-accent">संग्रह</p>
+        <h1 className="animate-rise text-4xl md:text-6xl" style={{ "--i": 1 } as React.CSSProperties}>
+          {title}
+        </h1>
+        {description && (
+          <p className="animate-rise mt-3 text-muted md:text-lg" style={{ "--i": 2 } as React.CSSProperties}>
+            {description}
+          </p>
+        )}
       </header>
 
       <nav aria-label="Categories" className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4">
@@ -69,6 +78,7 @@ export function ShopView({
         <ShopFilters
           availableColors={availableColors}
           availableMaterials={availableMaterials}
+          availableCrafts={availableCrafts}
           resultCount={filtered.length}
         />
       </Suspense>

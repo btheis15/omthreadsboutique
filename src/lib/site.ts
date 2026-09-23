@@ -1,15 +1,25 @@
-import type { ProductType } from "./types";
+import type { ProductType, SiteSettings } from "./types";
 
 export const site = {
   name: "Om Threads Boutique",
-  tagline: "Shawls & stoles, woven to be treasured",
+  tagline: "Heirloom shawls & stoles from the looms of North India",
   description:
-    "Handpicked shawls, stoles and wraps in pashmina, silk, wool and more. Soft, timeless pieces for everyday comfort and special occasions.",
+    "Pashmina, Kani, Jamawar, Phulkari, Banarasi and more, handpicked from the artisans of Kashmir, Himachal, Punjab, Uttar Pradesh and Rajasthan.",
   etsyUrl: "https://omthreadsboutique.etsy.com",
-  instagramUrl: "",
+};
+
+/**
+ * Defaults for everything editable in the admin under "Site settings".
+ * These apply until the owner saves their own values.
+ */
+export const defaultSettings: SiteSettings = {
+  announcement: "Handpicked from the artisans of North India · Also on Etsy",
   email: "",
-  announcement: "Handpicked & quality-checked · Also on Etsy",
+  instagramUrl: "",
+  whatsapp: "",
   freeShippingThreshold: 75,
+  returnDays: 30,
+  shipsWithin: "1–2 business days",
 };
 
 export function siteUrl(): string {
@@ -83,7 +93,7 @@ export const materials: { value: string; label: string }[] = [
 export const nav = [
   { href: "/shop", label: "Shop all" },
   ...categories.slice(0, 2).map((c) => ({ href: `/shop/${c.slug}`, label: c.title })),
-  { href: "/care-guide", label: "Care guide" },
+  { href: "/crafts", label: "The crafts" },
   { href: "/about", label: "Our story" },
 ];
 

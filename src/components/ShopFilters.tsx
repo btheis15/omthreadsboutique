@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { crafts as allCrafts } from "@/lib/crafts";
 import { colors as allColors, materials as allMaterials } from "@/lib/site";
 import { CloseIcon, FilterIcon } from "./icons";
 
@@ -18,10 +19,11 @@ type Props = {
   /** Only offer filter values that exist in the current product set. */
   availableColors: string[];
   availableMaterials: string[];
+  availableCrafts: string[];
   resultCount: number;
 };
 
-export function ShopFilters({ availableColors, availableMaterials, resultCount }: Props) {
+export function ShopFilters({ availableColors, availableMaterials, availableCrafts, resultCount }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -31,6 +33,7 @@ export function ShopFilters({ availableColors, availableMaterials, resultCount }
   const list = (key: string) => params.get(key)?.split(",").filter(Boolean) ?? [];
   const selectedColors = list("color");
   const selectedMaterials = list("material");
+  const selectedCrafts = list("craft");
   const maxPrice = params.get("max");
   const sort = params.get("sort") ?? "featured";
   const inStock = params.get("instock") === "1";
@@ -55,7 +58,7 @@ export function ShopFilters({ availableColors, availableMaterials, resultCount }
   const setParam = (key: string, value: string | null) =>
     update((p) => (value === null ? p.delete(key) : p.set(key, value)));
 
-  const activeCount = selectedColors.length + selectedMaterials.length + (maxPrice ? 1 : 0) + (inStock ? 1 : 0);
+  const activeCount = selectedColors.length + selectedMaterials.length + selectedCrafts.length + (maxPrice ? 1 : 0) + (inStock ? 1 : 0);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +80,10 @@ export function ShopFilters({ availableColors, availableMaterials, resultCount }
     ...selectedMaterials.map((m) => ({
       label: allMaterials.find((x) => x.value === m)?.label ?? m,
       clear: () => toggle("material", m),
+    })),
+    ...selectedCrafts.map((c) => ({
+      label: allCrafts.find((x) => x.value === c)?.label ?? c,
+      clear: () => toggle("craft", c),
     })),
     ...(maxPrice ? [{ label: `Under $${maxPrice}`, clear: () => setParam("max", null) }] : []),
     ...(inStock ? [{ label: "In stock", clear: () => setParam("instock", null) }] : []),
@@ -127,7 +134,7 @@ export function ShopFilters({ availableColors, availableMaterials, resultCount }
           ))}
           <button
             type="button"
-            onClick={() => update((p) => ["q", "color", "material", "max", "instock"].forEach((k) => p.delete(k)))}
+            onClick={() => update((p) => ["q", "color", "material", "craft", "max", "instock"].forEach((k) => p.delete(k)))}
             className="h-9 shrink-0 px-2 text-sm underline underline-offset-4"
           >
             Clear all
@@ -217,6 +224,32 @@ export function ShopFilters({ availableColors, availableMaterials, resultCount }
               </fieldset>
             )}
 
+            {availableCrafts.length > 0 && (
+              <fieldset>
+                <legend className="eyebrow mb-3">Craft</legend>
+                <div className="flex flex-wrap gap-2">
+                  {allCrafts
+                    .filter((c) => availableCrafts.includes(c.value))
+                    .map((c) => {
+                      const on = selectedCrafts.includes(c.value);
+                      return (
+                        <button
+                          key={c.value}
+                          type="button"
+                          aria-pressed={on}
+                          tabIndex={open ? 0 : -1}
+                          onClick={() => toggle("craft", c.value)}
+                          className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
+                        >
+                          {c.label}
+                          <span className={`font-deva text-xs ${on ? "text-zari-light" : "text-zari"}`}>{c.hindi}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </fieldset>
+            )}
+
             <fieldset>
               <legend className="eyebrow mb-3">Price</legend>
               <div className="flex flex-wrap gap-2">
@@ -254,7 +287,7 @@ export function ShopFilters({ availableColors, availableMaterials, resultCount }
             <button
               type="button"
               tabIndex={open ? 0 : -1}
-              onClick={() => update((p) => ["color", "material", "max", "instock"].forEach((k) => p.delete(k)))}
+              onClick={() => update((p) => ["color", "material", "craft", "max", "instock"].forEach((k) => p.delete(k)))}
               className="btn btn-outline flex-1"
             >
               Clear

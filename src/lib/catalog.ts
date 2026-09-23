@@ -8,7 +8,17 @@ import type { PortableTextBlock } from "next-sanity";
 import { sampleCollections, samplePages, sampleProducts } from "@/data/sample";
 import { client } from "@/sanity/client";
 import { carePresets } from "@/sanity/options";
-import type { Collection, ContentPage, Product, ProductImage, ProductType } from "./types";
+import { craftByValue } from "./crafts";
+import { defaultSettings } from "./site";
+import type {
+  Collection,
+  ContentPage,
+  Product,
+  ProductImage,
+  ProductType,
+  SiteSettings,
+  Testimonial,
+} from "./types";
 
 export const CACHE_TAG = "sanity";
 const NEW_ARRIVAL_DAYS = 21;
@@ -31,6 +41,9 @@ const productFields = `{
   description,
   colors,
   material,
+  craft,
+  origin,
+  "videoUrl": video.asset->url,
   dimensions,
   carePreset,
   care,
@@ -142,6 +155,31 @@ export async function getPage(slug: string): Promise<ContentPage | undefined> {
   return { slug, title: row.title, intro: row.intro, body: row.body ?? [] };
 }
 
+export async function getSettings(): Promise<SiteSettings> {
+  if (!client) return defaultSettings;
+  const row = await query<
+    (Partial<Omit<SiteSettings, "heroImage">> & { heroImage?: SanityImage }) | null
+  >(
+    `*[_id == "siteSettings"][0]{
+      announcement, email, instagramUrl, whatsapp, etsyRating, etsyReviewCount,
+      heroTitle, heroSubtitle, "heroImage": heroImage${imageFields}, "heroVideoUrl": heroVideo.asset->url,
+      freeShippingThreshold, returnDays, shipsWithin
+    }`,
+  );
+  if (!row) return defaultSettings;
+  const clean = Object.fromEntries(Object.entries(row).filter(([, v]) => v !== null && v !== undefined));
+  const heroImage = row.heroImage?.asset ? mapImage(row.heroImage, "Om Threads Boutique") : undefined;
+  return { ...defaultSettings, ...clean, heroImage } as SiteSettings;
+}
+
+export async function getTestimonials(): Promise<Testimonial[]> {
+  // No sample reviews on purpose: only real customer words are shown.
+  if (!client) return [];
+  return query<Testimonial[]>(
+    `*[_type == "testimonial"] | order(_createdAt desc)[0...9]{ "id": _id, quote, name, location, product }`,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Filtering helpers (catalog is small, so filtering happens in memory)
 // ---------------------------------------------------------------------------
@@ -153,6 +191,7 @@ export type ProductFilters = {
   collection?: string;
   colors?: string[];
   materials?: string[];
+  crafts?: string[];
   maxPrice?: number;
   q?: string;
   sort?: SortKey;
@@ -170,10 +209,19 @@ export function filterProducts(products: Product[], f: ProductFilters): Product[
     if (f.collection && !p.collections.includes(f.collection)) return false;
     if (f.colors?.length && !p.colors.some((c) => f.colors!.includes(c))) return false;
     if (f.materials?.length && (!p.material || !f.materials.includes(p.material))) return false;
+    if (f.crafts?.length && (!p.craft || !f.crafts.includes(p.craft))) return false;
     if (f.maxPrice && p.price > f.maxPrice) return false;
     if (f.inStockOnly && isSoldOut(p)) return false;
     if (q) {
-      const haystack = [p.title, p.shortDescription, p.material, p.type, ...p.colors]
+      const haystack = [
+        p.title,
+        p.shortDescription,
+        p.material,
+        p.type,
+        p.origin,
+        craftByValue(p.craft)?.label,
+        ...p.colors,
+      ]
         .join(" ")
         .toLowerCase();
       if (!q.split(/\s+/).every((word) => haystack.includes(word))) return false;
@@ -198,7 +246,8 @@ export function relatedProducts(all: Product[], product: Product, limit = 4): Pr
   const score = (p: Product) =>
     (p.type === product.type ? 2 : 0) +
     p.collections.filter((c) => product.collections.includes(c)).length +
-    p.colors.filter((c) => product.colors.includes(c)).length;
+    p.colors.filter((c) => product.colors.includes(c)).length +
+    (p.craft && p.craft === product.craft ? 2 : 0);
   return all
     .filter((p) => p.id !== product.id && !isSoldOut(p))
     .sort((a, b) => score(b) - score(a))

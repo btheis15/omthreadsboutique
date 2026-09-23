@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import { AddToCart, StickyBuyBar } from "@/components/AddToCart";
 import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons";
 import { Price } from "@/components/Price";
-import { ProductGrid } from "@/components/ProductCard";
+import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { RichText } from "@/components/RichText";
-import { getProduct, getProducts, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { craftByValue } from "@/lib/crafts";
 import { paymentProvider } from "@/lib/payments";
 import { categories, colorLabel, materialLabel, site, siteUrl } from "@/lib/site";
 
@@ -38,14 +39,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all] = await Promise.all([getProduct(slug), getProducts()]);
+  const [product, all, settings] = await Promise.all([getProduct(slug), getProducts(), getSettings()]);
   if (!product) notFound();
 
   const payments = paymentProvider();
   const category = categories.find((c) => c.type === product.type);
   const related = relatedProducts(all, product);
+  const craft = craftByValue(product.craft);
 
   const details = [
+    craft && { label: "Craft", value: craft.label },
+    product.origin && { label: "Made in", value: product.origin },
     product.material && { label: "Material", value: materialLabel(product.material) },
     product.dimensions && { label: "Size", value: product.dimensions },
     product.colors.length && { label: "Color", value: product.colors.map(colorLabel).join(", ") },
@@ -92,11 +96,19 @@ export default async function ProductPage({ params }: Props) {
         </nav>
 
         <div className="md:grid md:grid-cols-[1.15fr_1fr] md:gap-12 lg:gap-16">
-          <ProductGallery images={product.images} title={product.title} />
+          <ProductGallery
+            images={product.images}
+            title={product.title}
+            videoUrl={product.videoUrl}
+            vtName={productVtName(product.slug)}
+          />
 
           <div className="container-page pt-6 md:px-0 md:pt-0">
             <div className="md:sticky md:top-28">
-              {category && <p className="eyebrow mb-2">{category.singular}</p>}
+              <p className="eyebrow mb-2">
+                {[craft?.label, category?.singular].filter(Boolean).join(" · ")}
+                {product.origin && <span className="text-zari"> · {product.origin}</span>}
+              </p>
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
               <Price
                 price={product.price}
@@ -117,15 +129,28 @@ export default async function ProductPage({ params }: Props) {
                   <LeafIcon size={18} /> Handpicked quality
                 </li>
                 <li className="flex items-center gap-2">
-                  <TruckIcon size={18} /> Ships in 1–2 days
+                  <TruckIcon size={18} /> Ships in {settings.shipsWithin}
                 </li>
                 <li className="flex items-center gap-2">
-                  <ReturnIcon size={18} /> 30-day returns
+                  <ReturnIcon size={18} /> {settings.returnDays}-day returns
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldIcon size={18} /> Secure checkout
                 </li>
               </ul>
+
+              {craft && (
+                <Link
+                  href={`/crafts#${craft.value}`}
+                  className="mt-8 flex items-center gap-4 rounded-2xl border border-line bg-sand p-5 transition hover:border-zari"
+                >
+                  <span className="font-deva text-3xl text-accent">{craft.hindi}</span>
+                  <span>
+                    <span className="block font-medium">The craft: {craft.label}</span>
+                    <span className="block text-sm text-muted">{craft.summary}</span>
+                  </span>
+                </Link>
+              )}
 
               <div className="mt-8 divide-y divide-line border-y border-line">
                 {product.description && product.description.length > 0 && (
@@ -155,8 +180,8 @@ export default async function ProductPage({ params }: Props) {
                 )}
                 <Accordion title="Shipping & returns">
                   <p className="leading-relaxed">
-                    Packed with care and shipped within 1–2 business days. Unworn items can be returned within 30
-                    days.{" "}
+                    Packed with care and shipped within {settings.shipsWithin}. Unworn items can be returned within{" "}
+                    {settings.returnDays} days.{" "}
                     <Link href="/policies/shipping" className="underline underline-offset-4">
                       Shipping
                     </Link>{" "}

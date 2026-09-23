@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { formatPrice, site } from "@/lib/site";
+import { formatPrice } from "@/lib/site";
 import { CloseIcon, MinusIcon, PlusIcon } from "../icons";
 import { ProductImage } from "../ProductImage";
 import { cart, useCart } from "./store";
 
-export function CartDrawer() {
+export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: number }) {
   const { items, open, subtotal, count } = useCart();
 
   useEffect(() => {
@@ -21,7 +21,8 @@ export function CartDrawer() {
     };
   }, [open]);
 
-  const remaining = site.freeShippingThreshold - subtotal;
+  const remaining = freeShippingThreshold - subtotal;
+  const progress = freeShippingThreshold > 0 ? Math.min(1, subtotal / freeShippingThreshold) : 0;
 
   return (
     <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
@@ -60,7 +61,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            {site.freeShippingThreshold > 0 && (
+            {freeShippingThreshold > 0 && (
               <div className="border-b border-line bg-sand px-4 py-3 text-center text-sm md:px-6">
                 {remaining > 0 ? (
                   <>
@@ -69,11 +70,25 @@ export function CartDrawer() {
                 ) : (
                   <>You&apos;ve unlocked free shipping ✨</>
                 )}
+                <div className="mx-auto mt-2 h-1 max-w-xs overflow-hidden rounded-full bg-line">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-marigold to-accent transition-[width] duration-700 ease-soft"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                </div>
               </div>
             )}
             <ul className="flex-1 divide-y divide-line overflow-y-auto px-4 md:px-6">
-              {items.map((item) => (
-                <li key={item.productId} className="flex gap-4 py-4">
+              {items.map((item, i) => (
+                <li
+                  key={item.productId}
+                  className="flex gap-4 py-4 transition duration-500 ease-soft"
+                  style={{
+                    transitionDelay: open ? `${150 + i * 60}ms` : "0ms",
+                    opacity: open ? 1 : 0,
+                    transform: open ? "none" : "translateX(16px)",
+                  }}
+                >
                   <Link
                     href={`/product/${item.slug}`}
                     onClick={() => cart.close()}

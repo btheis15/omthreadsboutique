@@ -1,7 +1,9 @@
+import { crafts } from "@/lib/crafts";
 import { categories, colors, materials } from "@/lib/site";
 
 export const typeOptions = categories.map((c) => ({ title: c.singular, value: c.type }));
 export const colorOptions = colors.map((c) => ({ title: c.label, value: c.value }));
+export const craftOptions = crafts.map((c) => ({ title: `${c.label} (${c.region})`, value: c.value }));
 export const materialOptions = materials.map((m) => ({ title: m.label, value: m.value }));
 
 export const carePresets = {

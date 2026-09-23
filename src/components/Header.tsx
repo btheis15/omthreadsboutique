@@ -49,9 +49,17 @@ export function Header() {
           </button>
         </div>
 
-        <Link href="/" className="flex flex-col items-center text-center leading-none md:items-start">
-          <span className="font-display text-[1.6rem] tracking-wide md:text-3xl">Om Threads</span>
-          <span className="mt-0.5 text-[0.6rem] tracking-[0.35em] text-muted uppercase">Boutique</span>
+        <Link href="/" className="group flex items-center gap-2.5 leading-none" aria-label="Om Threads Boutique, home">
+          <span
+            aria-hidden="true"
+            className="font-deva grid size-10 place-items-center rounded-full border border-zari/60 pt-1 text-[1.35rem] text-accent transition-transform duration-700 ease-soft group-hover:rotate-[360deg] md:size-11"
+          >
+            ॐ
+          </span>
+          <span className="flex flex-col">
+            <span className="font-display text-[1.45rem] tracking-wide md:text-[1.7rem]">Om Threads</span>
+            <span className="mt-1 text-[0.58rem] tracking-[0.42em] text-muted uppercase">Boutique</span>
+          </span>
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 justify-center gap-8 md:flex">
@@ -85,7 +93,10 @@ export function Header() {
           >
             <BagIcon />
             {count > 0 && (
-              <span className="absolute top-1.5 right-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.7rem] leading-5 font-semibold text-white">
+              <span
+                key={count}
+                className="animate-bump absolute top-1.5 right-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.7rem] leading-5 font-semibold text-white"
+              >
                 {count}
               </span>
             )}
@@ -109,7 +120,7 @@ export function Header() {
               ref={searchRef}
               name="q"
               type="search"
-              placeholder="Search shawls, silk, navy…"
+              placeholder="Search pashmina, kani, silk, navy…"
               className="h-12 w-full bg-transparent text-base outline-none"
               aria-label="Search products"
             />
@@ -146,8 +157,12 @@ export function Header() {
           </div>
           <ul className="flex-1 overflow-y-auto px-4 py-2">
             {[{ href: "/shop", label: "Shop all" }, ...categories.map((c) => ({ href: `/shop/${c.slug}`, label: c.title }))].map(
-              (item) => (
-                <li key={item.href}>
+              (item, i) => (
+                <li
+                  key={item.href}
+                  style={{ transitionDelay: menuOpen ? `${120 + i * 50}ms` : "0ms" }}
+                  className={`transition duration-500 ease-soft ${menuOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
+                >
                   <Link
                     href={item.href}
                     tabIndex={menuOpen ? 0 : -1}
@@ -159,6 +174,7 @@ export function Header() {
               ),
             )}
             {[
+              { href: "/crafts", label: "The crafts of North India" },
               { href: "/care-guide", label: "Care & styling guide" },
               { href: "/about", label: "Our story" },
               { href: "/faq", label: "FAQ" },

@@ -303,3 +303,32 @@ PLAN.md              this document
 > the categories and details above are based on your description (shawls and
 > stoles). Once we have the listings (or an Etsy API key for the import
 > script), collections, filters and copy will be tuned to the real catalog.
+
+---
+
+## 14. Status (end of this build session)
+
+**Done**
+- Phases 0–1: storefront, admin, Buy on Etsy, SEO, Vercel-ready.
+- Indian design system: Kalnia, Mukta (Ek Type) and Tiro Devanagari type;
+  palette of sindoor, zari gold, indigo and marigold; Mughal arch (mehrab)
+  frames, jaali lattice, paisley (buta), lotus mandalas and block-print
+  borders; Devanagari accents; the ॐ mark.
+- Animations: rising hero headline over a slow Ken Burns zoom or looping
+  video, turning mandalas, a craft-name marquee, scroll reveals, paisley
+  line-drawing, parallax, product-card-to-product-page morph (View
+  Transitions), page crossfades, cart badge bump, staggered drawers. Motion
+  is switched off for visitors who ask for reduced motion.
+- Craft heritage: a `/crafts` guide to 11 North Indian crafts, product *Craft*
+  and *Made in* fields, craft filter and search.
+- Admin: Site settings (announcement, contact, WhatsApp, hero photo or video,
+  promises, Etsy rating), Customer reviews (real only), Inbox for the contact
+  form and newsletter, and product videos.
+- Tap-to-zoom photo viewer, Vercel Analytics.
+
+**Still to do next session**
+- Etsy bulk import script (needs an Etsy API key and `SANITY_WRITE_TOKEN`).
+- Branded social-share image (`opengraph-image`) and favicon (ॐ mark).
+- Loading skeletons for shop pages.
+- Real content: logo, brand photos, policies, contact details, Etsy rating.
+- Phase 3 payments (Stripe) and Etsy stock sync.

@@ -48,6 +48,8 @@ The admin is where you upload photos and manage products. It lives at
    | `NEXT_PUBLIC_SANITY_PROJECT_ID` | your Project ID |
    | `NEXT_PUBLIC_SANITY_DATASET` | `production` |
    | `SANITY_REVALIDATE_SECRET` | any long random password (e.g. from a password manager) |
+   | `SANITY_WRITE_TOKEN` | sanity.io/manage → **API → Tokens → Add token** (Editor). Lets the contact form and newsletter save into your **Inbox** |
+   | `RESEND_API_KEY` + `NOTIFY_EMAIL` | *(optional)* free account at resend.com, so you get an email for each new message |
 
 6. In Vercel, go to **Deployments**, click **⋯** next to the latest one, then **Redeploy**.
 7. Open `your-site.vercel.app/studio` and log in with your Sanity account.
@@ -103,6 +105,23 @@ automatically.
 - If a photo is cropped badly, click the photo, then the crop icon, and drag
   the **hotspot** onto the most important area.
 
+### Photos with your iPhone and Mac
+
+- **Shoot:** use your iPhone's main (1×) camera near a window in soft daylight,
+  not direct sun. Drape each piece on a plain wall, a wooden hanger, or a
+  person. Take the full piece, a draped shot, a texture close-up and the border
+  or fringe. Tap to focus on the embroidery.
+- **Edit in Photos (iPhone or Mac):** go to **Edit → Crop → aspect 4:5**.
+  Nudge *Warmth* to keep ivory looking ivory, and don't over-saturate, since
+  customers expect true colours. For more control, Pixelmator Pro on the Mac
+  can batch-edit a whole set of photos.
+- **Upload:** open `/studio` in Safari on your iPhone and upload straight from
+  the camera roll. On the Mac, AirDrop the photos over and drag them into the
+  admin.
+- **Video:** a 5–15 second clip of the shawl being draped, filmed on the
+  iPhone and trimmed in Photos or iMovie. Add it under **Short video** on the
+  product, or as the **Hero video** in Site settings (keep it under 15 MB).
+
 ---
 
 ## 4. Everyday tasks
@@ -114,20 +133,24 @@ automatically.
 | Put something on sale | Set **Original price** higher than **Price**. A "Sale" badge appears |
 | Show a product on the home page | Tick **Feature on home page** |
 | Create a collection (e.g. "Wedding") | **Collections → +**, then add it to products under **Details → Collections** |
+| Change the announcement bar, contact email, WhatsApp, Instagram, hero photo or video, free-shipping amount, return days | **Site settings** |
+| Show your Etsy star rating | **Site settings → Etsy star rating / Number of reviews** (copy them from Etsy) |
+| Add a customer review to the home page | **Customer reviews → +** (only real reviews, with permission). The section appears once you add one |
+| Read contact messages and newsletter sign-ups | **Inbox** |
+| Tag a product's craft and origin | Product → **Details → Craft / Made in**. It links to the Crafts guide and the craft filter |
 | Edit About / FAQ / policies | **Pages → +**, and set the page's web address to `about`, `faq`, `care-guide`, `shipping`, `returns`, `privacy` or `terms` |
 
 ---
 
 ## 5. Settings you may want to change
 
-These live in [`src/lib/site.ts`](src/lib/site.ts) (a developer, or Claude,
+Most shop settings are now in the admin under **Site settings** (see above).
+The rest live in [`src/lib/site.ts`](src/lib/site.ts) (a developer, or Claude,
 can change them in a minute):
 
 - Shop name, tagline and description
-- Announcement bar text
-- Free-shipping threshold
-- Email address and Instagram link (shown on the Contact page)
 - Colors and materials offered in the admin and filters
+- The crafts list and their stories: [`src/lib/crafts.ts`](src/lib/crafts.ts)
 
 Brand colors and fonts are in [`src/app/globals.css`](src/app/globals.css)
 (the `@theme` block at the top).

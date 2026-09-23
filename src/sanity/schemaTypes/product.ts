@@ -1,5 +1,5 @@
 import { defineArrayMember, defineField, defineType } from "sanity";
-import { colorOptions, materialOptions, typeOptions } from "../options";
+import { colorOptions, craftOptions, materialOptions, typeOptions } from "../options";
 
 export const product = defineType({
   name: "product",
@@ -55,6 +55,14 @@ export const product = defineType({
       validation: (r) => r.required().min(1),
     }),
     defineField({
+      name: "video",
+      title: "Short video (optional)",
+      type: "file",
+      group: "basics",
+      description: "A 5–15 second clip of the piece being draped (MP4 or MOV from your iPhone). Plays silently in the gallery.",
+      options: { accept: "video/mp4,video/quicktime,video/webm" },
+    }),
+    defineField({
       name: "price",
       title: "Price (USD)",
       type: "number",
@@ -101,6 +109,21 @@ export const product = defineType({
       type: "string",
       group: "details",
       options: { list: materialOptions },
+    }),
+    defineField({
+      name: "craft",
+      title: "Craft",
+      type: "string",
+      group: "details",
+      description: "The traditional technique. It links the product to the Crafts guide.",
+      options: { list: craftOptions },
+    }),
+    defineField({
+      name: "origin",
+      title: "Made in",
+      type: "string",
+      group: "details",
+      description: "e.g. Srinagar, Kashmir · Varanasi, Uttar Pradesh",
     }),
     defineField({
       name: "description",

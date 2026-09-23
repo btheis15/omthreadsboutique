@@ -1,18 +1,30 @@
 @import "tailwindcss";
 
-/* Brand tokens. Change these to re-theme the whole site. */
+/*
+ * Brand tokens, drawn from North Indian textiles: handmade-paper ivory,
+ * kajal ink, sindoor red, zari gold, indigo, peacock and marigold.
+ * Change these to re-theme the whole site.
+ */
 @theme {
-  --color-ivory: #faf7f2;
-  --color-sand: #f1ebe1;
-  --color-line: #e3dacb;
-  --color-ink: #1f1b16;
-  --color-muted: #6b6259;
-  --color-accent: #9c4221;
-  --color-accent-dark: #7c3318;
-  --color-sale: #9f1d1d;
+  --color-ivory: #fbf6ee;
+  --color-sand: #f4eadb;
+  --color-line: #e7d9c4;
+  --color-ink: #2b1b12;
+  --color-muted: #6f5b4c;
+  --color-accent: #a3321f;
+  --color-accent-dark: #7e2415;
+  --color-sale: #a3321f;
+  --color-zari: #b3873a;
+  --color-zari-light: #dcc083;
+  --color-indigo: #1f2a4d;
+  --color-indigo-deep: #161e39;
+  --color-peacock: #1c5a57;
+  --color-marigold: #e2a21b;
+  --color-rani: #a8295e;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-sans: var(--font-mukta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-kalnia), var(--font-tiro), ui-serif, Georgia, serif;
+  --font-deva: var(--font-tiro), var(--font-mukta), serif;
 
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -22,34 +34,31 @@
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
   }
+  main {
+    overflow-x: clip;
+  }
   body {
     background: var(--color-ivory);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 1.0625rem;
     -webkit-font-smoothing: antialiased;
   }
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.1;
+    font-weight: 450;
+    letter-spacing: -0.015em;
+    line-height: 1.08;
   }
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
+  ::selection {
+    background: var(--color-zari-light);
+    color: var(--color-ink);
   }
 }
 
@@ -71,13 +80,17 @@
   min-height: 3rem;
   padding-inline: 1.5rem;
   border-radius: 9999px;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   transition:
-    background-color 0.2s,
-    color 0.2s,
-    border-color 0.2s;
+    background-color 0.25s,
+    color 0.25s,
+    border-color 0.25s,
+    transform 0.2s var(--ease-soft);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -88,7 +101,7 @@
   background: var(--color-ink);
   color: var(--color-ivory);
   &:hover:not(:disabled) {
-    background: var(--color-accent-dark);
+    background: var(--color-accent);
   }
 }
 
@@ -104,7 +117,7 @@
 @utility eyebrow {
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -116,12 +129,204 @@
   }
 }
 
+/* Mughal ogee arch (mehrab). The <clipPath> is defined once in the site layout. */
+@utility arch {
+  clip-path: url(#mehrab);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Motion                                                                   */
+/* ------------------------------------------------------------------------ */
+
+@keyframes kenburns {
+  from {
+    transform: scale(1.12) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1) translate3d(0, -1.5%, 0);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.6em, 0);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+@keyframes float {
+  50% {
+    transform: translate3d(0, -8px, 0) rotate(-3deg);
+  }
+}
+@keyframes bump {
+  30% {
+    transform: scale(1.35);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+}
+@keyframes parallax {
+  from {
+    transform: translate3d(0, -6%, 0) scale(1.12);
+  }
+  to {
+    transform: translate3d(0, 6%, 0) scale(1.12);
+  }
+}
+
+.animate-kenburns {
+  animation: kenburns 14s var(--ease-soft) both;
+}
+.animate-rise {
+  animation: rise 1.1s var(--ease-soft) both;
+  animation-delay: calc(var(--i, 0) * 110ms + 150ms);
+}
+.animate-spin-slow {
+  animation: spin-slow 90s linear infinite;
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-bump {
+  animation: bump 0.5s var(--ease-soft);
+}
+.marquee-track {
+  animation: marquee 40s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Scroll-driven parallax where supported (Chrome, Edge, Safari 26+). */
+@supports (animation-timeline: view()) {
+  .parallax {
+    animation: parallax linear both;
+    animation-timeline: view();
+  }
+}
+
+/* Scroll reveals: hidden only when JS is running (html.js) to reveal them. */
+.js [data-reveal] {
+  transition:
+    opacity 0.9s var(--ease-soft),
+    transform 0.9s var(--ease-soft),
+    clip-path 1.2s var(--ease-soft),
+    filter 0.9s var(--ease-soft);
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+.js [data-reveal]:not(.is-visible) {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+}
+.js [data-reveal="fade"]:not(.is-visible) {
+  transform: none;
+}
+.js [data-reveal="grow"]:not(.is-visible) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+/* Image reveal: fades in while the photo settles from a slow zoom. */
+.js [data-reveal="curtain"]:not(.is-visible) {
+  transform: none;
+}
+.js [data-reveal="curtain"] img,
+.js [data-reveal="curtain"] svg {
+  transition: transform 1.8s var(--ease-soft);
+}
+.js [data-reveal="curtain"]:not(.is-visible) img,
+.js [data-reveal="curtain"]:not(.is-visible) svg {
+  transform: scale(1.18);
+}
+/* SVG line drawing: paths need pathLength="1" */
+.js [data-reveal="draw"] path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 2s var(--ease-soft) 0.2s;
+}
+.js [data-reveal="draw"]:not(.is-visible) {
+  opacity: 1;
+  transform: none;
+}
+.js [data-reveal="draw"]:not(.is-visible) path {
+  stroke-dashoffset: 1;
+}
+
+/* Route transitions (React <ViewTransition>) */
+::view-transition-group(.morph) {
+  animation-duration: 450ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: via-blur;
+}
+@keyframes via-blur {
+  30% {
+    filter: blur(3px);
+  }
+}
+::view-transition-old(.page) {
+  animation: 180ms ease-out both fade-out;
+}
+::view-transition-new(.page) {
+  animation: 420ms var(--ease-soft) both page-in;
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Long-form content                                                        */
+/* ------------------------------------------------------------------------ */
+
 .prose-om p {
   margin-block: 0 1em;
-  line-height: 1.75;
+  line-height: 1.8;
 }
 .prose-om h2 {
-  font-size: 1.625rem;
+  font-size: 1.75rem;
   margin-block: 1.75em 0.5em;
 }
 .prose-om ul {
