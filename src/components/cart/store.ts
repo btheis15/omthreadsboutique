@@ -3,7 +3,13 @@
 import { useSyncExternalStore } from "react";
 
 export type CartItem = {
+  /** One line per product, or per option of a product with options. */
+  key: string;
   productId: string;
+  /** Which option (e.g. Color: Teal), for a product with options */
+  variantId?: string;
+  /** "Teal" or "Teal / Large", shown under the title */
+  option?: string;
   slug: string;
   title: string;
   price: number;
@@ -26,7 +32,8 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) state = { ...state, items: JSON.parse(raw) as CartItem[] };
+    // Carts saved before options existed have no key: each product was one line.
+    if (raw) state = { ...state, items: (JSON.parse(raw) as CartItem[]).map((i) => ({ ...i, key: i.key ?? i.productId })) };
   } catch {
     /* storage unavailable (private mode) — cart still works in memory */
   }
@@ -62,26 +69,25 @@ function subscribe(listener: () => void) {
 
 const clamp = (qty: number, max?: number) => Math.max(0, max === undefined ? Math.min(qty, 10) : Math.min(qty, max));
 
+export const cartKey = (productId: string, variantId?: string) => (variantId ? `${productId}:${variantId}` : productId);
+
 export const cart = {
-  add(item: Omit<CartItem, "qty">, qty = 1) {
+  add(item: Omit<CartItem, "qty" | "key">, qty = 1) {
     load();
-    const existing = state.items.find((i) => i.productId === item.productId);
+    const key = cartKey(item.productId, item.variantId);
+    const existing = state.items.find((i) => i.key === key);
     const items = existing
-      ? state.items.map((i) =>
-          i.productId === item.productId ? { ...i, ...item, qty: clamp(i.qty + qty, item.maxQty) } : i,
-        )
-      : [...state.items, { ...item, qty: clamp(qty, item.maxQty) }];
+      ? state.items.map((i) => (i.key === key ? { ...i, ...item, key, qty: clamp(i.qty + qty, item.maxQty) } : i))
+      : [...state.items, { ...item, key, qty: clamp(qty, item.maxQty) }];
     set({ items, open: true });
   },
-  setQty(productId: string, qty: number) {
+  setQty(key: string, qty: number) {
     set({
-      items: state.items
-        .map((i) => (i.productId === productId ? { ...i, qty: clamp(qty, i.maxQty) } : i))
-        .filter((i) => i.qty > 0),
+      items: state.items.map((i) => (i.key === key ? { ...i, qty: clamp(qty, i.maxQty) } : i)).filter((i) => i.qty > 0),
     });
   },
-  remove(productId: string) {
-    set({ items: state.items.filter((i) => i.productId !== productId) });
+  remove(key: string) {
+    set({ items: state.items.filter((i) => i.key !== key) });
   },
   clear() {
     set({ items: [] });

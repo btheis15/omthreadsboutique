@@ -1,30 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Product } from "@/lib/types";
+import type { Product, ProductVariant } from "@/lib/types";
+import { variantLabel, variantPrice } from "@/lib/variants";
 import { cart } from "./cart/store";
 import { ExternalIcon } from "./icons";
 
-type Props = { product: Product; onSiteCheckout: boolean };
+/** variant: the option chosen, for a product with options. */
+type Props = { product: Product; variant?: ProductVariant; onSiteCheckout: boolean };
+
+const addToCart = (product: Product, variant?: ProductVariant) =>
+  cart.add({
+    productId: product.id,
+    variantId: variant?.id,
+    option: variant ? variantLabel(variant) : undefined,
+    slug: product.slug,
+    title: product.title,
+    price: variantPrice(product, variant),
+    image: variant?.image ?? product.images[0],
+    etsyUrl: product.etsyUrl,
+    maxQty: variant ? variant.stock : product.stock,
+  });
 
 /**
  * Primary purchase buttons. While on-site payments are off, "Buy on Etsy"
  * is the main action and "Add to cart" lets shoppers build a wishlist-style
  * cart that hands off to Etsy at checkout.
  */
-export function AddToCart({ product, onSiteCheckout }: Props) {
-  const soldOut = product.stock === 0;
-
-  const add = () =>
-    cart.add({
-      productId: product.id,
-      slug: product.slug,
-      title: product.title,
-      price: product.price,
-      image: product.images[0],
-      etsyUrl: product.etsyUrl,
-      maxQty: product.stock,
-    });
+export function AddToCart({ product, variant, onSiteCheckout }: Props) {
+  const soldOut = (variant ? variant.stock : product.stock) === 0;
+  const add = () => addToCart(product, variant);
 
   const etsy = product.etsyUrl && (
     <a
@@ -41,7 +46,7 @@ export function AddToCart({ product, onSiteCheckout }: Props) {
     return (
       <div className="space-y-3">
         <button type="button" className="btn btn-primary w-full" disabled>
-          Sold out
+          {variant ? `${variantLabel(variant)} is sold out` : "Sold out"}
         </button>
         {product.etsyUrl && (
           <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline w-full">
@@ -69,12 +74,15 @@ export function AddToCart({ product, onSiteCheckout }: Props) {
           </button>
         </>
       )}
+      {variant && etsy && (
+        <p className="text-center text-sm text-muted">On Etsy, choose {variantLabel(variant)} before adding it to your basket.</p>
+      )}
     </div>
   );
 }
 
 /** Slim sticky bar on phones so the main action is always within thumb reach. */
-export function StickyBuyBar({ product, onSiteCheckout, watchId }: Props & { watchId: string }) {
+export function StickyBuyBar({ product, variant, onSiteCheckout, watchId }: Props & { watchId: string }) {
   // Only show once the main buttons have scrolled out of view.
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -87,7 +95,7 @@ export function StickyBuyBar({ product, onSiteCheckout, watchId }: Props & { wat
     return () => io.disconnect();
   }, [watchId]);
 
-  if (product.stock === 0) return null;
+  if ((variant ? variant.stock : product.stock) === 0) return null;
   const primaryIsEtsy = !onSiteCheckout && product.etsyUrl;
   return (
     <div
@@ -105,17 +113,7 @@ export function StickyBuyBar({ product, onSiteCheckout, watchId }: Props & { wat
         <button
           type="button"
           className="btn btn-primary w-full"
-          onClick={() =>
-            cart.add({
-              productId: product.id,
-              slug: product.slug,
-              title: product.title,
-              price: product.price,
-              image: product.images[0],
-              etsyUrl: product.etsyUrl,
-              maxQty: product.stock,
-            })
-          }
+          onClick={() => addToCart(product, variant)}
         >
           Add to cart
         </button>

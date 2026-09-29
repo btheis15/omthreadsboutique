@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AddToCart, StickyBuyBar } from "@/components/AddToCart";
 import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons";
-import { Price } from "@/components/Price";
 import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ProductPurchase } from "@/components/ProductPurchase";
 import { RichText } from "@/components/RichText";
 import { getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { craftByValue } from "@/lib/crafts";
 import { paymentProvider } from "@/lib/payments";
 import { categories, colorLabel, materialLabel, site, siteUrl } from "@/lib/site";
+import type { Product } from "@/lib/types";
+import { hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -65,14 +66,7 @@ export default async function ProductPage({ params }: Props) {
     material: materialLabel(product.material),
     color: product.colors.map(colorLabel).join(", ") || undefined,
     brand: { "@type": "Brand", name: site.name },
-    offers: {
-      "@type": "Offer",
-      url: `${siteUrl()}/product/${product.slug}`,
-      priceCurrency: "USD",
-      price: product.price.toFixed(2),
-      availability: isSoldOut(product) ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-    },
+    offers: offersFor(product),
   };
 
   return (
@@ -111,19 +105,8 @@ export default async function ProductPage({ params }: Props) {
                 {product.origin && <span className="text-zari"> · {product.origin}</span>}
               </p>
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
-              <Price
-                price={product.price}
-                compareAt={product.compareAtPrice}
-                className="mt-3 text-xl font-medium"
-              />
-              {product.stock !== undefined && product.stock > 0 && product.stock <= 3 && (
-                <p className="mt-2 text-sm text-accent">Only {product.stock} left</p>
-              )}
-              <p className="mt-5 leading-relaxed text-ink/85">{product.shortDescription}</p>
-
-              <div id="buy-buttons" className="mt-6">
-                <AddToCart product={product} onSiteCheckout={payments.onSiteCheckout} />
-              </div>
+              {/* Price, stock, the option picker (colours…) and the buy buttons. */}
+              <ProductPurchase product={product} onSiteCheckout={payments.onSiteCheckout} />
 
               <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-muted">
                 <li className="flex items-center gap-2">
@@ -204,9 +187,25 @@ export default async function ProductPage({ params }: Props) {
           </section>
         )}
       </div>
-      <StickyBuyBar product={product} onSiteCheckout={payments.onSiteCheckout} watchId="buy-buttons" />
     </>
   );
+}
+
+/** Search engines see one offer, or a price range when the options have different prices. */
+function offersFor(product: Product) {
+  const url = `${siteUrl()}/product/${product.slug}`;
+  const common = { url, priceCurrency: "USD", itemCondition: "https://schema.org/NewCondition" };
+  const availability = (inStock: boolean) => (inStock ? "https://schema.org/InStock" : "https://schema.org/SoldOut");
+  if (!hasOptions(product)) return { "@type": "Offer", ...common, price: product.price.toFixed(2), availability: availability(!isSoldOut(product)) };
+  const { min, max } = priceRange(product);
+  return {
+    "@type": "AggregateOffer",
+    ...common,
+    lowPrice: min.toFixed(2),
+    highPrice: max.toFixed(2),
+    offerCount: product.variants!.length,
+    availability: availability(product.variants!.some(variantAvailable)),
+  };
 }
 
 function Accordion({

@@ -19,7 +19,7 @@ export function CheckoutView({ onSiteCheckout }: { onSiteCheckout: boolean }) {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lines: items.map((i) => ({ productId: i.productId, qty: i.qty })) }),
+        body: JSON.stringify({ lines: items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty })) }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (data.url) window.location.href = data.url;
@@ -58,7 +58,7 @@ export function CheckoutView({ onSiteCheckout }: { onSiteCheckout: boolean }) {
 
       <ul className="mt-8 divide-y divide-line border-y border-line">
         {items.map((item) => (
-          <li key={item.productId} className="flex gap-4 py-5">
+          <li key={item.key} className="flex gap-4 py-5">
             <div className="relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-md bg-sand">
               <ProductImage image={item.image} sizes="80px" />
             </div>
@@ -67,6 +67,7 @@ export function CheckoutView({ onSiteCheckout }: { onSiteCheckout: boolean }) {
                 <Link href={`/product/${item.slug}`} className="hover:underline">
                   {item.title}
                 </Link>
+                {item.option && <p className="text-sm text-muted">{item.option}</p>}
                 <p className="text-sm text-muted">
                   Qty {item.qty} · {formatPrice(item.price * item.qty)}
                 </p>
