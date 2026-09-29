@@ -13,6 +13,7 @@ import { carePresets } from "@/sanity/options";
 import { craftByValue } from "./crafts";
 import { defaultSettings } from "./site";
 import type {
+  CheckoutInfo,
   Collection,
   ContentPage,
   Product,
@@ -43,6 +44,8 @@ type ShopCatalog = {
   pages: ContentPage[];
   settings: Partial<SiteSettings>;
   testimonials: Testimonial[];
+  /** Present only while the admin has the website checkout on (test or live). */
+  checkout?: CheckoutInfo;
 };
 
 /**
@@ -58,6 +61,43 @@ async function shopCatalog(): Promise<ShopCatalog> {
   });
   if (!res.ok) throw new Error(`Shop catalog request failed: ${res.status} ${res.statusText}`);
   return res.json();
+}
+
+/** The website checkout's settings, or null when it's off (or the catalog isn't the admin's). */
+export async function getCheckout(): Promise<CheckoutInfo | null> {
+  if (catalogSource !== "shop") return null;
+  try {
+    return (await shopCatalog()).checkout ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Calls the admin's public server from this site's server (never the
+ * browser), with the shared token. Used by checkout, which always asks for
+ * fresh prices and stock.
+ */
+export async function shopApi(path: string, init: { method?: string; body?: unknown; shopperIp?: string | null } = {}) {
+  if (catalogSource !== "shop") throw new Error("The shop's checkout isn't connected.");
+  const res = await fetch(`${shopApiUrl}${path}`, {
+    method: init.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${process.env.SHOP_API_TOKEN ?? ""}`,
+      // Lets the admin limit each shopper separately (one visitor can't use up everyone's checkout).
+      ...(init.shopperIp ? { "X-Shopper-IP": init.shopperIp } : {}),
+      ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
+    },
+    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+    signal: AbortSignal.timeout(25_000),
+  });
+  return { status: res.status, data: (await res.json().catch(() => ({}))) as Record<string, unknown> };
+}
+
+/** The visitor's address as Vercel reports it (x-real-ip, or the first x-forwarded-for hop). */
+export function shopperIp(h: Headers) {
+  return h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
 }
 
 /** True when the admin's catalog can be fetched right now (always true for other sources). */

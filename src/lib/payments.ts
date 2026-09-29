@@ -1,30 +1,41 @@
 /**
- * Payment provider abstraction.
+ * Whether shoppers can pay on this site, and how.
  *
- * The storefront only talks to this interface, so switching on real
- * payments (Phase 3) means adding one provider here. No UI changes needed.
+ * Payments run on the Om Threads admin (Mac mini): it re-checks prices and
+ * stock, and hands the shopper to Stripe's page (cards, Apple Pay, Google
+ * Pay, UPI) or Exodus's (USDC/USDT). No payment keys live on this site.
  *
- *  - "etsy"   (default): no on-site payments; shoppers complete purchase on Etsy.
- *  - "stripe" : Stripe Checkout (hosted page → PCI SAQ A). Not yet implemented.
+ *  - checkout off (default): "Buy on Etsy", as before.
+ *  - test: only for people who opened the tester link (a cookie); everyone
+ *    else still sees "Buy on Etsy".
+ *  - live: everyone can pay here; "Add to cart" becomes the main button.
  */
+import "server-only";
+import { createHash } from "node:crypto";
+import { getCheckout } from "./catalog";
+import type { CheckoutInfo } from "./types";
 
 export type CheckoutLine = { productId: string; variantId?: string; qty: number };
 
-export type PaymentProviderId = "etsy" | "stripe";
+/** The tester link's cookie (set by /api/tester). */
+export const TESTER_COOKIE = "omthreads-tester";
 
-export type PaymentProviderInfo = {
-  id: PaymentProviderId;
-  /** True when shoppers can pay directly on this site. */
-  onSiteCheckout: boolean;
-  label: string;
-};
+const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
-export function paymentProvider(): PaymentProviderInfo {
-  const id = (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER as PaymentProviderId) || "etsy";
-  switch (id) {
-    case "stripe":
-      return { id, onSiteCheckout: true, label: "Secure checkout" };
-    default:
-      return { id: "etsy", onSiteCheckout: false, label: "Complete purchase on Etsy" };
-  }
+/** True for a tester cookie that matches the admin's current tester link. */
+export function isTester(info: CheckoutInfo | null, testerKey: string | undefined) {
+  return Boolean(info?.mode === "test" && info.testerHash && testerKey && sha256(testerKey) === info.testerHash);
+}
+
+/** What the checkout page offers this visitor: the checkout, or null for "buy on Etsy". */
+export async function checkoutFor(testerKey: string | undefined): Promise<CheckoutInfo | null> {
+  const info = await getCheckout();
+  if (!info) return null;
+  if (info.mode === "live") return info;
+  return isTester(info, testerKey) ? info : null;
+}
+
+/** Product pages (cached for everyone): on-site checkout is the main action only once it's live. */
+export async function liveCheckout(): Promise<boolean> {
+  return (await getCheckout())?.mode === "live";
 }

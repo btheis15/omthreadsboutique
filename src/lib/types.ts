@@ -102,3 +102,30 @@ export type SiteSettings = {
   etsyRating?: number;
   etsyReviewCount?: number;
 };
+
+/** A shipping option at checkout (from the Om Threads admin's Checkout setup). */
+export type ShippingRate = {
+  id: string;
+  label: string;
+  cents: number;
+  /** Free when the items come to at least this much. */
+  freeOverCents: number | null;
+  minDays: number;
+  maxDays: number;
+};
+
+/**
+ * The website's own checkout, when the admin has it on. "test" is only open
+ * to people with the tester link (a cookie whose hash matches testerHash).
+ */
+export type CheckoutInfo = {
+  mode: "test" | "live";
+  /** stripe: cards, Apple Pay, Google Pay, UPI · exodus: USDC/USDT stablecoins */
+  providers: ("stripe" | "exodus")[];
+  countries: { code: string; name: string; rates: ShippingRate[] }[];
+  /** Sales tax is added on the payment page (Stripe Tax). */
+  taxAdded: boolean;
+  /** What shoppers can pay with through Exodus Pay, e.g. "USDC or USDT" (set in the admin). */
+  exodusCoins?: string;
+  testerHash?: string;
+};
