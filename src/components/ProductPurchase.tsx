@@ -9,7 +9,7 @@ import { Price } from "./Price";
 /**
  * Price, stock and the buy buttons, with the option picker for a product
  * that comes in options (e.g. three colours). Each option has its own stock:
- * a sold-out colour is shown crossed out, and the others stay available.
+ * a sold-out colour says "Sold out", and the others stay available.
  */
 export function ProductPurchase({ product, onSiteCheckout }: { product: Product; onSiteCheckout: boolean }) {
   const withOptions = hasOptions(product);
@@ -102,9 +102,11 @@ function OptionPicker({
               onClick={() => onChoose(value)}
               className={`min-h-11 rounded-full border px-4 text-[0.95rem] transition ${
                 isOn ? "border-ink bg-ink text-ivory" : "border-line bg-ivory hover:border-ink"
-              } ${canBuy ? "" : "text-muted line-through decoration-1"} ${isOn && !canBuy ? "!text-ivory/70" : ""}`}
+              } ${canBuy ? "" : "text-muted"} ${isOn && !canBuy ? "!text-ivory/75" : ""}`}
             >
               {value}
+              {/* Said in words, as on Etsy, and the other choices stay available. */}
+              {!canBuy && <span className="ml-1.5 text-[0.7rem] uppercase tracking-wider">Sold out</span>}
             </button>
           );
         })}
