@@ -83,7 +83,7 @@ export function ProductCard({
         {priceRange(product).min !== priceRange(product).max ? (
           <p className="text-[0.95rem] font-medium">From {formatPrice(priceRange(product).min)}</p>
         ) : (
-          <Price price={product.price} compareAt={product.compareAtPrice} className="text-[0.95rem] font-medium" />
+          <Price price={priceRange(product).min} compareAt={product.compareAtPrice} className="text-[0.95rem] font-medium" />
         )}
       </div>
     </Link>
