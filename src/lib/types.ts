@@ -13,6 +13,21 @@ export type ProductImage = {
   swatch?: { base: string; accent: string; pattern: SwatchPattern };
 };
 
+/**
+ * One combination of options (e.g. Color: Teal), with its own stock and,
+ * when it differs, its own price and photo. Same as a variation on Etsy.
+ */
+export type ProductVariant = {
+  id: string;
+  /** One value per option name, in order, e.g. ["Teal"] or ["Teal", "Large"] */
+  values: string[];
+  /** undefined = made to order, 0 = sold out */
+  stock?: number;
+  /** When absent, the product's price */
+  price?: number;
+  image?: ProductImage;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -33,8 +48,11 @@ export type Product = {
   videoUrl?: string;
   dimensions?: string;
   care?: string;
-  /** undefined = made to order / unlimited, 0 = sold out */
+  /** undefined = made to order / unlimited, 0 = sold out. With options, the total of theirs. */
   stock?: number;
+  /** Option names, e.g. ["Color"] (up to three), when the piece comes in options */
+  options?: string[];
+  variants?: ProductVariant[];
   etsyUrl?: string;
   collections: string[];
   featured: boolean;

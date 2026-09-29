@@ -22,10 +22,16 @@ export async function POST(request: Request) {
     if (!product || !(qty > 0)) {
       return NextResponse.json({ error: "An item in your cart is no longer available." }, { status: 400 });
     }
-    if (isSoldOut(product) || (product.stock !== undefined && qty > product.stock)) {
+    // A product with options is bought as one of them, at that option's price and stock.
+    const variant = product.variants?.find((v) => v.id === line.variantId);
+    if (product.variants?.length && !variant) {
+      return NextResponse.json({ error: `Choose an option for ${product.title}.` }, { status: 400 });
+    }
+    const stock = variant ? variant.stock : product.stock;
+    if (isSoldOut(product) || (stock !== undefined && qty > stock)) {
       return NextResponse.json({ error: `${product.title} is sold out or low in stock.` }, { status: 409 });
     }
-    lineItems.push({ product, qty, amount: Math.round(product.price * 100) });
+    lineItems.push({ product, variant, qty, amount: Math.round((variant?.price ?? product.price) * 100) });
   }
 
   const provider = paymentProvider();

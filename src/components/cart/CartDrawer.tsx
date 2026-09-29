@@ -81,7 +81,7 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
             <ul className="flex-1 divide-y divide-line overflow-y-auto px-4 md:px-6">
               {items.map((item, i) => (
                 <li
-                  key={item.productId}
+                  key={item.key}
                   className="flex gap-4 py-4 transition duration-500 ease-soft"
                   style={{
                     transitionDelay: open ? `${150 + i * 60}ms` : "0ms",
@@ -99,7 +99,10 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
                   </Link>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex justify-between gap-2">
-                      <p className="text-[0.95rem] leading-snug">{item.title}</p>
+                      <p className="text-[0.95rem] leading-snug">
+                        {item.title}
+                        {item.option && <span className="block text-sm text-muted">{item.option}</span>}
+                      </p>
                       <p className="shrink-0 font-medium">{formatPrice(item.price * item.qty)}</p>
                     </div>
                     <div className="mt-auto flex items-center justify-between pt-2">
@@ -108,7 +111,7 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
                           type="button"
                           className="grid size-9 place-items-center"
                           aria-label={`Decrease quantity of ${item.title}`}
-                          onClick={() => cart.setQty(item.productId, item.qty - 1)}
+                          onClick={() => cart.setQty(item.key, item.qty - 1)}
                           tabIndex={open ? 0 : -1}
                         >
                           <MinusIcon size={16} />
@@ -120,7 +123,7 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
                           type="button"
                           className="grid size-9 place-items-center disabled:opacity-40"
                           aria-label={`Increase quantity of ${item.title}`}
-                          onClick={() => cart.setQty(item.productId, item.qty + 1)}
+                          onClick={() => cart.setQty(item.key, item.qty + 1)}
                           disabled={item.maxQty !== undefined && item.qty >= item.maxQty}
                           tabIndex={open ? 0 : -1}
                         >
@@ -130,7 +133,7 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
                       <button
                         type="button"
                         className="text-sm text-muted underline underline-offset-4"
-                        onClick={() => cart.remove(item.productId)}
+                        onClick={() => cart.remove(item.key)}
                         tabIndex={open ? 0 : -1}
                       >
                         Remove

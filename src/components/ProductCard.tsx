@@ -2,7 +2,9 @@ import Link from "next/link";
 import { ViewTransition } from "react";
 import { isSoldOut } from "@/lib/catalog";
 import { craftByValue } from "@/lib/crafts";
+import { formatPrice } from "@/lib/site";
 import type { Product } from "@/lib/types";
+import { priceRange } from "@/lib/variants";
 import { Price } from "./Price";
 import { ProductImage } from "./ProductImage";
 
@@ -78,7 +80,11 @@ export function ProductCard({
       <div className="mt-3 space-y-0.5 px-0.5">
         {craft && <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-zari uppercase">{craft.label}</p>}
         <h3 className="font-sans text-[0.95rem] leading-snug transition-colors group-hover:text-accent">{product.title}</h3>
-        <Price price={product.price} compareAt={product.compareAtPrice} className="text-[0.95rem] font-medium" />
+        {priceRange(product).min !== priceRange(product).max ? (
+          <p className="text-[0.95rem] font-medium">From {formatPrice(priceRange(product).min)}</p>
+        ) : (
+          <Price price={product.price} compareAt={product.compareAtPrice} className="text-[0.95rem] font-medium" />
+        )}
       </div>
     </Link>
   );

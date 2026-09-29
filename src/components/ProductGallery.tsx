@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, ViewTransition } from "react";
 import type { ProductImage as Img } from "@/lib/types";
+import { SHOW_IMAGE_EVENT } from "@/lib/variants";
 import { CloseIcon } from "./icons";
 import { ProductImage } from "./ProductImage";
 
@@ -34,6 +35,20 @@ export function ProductGallery({
     const el = track.current;
     if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
   };
+
+  // Picking an option (e.g. a colour) with its own photo shows that photo.
+  useEffect(() => {
+    const onShow = (e: Event) => {
+      const url = (e as CustomEvent<{ url: string }>).detail?.url;
+      const i = images.findIndex((img) => img.url === url);
+      const el = track.current;
+      // The video, when there is one, is the second slide.
+      const slide = videoUrl && i >= 1 ? i + 1 : i;
+      if (i >= 0 && el) el.scrollTo({ left: slide * el.clientWidth, behavior: "smooth" });
+    };
+    window.addEventListener(SHOW_IMAGE_EVENT, onShow);
+    return () => window.removeEventListener(SHOW_IMAGE_EVENT, onShow);
+  }, [images, videoUrl]);
 
   useEffect(() => {
     if (zoom === null) return;

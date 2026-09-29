@@ -8,7 +8,7 @@
  *  - "stripe" : Stripe Checkout (hosted page → PCI SAQ A). Not yet implemented.
  */
 
-export type CheckoutLine = { productId: string; qty: number };
+export type CheckoutLine = { productId: string; variantId?: string; qty: number };
 
 export type PaymentProviderId = "etsy" | "stripe";
 
