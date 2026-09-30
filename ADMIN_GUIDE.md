@@ -148,10 +148,21 @@ Brand colors and fonts are in [`src/app/globals.css`](src/app/globals.css)
 
 ---
 
-## Payments (Phase 3)
+## Payments
 
-Today, shoppers pay on Etsy: every product has a **Buy on Etsy** button, and
-the cart's checkout page links each item to its Etsy listing. Switching on
-payments directly on the site is a separate step (see `PLAN.md` §8). It
-means adding Stripe, setting `NEXT_PUBLIC_PAYMENT_PROVIDER=stripe`, and
-publishing proper Terms and Privacy pages first.
+Until the website checkout is switched on, shoppers pay on Etsy: every product
+has a **Buy on Etsy** button, and the cart's checkout page links each item to
+its Etsy listing.
+
+The website's own checkout runs on the Om Threads admin (Mac mini), not here:
+**Orders → Checkout setup** switches it **Off**, **Test** or **Live**, and lists
+what's still needed. The admin re-checks every price and stock count, then sends
+the shopper to Stripe's page (cards, Apple Pay, Google Pay, and UPI for shoppers
+in India) or Exodus's (USDC/USDT stablecoins). No payment keys live on this site.
+
+- **Test** is only visible to browsers that opened the admin's tester link
+  (`/api/tester?key=…`, a cookie). Everyone else still sees "Buy on Etsy".
+  `/api/tester?off=1` leaves test mode.
+- **Live** makes **Add to cart** the main button on product pages.
+- After paying, shoppers land on `/checkout/success`, which reads the order
+  back from the admin.

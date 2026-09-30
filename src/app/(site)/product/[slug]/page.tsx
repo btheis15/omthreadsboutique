@@ -8,7 +8,7 @@ import { ProductPurchase } from "@/components/ProductPurchase";
 import { RichText } from "@/components/RichText";
 import { getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { craftByValue } from "@/lib/crafts";
-import { paymentProvider } from "@/lib/payments";
+import { liveCheckout } from "@/lib/payments";
 import { categories, colorLabel, materialLabel, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { hasOptions, priceRange, variantAvailable } from "@/lib/variants";
@@ -41,10 +41,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings] = await Promise.all([getProduct(slug), getProducts(), getSettings()]);
+  const [product, all, settings, onSiteCheckout] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout()]);
   if (!product) notFound();
 
-  const payments = paymentProvider();
   const category = categories.find((c) => c.type === product.type);
   const related = relatedProducts(all, product);
   const craft = craftByValue(product.craft);
@@ -106,7 +105,7 @@ export default async function ProductPage({ params }: Props) {
               </p>
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
-              <ProductPurchase product={product} onSiteCheckout={payments.onSiteCheckout} />
+              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} />
 
               <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-muted">
                 <li className="flex items-center gap-2">
