@@ -120,8 +120,12 @@ export type ShippingRate = {
  */
 export type CheckoutInfo = {
   mode: "test" | "live";
-  /** stripe: cards, Apple Pay, Google Pay, UPI · exodus: USDC/USDT stablecoins */
-  providers: ("stripe" | "exodus")[];
+  /** stripe: cards, Apple Pay, Google Pay, UPI · paypal: PayPal and Venmo · exodus: stablecoins · zelle: confirmed by hand */
+  providers: ("stripe" | "paypal" | "exodus" | "zelle")[];
+  /** PayPal's public client id and its JavaScript SDK (v6) address. */
+  paypal?: { clientId: string; sdkUrl: string };
+  /** How long a Zelle order holds the pieces. */
+  zelle?: { holdHours: number };
   countries: { code: string; name: string; rates: ShippingRate[] }[];
   /** Sales tax is added on the payment page (Stripe Tax). */
   taxAdded: boolean;
