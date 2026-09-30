@@ -11,8 +11,9 @@ type Props = { searchParams: Promise<{ order?: string }> };
 
 type Summary = {
   number: string;
-  status: "paid" | "processing" | "awaiting" | "failed" | "expired" | "refunded";
-  provider: "stripe" | "exodus";
+  status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "failed" | "expired" | "refunded";
+  provider: "stripe" | "exodus" | "paypal" | "zelle";
+  zelle?: { name: string; handle: string; amountCents: number; memo: string; holdUntil: string };
   test: boolean;
   email: string | null;
   emailing: boolean;
@@ -52,18 +53,37 @@ export default async function SuccessPage({ searchParams }: Props) {
   }
 
   const paid = summary.status === "paid";
+  const zelle = summary.status === "awaiting_zelle" ? summary.zelle : undefined;
   const waiting = summary.status === "processing" || summary.status === "awaiting";
   return (
     <div className="container-page max-w-2xl pt-10 pb-20 md:pt-16">
-      <AfterPayment clearCart={paid || summary.status === "processing"} keepChecking={waiting} />
+      <AfterPayment clearCart={paid || summary.status === "processing" || Boolean(zelle)} keepChecking={waiting} />
       {summary.test && (
         <p className="mb-6 rounded-lg bg-sand p-3 text-sm">Test order: no real payment was taken.</p>
       )}
       <p className="text-sm uppercase tracking-[0.16em] text-muted">Order {summary.number}</p>
       <h1 className="mt-2 text-4xl md:text-5xl">
-        {paid ? "Thank you for your order" : waiting ? "Confirming your payment…" : "Your payment didn't go through"}
+        {paid ? "Thank you for your order" : zelle ? "Almost done: pay by Zelle" : waiting ? "Confirming your payment…" : "Your payment didn't go through"}
       </h1>
-      <p className="mt-4 leading-relaxed text-ink/85">
+      {zelle && (
+        <div className="mt-6 rounded-xl border border-ink p-5">
+          <p className="text-lg">
+            Send <strong>{dollars(zelle.amountCents)}</strong> by Zelle to <strong>{zelle.name}</strong>
+          </p>
+          <p className="mt-1 text-lg">
+            at <strong>{zelle.handle}</strong>
+          </p>
+          <p className="mt-3 text-[0.95rem]">
+            Put <strong>{zelle.memo}</strong> in the memo so we can match it to your order.
+          </p>
+          <p className="mt-3 text-sm text-ink/80">
+            We&apos;re holding your order until{" "}
+            {new Date(zelle.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. It ships as soon
+            as the payment arrives. Zelle payments can&apos;t be cancelled once sent, so please check the name and amount in your bank app first.
+          </p>
+        </div>
+      )}
+      <p className={`mt-4 leading-relaxed text-ink/85 ${zelle ? "hidden" : ""}`}>
         {paid
           ? summary.emailing && summary.email
             ? `We've received your payment. Your receipt is on its way to ${summary.email}, and we'll email you again with tracking as soon as it ships.`
@@ -112,7 +132,7 @@ export default async function SuccessPage({ searchParams }: Props) {
         <Link href="/shop" className="btn btn-primary">
           Continue shopping
         </Link>
-        {!paid && !waiting && (
+        {!paid && !waiting && !zelle && (
           <Link href="/checkout" className="btn btn-outline">
             Back to checkout
           </Link>

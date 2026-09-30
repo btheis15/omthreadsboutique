@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { cart, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
 import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
 import type { CheckoutInfo } from "@/lib/types";
+import { PayPalButtons } from "./PayPalButtons";
 
-type Provider = "stripe" | "exodus";
+type Provider = CheckoutInfo["providers"][number];
+// PayPal, crypto and Zelle need the address on this page (Stripe asks on its own page).
+const asksAddress = (p: Provider) => p !== "stripe";
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
@@ -40,6 +43,10 @@ export function CheckoutView({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  // After "Continue" with PayPal: the priced order, ready for PayPal's buttons.
+  const [paypalOrder, setPaypalOrder] = useState<string | null>(null);
+  const [paypalMessage, setPaypalMessage] = useState<string | null>(null);
+  const onPayPalMessage = useCallback((m: string | null) => setPaypalMessage(m), []);
 
   const subtotalCents = items.reduce((n, i) => n + Math.round(i.price * 100) * i.qty, 0);
   const place = checkout?.countries.find((c) => c.code === country) ?? checkout?.countries[0];
@@ -62,14 +69,19 @@ export function CheckoutView({
           rateId: rate?.id,
           testAs: checkout?.mode === "test" && testAsIndia && place?.code === "IN" ? "IN" : undefined,
           customer:
-            provider === "exodus"
+            asksAddress(provider)
               ? { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } }
               : undefined,
         }),
       });
-      const data = (await res.json()) as { url?: string; error?: string; errors?: Record<string, string> };
+      const data = (await res.json()) as { url?: string; paypal?: { token: string }; error?: string; errors?: Record<string, string> };
       if (data.url) {
         window.location.href = data.url;
+        return;
+      }
+      if (data.paypal) {
+        setPaypalOrder(data.paypal.token);
+        setLoading(false);
         return;
       }
       setError(data.error ?? "Something went wrong. Please try again.");
@@ -229,15 +241,39 @@ export function CheckoutView({
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Pay with">
                 {checkout.providers.map((p) => (
                   <label key={p} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${provider === p ? "border-ink" : "border-line"}`}>
-                    <input type="radio" name="provider" checked={provider === p} onChange={() => setProvider(p)} className="mt-1" />
+                    <input
+                      type="radio"
+                      name="provider"
+                      checked={provider === p}
+                      onChange={() => {
+                        setProvider(p);
+                        setPaypalOrder(null);
+                        setPaypalMessage(null);
+                      }}
+                      className="mt-1"
+                    />
                     <span>
-                      <span className="block font-medium">{p === "stripe" ? `Card, Apple Pay or Google Pay${place.code === "IN" ? ", or UPI" : ""}` : "Exodus Pay or another crypto wallet"}</span>
+                      <span className="block font-medium">
+                        {p === "stripe"
+                          ? `Card, Apple Pay or Google Pay${place.code === "IN" ? ", or UPI" : ""}`
+                          : p === "paypal"
+                            ? place.code === "US"
+                              ? "PayPal or Venmo"
+                              : "PayPal"
+                            : p === "exodus"
+                              ? "Exodus Pay or another crypto wallet"
+                              : "Zelle"}
+                      </span>
                       <span className="block text-sm text-muted">
                         {p === "stripe"
                           ? place.code === "IN"
                             ? "Secure checkout by Stripe. Shoppers in India see rupees and can pay by UPI."
                             : "Secure checkout by Stripe."
-                          : `Pay in ${checkout.exodusCoins || "USDC or USDT"} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.`}
+                          : p === "paypal"
+                            ? "Pay with your PayPal or Venmo account, in PayPal's own window."
+                            : p === "exodus"
+                              ? `Pay in ${checkout.exodusCoins || "USDC or USDT"} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.`
+                              : `Place the order, then send the payment from your bank's Zelle. We hold it for you for ${checkout.zelle?.holdHours ?? 48} hours and ship once it arrives.`}
                       </span>
                     </span>
                   </label>
@@ -246,11 +282,11 @@ export function CheckoutView({
             </section>
           )}
 
-          {provider === "exodus" && (
+          {asksAddress(provider) && (
             <section>
               <h2 className="text-xl">Your details</h2>
               <p className="mt-1 text-sm text-muted">Where we ship it, and how to send your receipt.</p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <fieldset disabled={Boolean(paypalOrder)} className="mt-3 grid gap-3 disabled:opacity-60 sm:grid-cols-2">
                 {field("name", "Full name", { autoComplete: "name" })}
                 {field("email", "Email", { type: "email", autoComplete: "email" })}
                 {field("phone", "Phone", { type: "tel", autoComplete: "tel" })}
@@ -260,7 +296,7 @@ export function CheckoutView({
                 {field("city", "City", { autoComplete: "address-level2" })}
                 {field("state", place.code === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: place.code === "US" ? "IL" : undefined })}
                 {field("postal_code", place.code === "US" ? "ZIP code" : place.code === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: place.code === "US" || place.code === "IN" ? "numeric" : undefined })}
-              </div>
+              </fieldset>
             </section>
           )}
 
@@ -287,11 +323,38 @@ export function CheckoutView({
                 {error}
               </p>
             )}
-            <button type="button" onClick={startCheckout} disabled={loading} className="btn btn-primary mt-6 w-full">
-              {loading ? "Starting secure checkout…" : provider === "exodus" ? "Continue to Exodus Pay" : "Continue to secure payment"}
-            </button>
+            {provider === "paypal" && paypalOrder && checkout.paypal ? (
+              <>
+                <PayPalButtons token={paypalOrder} clientId={checkout.paypal.clientId} sdkUrl={checkout.paypal.sdkUrl} onMessage={onPayPalMessage} />
+                {paypalMessage && <p className="mt-3 text-center text-sm">{paypalMessage}</p>}
+                <button type="button" onClick={() => setPaypalOrder(null)} className="mt-3 w-full text-sm text-muted underline underline-offset-4">
+                  Change the address or cart
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={startCheckout} disabled={loading} className="btn btn-primary mt-6 w-full">
+                {loading
+                  ? "Starting secure checkout…"
+                  : provider === "exodus"
+                    ? "Continue to Exodus Pay"
+                    : provider === "paypal"
+                      ? place.code === "US"
+                        ? "Continue to PayPal or Venmo"
+                        : "Continue to PayPal"
+                      : provider === "zelle"
+                        ? "Place order and get the Zelle details"
+                        : "Continue to secure payment"}
+              </button>
+            )}
             <p className="mt-3 flex items-center justify-center gap-2 text-center text-sm text-muted">
-              <ShieldIcon size={16} /> {provider === "exodus" ? "You pay on Exodus's page, from your own wallet." : "Payments are processed by Stripe. We never see your card details."}
+              <ShieldIcon size={16} />{" "}
+              {provider === "exodus"
+                ? "You pay on Exodus's page, from your own wallet."
+                : provider === "paypal"
+                  ? "You pay in PayPal's own window. We never see your PayPal or card details."
+                  : provider === "zelle"
+                    ? "You send it from your own bank's app. Zelle payments can't be reversed, so check the details before sending."
+                    : "Payments are processed by Stripe. We never see your card details."}
             </p>
             <p className="mt-1 text-center text-sm text-muted">
               <Link href="/policies/returns" className="underline underline-offset-4">
