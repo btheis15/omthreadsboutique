@@ -19,8 +19,9 @@ const dollars = (cents: number) => formatPrice(cents / 100);
 
 /**
  * The cart and, when the shop's own checkout is on, the way to pay: Stripe
- * (cards, Apple Pay, Google Pay, and UPI for shoppers in India) or Exodus
- * (USDC/USDT stablecoins). Without it, each piece links to Etsy.
+ * (cards, Apple Pay, Google Pay, and UPI for shoppers in India), PayPal and
+ * Venmo, Bitcoin Cash (paid on the shop's own payment screen), Exodus
+ * (USDC/USDT stablecoins) or Zelle. Without it, each piece links to Etsy.
  */
 export function CheckoutView({
   checkout,
@@ -131,7 +132,8 @@ export function CheckoutView({
         <div className="mt-6 rounded-xl border border-dashed border-zari bg-sand p-4 text-[0.95rem]">
           <p className="font-medium">Test mode: only you can see this checkout.</p>
           <p className="mt-1 text-ink/80">
-            Pay with the test card 4242 4242 4242 4242, any future date and any 3 digits. No real money moves, and your stock and Etsy aren&apos;t changed.{" "}
+            Pay with the test card 4242 4242 4242 4242, any future date and any 3 digits. No real money moves, and your stock and Etsy aren&apos;t changed.
+            {checkout.providers.includes("bch") && ` Bitcoin Cash has no test network: a test order asks for ${dollars(checkout.bch?.testCents ?? 25)} of real BCH, paid into the shop's own wallet.`}{" "}
             <a href="/api/tester?off=1" className="underline underline-offset-4">
               Leave test mode
             </a>
@@ -264,7 +266,9 @@ export function CheckoutView({
                               : "PayPal"
                             : p === "exodus"
                               ? "Exodus Pay or another crypto wallet"
-                              : "Zelle"}
+                              : p === "bch"
+                                ? "Bitcoin Cash (BCH)"
+                                : "Zelle"}
                       </span>
                       <span className="block text-sm text-muted">
                         {p === "stripe"
@@ -275,7 +279,9 @@ export function CheckoutView({
                             ? "Pay with your PayPal or Venmo account, in PayPal's own window."
                             : p === "exodus"
                               ? `Pay in ${checkout.exodusCoins || "USDC or USDT"} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.`
-                              : `Place the order, then send the payment from your bank's Zelle. We hold it for you for ${checkout.zelle?.holdHours ?? 48} hours and ship once it arrives.`}
+                              : p === "bch"
+                                ? "Pay from any Bitcoin Cash wallet: scan the QR code or tap to open your wallet. Your order is confirmed seconds after you send it."
+                                : `Place the order, then send the payment from your bank's Zelle. We hold it for you for ${checkout.zelle?.holdHours ?? 48} hours and ship once it arrives.`}
                       </span>
                     </span>
                   </label>
@@ -350,6 +356,8 @@ export function CheckoutView({
                   ? "Starting secure checkout…"
                   : provider === "exodus"
                     ? "Continue to Exodus Pay"
+                    : provider === "bch"
+                      ? "Continue to Bitcoin Cash payment"
                     : provider === "paypal"
                       ? place.code === "US"
                         ? "Continue to PayPal or Venmo"
@@ -363,6 +371,8 @@ export function CheckoutView({
               <ShieldIcon size={16} />{" "}
               {provider === "exodus"
                 ? "You pay on Exodus's page, from your own wallet."
+                : provider === "bch"
+                  ? "You pay from your own wallet, straight to ours. We never see your wallet or its keys."
                 : provider === "paypal"
                   ? "You pay in PayPal's own window. We never see your PayPal or card details."
                   : provider === "zelle"
