@@ -35,7 +35,12 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
 
   return (
     <>
-      <Price price={price} compareAt={product.compareAtPrice} className="mt-3 text-xl font-medium" />
+      <Price price={price} compareAt={variant ? (variant.compareAtPrice ?? (variant.price === undefined ? product.compareAtPrice : undefined)) : product.compareAtPrice} className="mt-3 text-xl font-medium" />
+      {product.saleEndsOn && (
+        <p className="mt-1 text-sm text-sale">
+          Sale ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+        </p>
+      )}
       {stock !== undefined && stock > 0 && stock <= 3 && (
         <p className="mt-2 text-sm text-accent">
           Only {stock} left{variant ? ` in ${variantLabel(variant)}` : ""}

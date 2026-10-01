@@ -27,6 +27,8 @@ type Summary = {
   taxCents: number;
   discountCents?: number;
   couponLabel?: string | null;
+  feeCents?: number;
+  feeLabel?: string | null;
   totalCents: number;
   shippingLabel: string | null;
 };
@@ -154,6 +156,12 @@ export default async function SuccessPage({ searchParams }: Props) {
         ) : null}
         <dt className="text-muted">Shipping{summary.shippingLabel ? ` · ${summary.shippingLabel}` : ""}</dt>
         <dd className="text-right">{summary.shippingCents ? dollars(summary.shippingCents) : "Free"}</dd>
+        {summary.feeCents ? (
+          <>
+            <dt className="text-muted">{summary.feeLabel || "Processing fee"}</dt>
+            <dd className="text-right">{dollars(summary.feeCents)}</dd>
+          </>
+        ) : null}
         {summary.taxCents > 0 && (
           <>
             <dt className="text-muted">Sales tax</dt>

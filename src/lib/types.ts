@@ -25,6 +25,8 @@ export type ProductVariant = {
   stock?: number;
   /** When absent, the product's price */
   price?: number;
+  /** On a website sale: the regular price, shown struck through */
+  compareAtPrice?: number;
   image?: ProductImage;
 };
 
@@ -35,6 +37,8 @@ export type Product = {
   type: ProductType;
   price: number;
   compareAtPrice?: number;
+  /** A website sale's last day (YYYY-MM-DD), when it has one */
+  saleEndsOn?: string;
   images: ProductImage[];
   shortDescription: string;
   description?: PortableTextBlock[] | string[];
@@ -124,6 +128,12 @@ export type CheckoutInfo = {
   providers: ("stripe" | "paypal" | "bch" | "exodus" | "zelle")[];
   /** How long a Bitcoin Cash price is held, and what a test order pays (BCH has no test network). */
   bch?: { minutes: number; testCents: number };
+  /** Processing fees by way of paying (only those set): a percent of items + shipping, plus a fixed amount. */
+  fees?: Partial<Record<"stripe" | "paypal" | "bch" | "exodus" | "zelle", { percent: number; fixedCents: number }>>;
+  /** What the fee is called, e.g. "Processing fee". */
+  feeLabel?: string;
+  /** Ways of paying where the shop covers the sales tax. */
+  taxCovered?: ("paypal" | "bch" | "exodus" | "zelle")[];
   /** PayPal's public client id and its JavaScript SDK (v6) address. */
   paypal?: { clientId: string; sdkUrl: string };
   /** How long a Zelle order holds the pieces. */
