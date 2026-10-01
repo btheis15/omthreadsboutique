@@ -40,6 +40,7 @@ export function CheckoutView({
   const [provider, setProvider] = useState<Provider>(checkout?.providers[0] ?? "stripe");
   const [testAsIndia, setTestAsIndia] = useState(false);
   const [customer, setCustomer] = useState<Customer>(EMPTY);
+  const [giftNote, setGiftNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -68,6 +69,7 @@ export function CheckoutView({
           country: place?.code,
           rateId: rate?.id,
           testAs: checkout?.mode === "test" && testAsIndia && place?.code === "IN" ? "IN" : undefined,
+          giftNote: asksAddress(provider) ? giftNote : undefined,
           customer:
             asksAddress(provider)
               ? { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } }
@@ -296,6 +298,16 @@ export function CheckoutView({
                 {field("city", "City", { autoComplete: "address-level2" })}
                 {field("state", place.code === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: place.code === "US" ? "IL" : undefined })}
                 {field("postal_code", place.code === "US" ? "ZIP code" : place.code === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: place.code === "US" || place.code === "IN" ? "numeric" : undefined })}
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-sm">Gift note (optional)</span>
+                  <textarea
+                    value={giftNote}
+                    onChange={(e) => setGiftNote(e.target.value.slice(0, 255))}
+                    rows={2}
+                    placeholder="We'll write it on a card and wrap your piece."
+                    className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5"
+                  />
+                </label>
               </fieldset>
             </section>
           )}
@@ -310,6 +322,7 @@ export function CheckoutView({
               <dd className="text-right text-lg font-medium">{dollars(subtotalCents + shipping)}</dd>
             </dl>
             {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
+            {provider === "stripe" && <p className="mt-1 text-sm text-muted">A gift? Add a gift note on the payment page and we&apos;ll write it on a card.</p>}
 
             {checkout.mode === "test" && provider === "stripe" && place.code === "IN" && (
               <label className="mt-4 flex items-center gap-2 text-sm">
