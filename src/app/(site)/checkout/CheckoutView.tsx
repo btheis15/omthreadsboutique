@@ -16,10 +16,6 @@ const asksAddress = (p: Provider) => p !== "stripe";
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
-type Fee = { percent: number; fixedCents: number };
-/** The processing fee for a way of paying (as the shop works it out): a percent of items + shipping, plus a fixed amount. */
-const feeFor = (fee: Fee | undefined, baseCents: number) => (fee && baseCents > 0 ? Math.round((baseCents * fee.percent) / 100) + fee.fixedCents : 0);
-const feeText = (fee: Fee) => [fee.percent ? `${fee.percent}%` : "", fee.fixedCents ? dollars(fee.fixedCents) : ""].filter(Boolean).join(" + ");
 
 /**
  * The cart and, when the shop's own checkout is on, the way to pay: Stripe
@@ -59,8 +55,6 @@ export function CheckoutView({
   const rate = place?.rates.find((r) => r.id === rateId) ?? place?.rates[0];
   const shipping = rate ? shippingCents(rate, subtotalCents) : 0;
   const nextFree = useMemo(() => (rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null), [rate, shipping, subtotalCents]);
-  const fee = feeFor(checkout?.fees?.[provider], subtotalCents + shipping);
-  const feeLabel = checkout?.feeLabel || "Processing fee";
 
   async function startCheckout() {
     setLoading(true);
@@ -264,7 +258,6 @@ export function CheckoutView({
                     />
                     <span>
                       <span className="block font-medium">
-                        {checkout.fees?.[p] && <span className="float-right ml-3 text-sm font-normal text-muted">+ {feeText(checkout.fees[p]!)} {feeLabel.toLowerCase()}</span>}
                         {p === "stripe"
                           ? `Card, Apple Pay or Google Pay${place.code === "IN" ? ", or UPI" : ""}`
                           : p === "paypal"
@@ -331,14 +324,8 @@ export function CheckoutView({
               <dd className="text-right">{dollars(subtotalCents)}</dd>
               <dt className="text-muted">Shipping</dt>
               <dd className="text-right">{shipping ? dollars(shipping) : "Free"}</dd>
-              {fee > 0 && (
-                <>
-                  <dt className="text-muted">{feeLabel}</dt>
-                  <dd className="text-right">{dollars(fee)}</dd>
-                </>
-              )}
               <dt className="text-lg font-medium">Total</dt>
-              <dd className="text-right text-lg font-medium">{dollars(subtotalCents + shipping + fee)}</dd>
+              <dd className="text-right text-lg font-medium">{dollars(subtotalCents + shipping)}</dd>
             </dl>
             {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
             {provider === "stripe" && <p className="mt-1 text-sm text-muted">A gift? Add a gift note on the payment page and we&apos;ll write it on a card.</p>}
