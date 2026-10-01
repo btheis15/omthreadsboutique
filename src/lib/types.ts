@@ -120,8 +120,10 @@ export type ShippingRate = {
  */
 export type CheckoutInfo = {
   mode: "test" | "live";
-  /** stripe: cards, Apple Pay, Google Pay, UPI · paypal: PayPal and Venmo · exodus: stablecoins · zelle: confirmed by hand */
-  providers: ("stripe" | "paypal" | "exodus" | "zelle")[];
+  /** stripe: cards, Apple Pay, Google Pay, UPI · paypal: PayPal and Venmo · bch: Bitcoin Cash (Prompt.cash) · exodus: stablecoins · zelle: confirmed by hand */
+  providers: ("stripe" | "paypal" | "bch" | "exodus" | "zelle")[];
+  /** How long a Bitcoin Cash price is held, and what a test order pays (BCH has no test network). */
+  bch?: { minutes: number; testCents: number };
   /** PayPal's public client id and its JavaScript SDK (v6) address. */
   paypal?: { clientId: string; sdkUrl: string };
   /** How long a Zelle order holds the pieces. */

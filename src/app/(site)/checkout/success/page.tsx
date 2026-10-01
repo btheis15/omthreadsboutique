@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
+import type { BchPayment } from "@/lib/bch";
 import { shopApi, shopperIp } from "@/lib/catalog";
 import { formatPrice } from "@/lib/site";
 import { AfterPayment } from "./AfterPayment";
+import { BchPay } from "./BchPay";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
 
@@ -11,9 +13,10 @@ type Props = { searchParams: Promise<{ order?: string }> };
 
 type Summary = {
   number: string;
-  status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "failed" | "expired" | "refunded";
-  provider: "stripe" | "exodus" | "paypal" | "zelle";
+  status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "awaiting_bch" | "failed" | "expired" | "refunded";
+  provider: "stripe" | "exodus" | "paypal" | "zelle" | "bch";
   zelle?: { name: string; handle: string; amountCents: number; memo: string; holdUntil: string };
+  bch?: BchPayment;
   test: boolean;
   email: string | null;
   emailing: boolean;
@@ -22,6 +25,8 @@ type Summary = {
   subtotalCents: number;
   shippingCents: number;
   taxCents: number;
+  discountCents?: number;
+  couponLabel?: string | null;
   totalCents: number;
   shippingLabel: string | null;
 };
@@ -54,17 +59,33 @@ export default async function SuccessPage({ searchParams }: Props) {
 
   const paid = summary.status === "paid";
   const zelle = summary.status === "awaiting_zelle" ? summary.zelle : undefined;
+  // The Bitcoin Cash payment screen (it checks for the payment itself).
+  const bch = summary.status === "awaiting_bch" ? summary.bch : undefined;
+  const bchStuck = summary.provider === "bch" && !paid && summary.bch?.state === "expired_partial";
   const waiting = summary.status === "processing" || summary.status === "awaiting";
   return (
     <div className="container-page max-w-2xl pt-10 pb-20 md:pt-16">
       <AfterPayment clearCart={paid || summary.status === "processing" || Boolean(zelle)} keepChecking={waiting} />
-      {summary.test && (
-        <p className="mb-6 rounded-lg bg-sand p-3 text-sm">Test order: no real payment was taken.</p>
+      {summary.test && !bch && (
+        <p className="mb-6 rounded-lg bg-sand p-3 text-sm">
+          {summary.provider === "bch" ? "Test order: only the small test amount of real Bitcoin Cash was asked for." : "Test order: no real payment was taken."}
+        </p>
       )}
       <p className="text-sm uppercase tracking-[0.16em] text-muted">Order {summary.number}</p>
       <h1 className="mt-2 text-4xl md:text-5xl">
-        {paid ? "Thank you for your order" : zelle ? "Almost done: pay by Zelle" : waiting ? "Confirming your payment…" : "Your payment didn't go through"}
+        {paid
+          ? "Thank you for your order"
+          : zelle
+            ? "Almost done: pay by Zelle"
+            : bch
+              ? "Pay with Bitcoin Cash"
+              : waiting
+                ? "Confirming your payment…"
+                : bchStuck
+                  ? "We're sorting out your payment"
+                  : "Your payment didn't go through"}
       </h1>
+      {bch && order && <BchPay token={order} initial={bch} test={summary.test} />}
       {zelle && (
         <div className="mt-6 rounded-xl border border-ink p-5">
           <p className="text-lg">
@@ -83,7 +104,7 @@ export default async function SuccessPage({ searchParams }: Props) {
           </p>
         </div>
       )}
-      <p className={`mt-4 leading-relaxed text-ink/85 ${zelle ? "hidden" : ""}`}>
+      <p className={`mt-4 leading-relaxed text-ink/85 ${zelle || bch ? "hidden" : ""}`}>
         {paid
           ? summary.emailing && summary.email
             ? `We've received your payment. Your receipt is on its way to ${summary.email}, and we'll email you again with tracking as soon as it ships.`
@@ -92,8 +113,23 @@ export default async function SuccessPage({ searchParams }: Props) {
             ? summary.provider === "exodus"
               ? "Your stablecoin payment is being confirmed on the blockchain. This page updates by itself; you can also close it: we'll email you once it's confirmed."
               : "This usually takes a few seconds. This page updates by itself."
-            : "Nothing was charged. Your cart is still saved, so you can try again."}
+            : bchStuck
+              ? `Part of your payment (${summary.bch?.paidBch} BCH) arrived before the price hold ended. Please don't send any more: we'll email you to complete your order or send it back.`
+              : "Nothing was charged. Your cart is still saved, so you can try again."}
       </p>
+      {paid && summary.provider === "bch" && summary.bch?.paidBch && (
+        <p className="mt-2 text-sm text-muted">
+          Paid {summary.bch.paidBch} BCH
+          {summary.bch.txUrl && (
+            <>
+              {" · "}
+              <a href={summary.bch.txUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                View the transaction
+              </a>
+            </>
+          )}
+        </p>
+      )}
 
       <ul className="mt-8 divide-y divide-line border-y border-line">
         {summary.items.map((i, n) => (
@@ -110,6 +146,12 @@ export default async function SuccessPage({ searchParams }: Props) {
       <dl className="mt-4 grid grid-cols-[1fr_auto] gap-y-1 text-[0.95rem]">
         <dt className="text-muted">Items</dt>
         <dd className="text-right">{dollars(summary.subtotalCents)}</dd>
+        {summary.discountCents ? (
+          <>
+            <dt className="text-muted">Coupon{summary.couponLabel ? ` · ${summary.couponLabel}` : ""}</dt>
+            <dd className="text-right">−{dollars(summary.discountCents)}</dd>
+          </>
+        ) : null}
         <dt className="text-muted">Shipping{summary.shippingLabel ? ` · ${summary.shippingLabel}` : ""}</dt>
         <dd className="text-right">{summary.shippingCents ? dollars(summary.shippingCents) : "Free"}</dd>
         {summary.taxCents > 0 && (
@@ -129,10 +171,10 @@ export default async function SuccessPage({ searchParams }: Props) {
       )}
 
       <div className="mt-10 flex flex-wrap gap-3">
-        <Link href="/shop" className="btn btn-primary">
+        <Link href="/shop" className={`btn ${bch ? "btn-outline" : "btn-primary"}`}>
           Continue shopping
         </Link>
-        {!paid && !waiting && !zelle && (
+        {!paid && !waiting && !zelle && !bch && !bchStuck && (
           <Link href="/checkout" className="btn btn-outline">
             Back to checkout
           </Link>
