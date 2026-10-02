@@ -6,7 +6,7 @@ import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/component
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { getCollections, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
-import { crafts } from "@/lib/crafts";
+import { carriedCrafts } from "@/lib/crafts";
 import { categories, site } from "@/lib/site";
 
 export const revalidate = 300;
@@ -30,12 +30,9 @@ export default async function HomePage() {
     .filter((c) => c.product)
     .slice(0, 2);
 
-  // Feature the crafts actually in the catalog first, then fill to six.
-  const carried = new Set(products.map((p) => p.craft).filter(Boolean));
-  const craftCards = [...crafts.filter((c) => carried.has(c.value)), ...crafts.filter((c) => !carried.has(c.value))].slice(
-    0,
-    6,
-  );
+  // Only the crafts of pieces the shop has.
+  const shownCrafts = carriedCrafts(products);
+  const craftCards = shownCrafts.slice(0, 6);
 
   return (
     <>
@@ -47,7 +44,7 @@ export default async function HomePage() {
         poster={settings.heroImage?.url}
       />
 
-      <Marquee />
+      <Marquee crafts={shownCrafts} />
 
       {/* Promises */}
       <section className="border-b border-line">
@@ -128,10 +125,9 @@ export default async function HomePage() {
         <div className="container-page py-16 md:py-24">
           <div className="max-w-2xl" data-reveal>
             <p className="font-deva text-xl text-zari-light">करघे से</p>
-            <h2 className="mt-2 text-4xl md:text-6xl">From Kashmir to Rajasthan</h2>
+            <h2 className="mt-2 text-4xl md:text-6xl">The crafts behind our shawls</h2>
             <p className="mt-4 text-ivory/80 md:text-lg">
-              Each piece carries a living tradition, handed down through generations of weavers, embroiderers and
-              dyers.
+              Where each tradition comes from, and what makes it its own.
             </p>
           </div>
           <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -154,7 +150,7 @@ export default async function HomePage() {
           </ul>
           <div className="mt-10 text-center" data-reveal>
             <Link href="/crafts" className="btn border border-zari/70 text-ivory hover:bg-zari hover:text-indigo-deep">
-              Explore all the crafts
+              Explore the crafts
             </Link>
           </div>
         </div>

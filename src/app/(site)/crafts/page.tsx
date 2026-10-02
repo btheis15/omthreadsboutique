@@ -3,19 +3,24 @@ import Link from "next/link";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
 import { ProductCard } from "@/components/ProductCard";
 import { getProducts } from "@/lib/catalog";
-import { crafts } from "@/lib/crafts";
+import { carriedCrafts } from "@/lib/crafts";
 
-export const metadata: Metadata = {
-  title: "The crafts of North India",
-  description:
-    "A guide to the textile traditions behind our shawls and stoles: Pashmina, Kani, Sozni, Jamawar, Kullu, Phulkari, Banarasi, Chikankari, Bandhani and hand block printing.",
-  alternates: { canonical: "/crafts" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const names = carriedCrafts(await getProducts()).map((c) => c.label);
+  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
+  return {
+    title: "The crafts of North India",
+    description: `A guide to the textile traditions behind our shawls and stoles: ${list}.`,
+    alternates: { canonical: "/crafts" },
+  };
+}
 
 export const revalidate = 300;
 
 export default async function CraftsPage() {
   const products = await getProducts();
+  // Only the crafts of pieces the shop has.
+  const crafts = carriedCrafts(products);
   return (
     <>
       <section className="relative isolate overflow-hidden bg-indigo-deep text-ivory">
@@ -27,8 +32,8 @@ export default async function CraftsPage() {
             The crafts of North India
           </h1>
           <p className="animate-rise mt-5 max-w-xl text-ivory/80 md:text-lg" style={{ "--i": 2 } as React.CSSProperties}>
-            From Himalayan valleys to the plains of the Ganga, every region has its own language of thread. Here are the
-            traditions behind the pieces we carry.
+            Every region of North India has its own language of thread. Here are the traditions behind the pieces we
+            carry.
           </p>
           <nav
             aria-label="Crafts"

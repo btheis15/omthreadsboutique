@@ -4,10 +4,12 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { RevealObserver } from "@/components/motion/RevealObserver";
-import { catalogSource, getSettings } from "@/lib/catalog";
+import { catalogSource, getProducts, getSettings } from "@/lib/catalog";
+import { carriedCrafts } from "@/lib/crafts";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getSettings();
+  const [settings, products] = await Promise.all([getSettings(), getProducts()]);
+  const crafts = carriedCrafts(products).map(({ value, label, hindi }) => ({ value, label, hindi }));
   return (
     <>
       {/* Shared shapes referenced from CSS (e.g. the `arch` utility). */}
@@ -33,7 +35,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           {settings.announcement}
         </div>
       )}
-      <Header />
+      <Header crafts={crafts} />
       <ViewTransition default="none" update="page">
         <main id="main">{children}</main>
       </ViewTransition>

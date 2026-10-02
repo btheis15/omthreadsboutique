@@ -5,13 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/logo.png";
-import { crafts } from "@/lib/crafts";
+import type { Craft } from "@/lib/crafts";
 import { categories, nav, site } from "@/lib/site";
 import { cart, useCart } from "./cart/store";
 import { ArrowIcon, BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
 import { Mandala, Paisley } from "./ornaments";
 
-export function Header() {
+/** `crafts`: the crafts the shop carries, for "Shop by craft". */
+export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hindi">[] }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { count } = useCart();
@@ -185,7 +186,7 @@ export function Header() {
               ref={searchRef}
               name="q"
               type="search"
-              placeholder="Search pashmina, kani, silk, navy…"
+              placeholder="Search lohi, Kullu, pashmina…"
               className="h-12 w-full bg-transparent text-base outline-none"
               aria-label="Search products"
             />
