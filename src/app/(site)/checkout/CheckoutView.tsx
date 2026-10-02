@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { cart, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
@@ -53,8 +53,9 @@ export function CheckoutView({
   const subtotalCents = items.reduce((n, i) => n + Math.round(i.price * 100) * i.qty, 0);
   const place = checkout?.countries.find((c) => c.code === country) ?? checkout?.countries[0];
   const rate = place?.rates.find((r) => r.id === rateId) ?? place?.rates[0];
-  const shipping = rate ? shippingCents(rate, subtotalCents) : 0;
-  const nextFree = useMemo(() => (rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null), [rate, shipping, subtotalCents]);
+  const itemCount = items.reduce((n, i) => n + i.qty, 0);
+  const shipping = rate ? shippingCents(rate, subtotalCents, itemCount) : 0;
+  const nextFree = rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
   async function startCheckout() {
     setLoading(true);
@@ -217,7 +218,7 @@ export function CheckoutView({
                   <select value={rate.id} onChange={(e) => setRateId(e.target.value)} className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5">
                     {place.rates.map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.label} · {shippingCents(r, subtotalCents) ? dollars(shippingCents(r, subtotalCents)) : "Free"}
+                        {r.label} · {shippingCents(r, subtotalCents, itemCount) ? dollars(shippingCents(r, subtotalCents, itemCount)) : "Free"}
                       </option>
                     ))}
                   </select>
@@ -230,6 +231,7 @@ export function CheckoutView({
             </div>
             <p className="mt-2 text-sm text-muted">
               Arrives in about {rate.minDays}–{rate.maxDays} business days after it ships.
+              {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
               {nextFree !== null && nextFree > 0 && ` Add ${dollars(nextFree)} more for free shipping.`}
             </p>
             {place.code === "IN" && (
