@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import logo from "@/assets/logo.png";
 import { categories, site } from "@/lib/site";
 import type { SiteSettings } from "@/lib/types";
 import { NewsletterForm } from "./NewsletterForm";
@@ -49,8 +51,8 @@ export function Footer({ settings }: { settings: SiteSettings }) {
 
         <div className="grid grid-cols-2 gap-8 border-t border-ivory/15 pt-10 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <p className="flex items-center gap-2 font-display text-2xl">
-              <span className="font-deva text-zari-light">ॐ</span> {site.name}
+            <p className="flex items-center gap-3 font-display text-2xl">
+              <Image src={logo} alt="" sizes="56px" className="size-14 shrink-0" /> {site.name}
             </p>
             <p className="mt-2 max-w-xs text-sm text-ivory/70">{site.tagline}.</p>
             <div className="mt-5 flex flex-wrap gap-2">

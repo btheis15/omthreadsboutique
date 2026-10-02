@@ -58,7 +58,7 @@ export function ProductImage({
       />
     );
   }
-  const s = image?.swatch ?? { base: "#e8e0d2", accent: "#b9a88c", pattern: "weave" as const };
+  const s = image?.swatch ?? { base: "#e6dfcf", accent: "#a8b4c0", pattern: "weave" as const };
   return (
     <div role="img" aria-label={image?.alt ?? "Product image"} className={`absolute inset-0 ${className}`}>
       <Swatch {...s} className="h-full w-full" />
