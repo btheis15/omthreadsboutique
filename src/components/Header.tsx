@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import logo from "@/assets/logo.png";
 import { crafts } from "@/lib/crafts";
 import { categories, nav, site } from "@/lib/site";
 import { cart, useCart } from "./cart/store";
@@ -52,12 +54,7 @@ export function Header() {
         </div>
 
         <Link href="/" className="group flex items-center gap-2.5 leading-none" aria-label="Om Threads Boutique, home">
-          <span
-            aria-hidden="true"
-            className="font-deva grid size-10 place-items-center rounded-full border border-zari/60 pt-1 text-[1.35rem] text-accent transition-transform duration-700 ease-soft group-hover:rotate-[360deg] md:size-11"
-          >
-            ॐ
-          </span>
+          <Image src={logo} alt="" priority sizes="(min-width: 768px) 52px, 44px" className="size-11 transition-transform duration-700 ease-soft group-hover:scale-105 md:size-[3.25rem]" />
           <span className="flex flex-col">
             <span className="font-display text-[1.45rem] tracking-wide md:text-[1.7rem]">Om Threads</span>
             <span className="mt-1 text-[0.58rem] tracking-[0.42em] text-muted uppercase">Boutique</span>
@@ -79,7 +76,7 @@ export function Header() {
                   {item.label}
                   <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/mega:scale-x-100" />
                 </Link>
-                <div className="invisible absolute inset-x-0 top-full -translate-y-2 border-b border-line bg-ivory opacity-0 shadow-[0_24px_48px_-24px_rgba(43,27,18,0.35)] transition duration-300 ease-soft group-focus-within/mega:visible group-focus-within/mega:translate-y-0 group-focus-within/mega:opacity-100 group-hover/mega:visible group-hover/mega:translate-y-0 group-hover/mega:opacity-100">
+                <div className="invisible absolute inset-x-0 top-full -translate-y-2 border-b border-line bg-ivory opacity-0 shadow-[0_24px_48px_-24px_rgba(35,49,66,0.35)] transition duration-300 ease-soft group-focus-within/mega:visible group-focus-within/mega:translate-y-0 group-focus-within/mega:opacity-100 group-hover/mega:visible group-hover/mega:translate-y-0 group-hover/mega:opacity-100">
                   <div className="container-page grid grid-cols-[1fr_1.6fr_1.1fr] gap-10 py-10">
                     <div>
                       <p className="eyebrow mb-4">Shop by type</p>

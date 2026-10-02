@@ -28,7 +28,7 @@ function QrCode({ text, size }: { text: string; size: number }) {
   return (
     <svg viewBox={`0 0 ${n} ${n}`} width={size} height={size} shapeRendering="crispEdges" role="img" aria-label="QR code with the payment address and amount">
       <rect width={n} height={n} fill="#ffffff" />
-      <path d={d} fill="#2b1b12" />
+      <path d={d} fill="#233142" />
     </svg>
   );
 }

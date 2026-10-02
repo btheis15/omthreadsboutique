@@ -46,7 +46,7 @@ export function ProductCard({
   const [first, second] = product.images;
   const craft = craftByValue(product.craft);
   const image = (
-    <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-sand shadow-[0_1px_0_rgba(43,27,18,0.04)] transition-shadow duration-500 group-hover:shadow-[0_18px_40px_-18px_rgba(43,27,18,0.45)]">
+    <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-sand shadow-[0_1px_0_rgba(35,49,66,0.04)] transition-shadow duration-500 group-hover:shadow-[0_18px_40px_-18px_rgba(35,49,66,0.45)]">
       <Badge product={product} />
       <ProductImage
         image={first}

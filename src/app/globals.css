@@ -1,26 +1,32 @@
 @import "tailwindcss";
 
 /*
- * Brand tokens, drawn from North Indian textiles: handmade-paper ivory,
- * kajal ink, sindoor red, zari gold, indigo, peacock and marigold.
- * Change these to re-theme the whole site.
+ * Brand tokens, drawn from the logo: its paper cream, the gold thread of the
+ * meditating figure, the Himalayan blues of the mountains, and the tassel's
+ * rani pink and peacock teal. Change these to re-theme the whole site.
  */
 @theme {
-  --color-ivory: #fbf6ee;
-  --color-sand: #f4eadb;
-  --color-line: #e7d9c4;
-  --color-ink: #2b1b12;
-  --color-muted: #6f5b4c;
-  --color-accent: #a3321f;
-  --color-accent-dark: #7e2415;
-  --color-sale: #a3321f;
-  --color-zari: #b3873a;
-  --color-zari-light: #dcc083;
-  --color-indigo: #1f2a4d;
-  --color-indigo-deep: #161e39;
-  --color-peacock: #1c5a57;
-  --color-marigold: #e2a21b;
-  --color-rani: #a8295e;
+  --color-ivory: #fdfaf2;
+  --color-sand: #f4efe3;
+  --color-line: #e6dfcf;
+  /* Text and buttons: a deep Himalayan slate. */
+  --color-ink: #233142;
+  --color-muted: #66717f;
+  /* Accents and sale prices: the tassel's rani pink. */
+  --color-accent: #a52b57;
+  --color-accent-dark: #7c1f42;
+  --color-sale: #a52b57;
+  /* The gold thread. */
+  --color-zari: #b8873a;
+  --color-zari-light: #e3bf80;
+  /* The mountains: dusk blue for dark bands, and the lighter blues of the peaks and mist. */
+  --color-indigo: #2d4b68;
+  --color-indigo-deep: #1d3248;
+  --color-mountain: #6f93b3;
+  --color-mist: #e3eaf0;
+  --color-peacock: #23706f;
+  --color-marigold: #e2a93f;
+  --color-rani: #b0285e;
 
   --font-sans: var(--font-mukta), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-kalnia), var(--font-tiro), ui-serif, Georgia, serif;
