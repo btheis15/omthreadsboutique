@@ -112,6 +112,8 @@ export type ShippingRate = {
   id: string;
   label: string;
   cents: number;
+  /** The price for an order of two or more items, when it differs. */
+  multiCents?: number | null;
   /** Free when the items come to at least this much. */
   freeOverCents: number | null;
   minDays: number;
