@@ -19,6 +19,7 @@
     "react-dom": "19.2.8",
     "sanity": "^6.16.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
     "styled-components": "^6.5.3",
     "uqr": "0.1.3"
   },

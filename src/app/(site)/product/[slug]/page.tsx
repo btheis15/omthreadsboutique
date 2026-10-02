@@ -25,17 +25,12 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProduct((await params).slug);
   if (!product) return {};
-  const image = product.images[0]?.url;
+  // The link-preview picture is drawn by opengraph-image.tsx next to this file.
   return {
     title: product.seoTitle ?? product.title,
     description: product.seoDescription ?? product.shortDescription,
     alternates: { canonical: `/product/${product.slug}` },
-    openGraph: {
-      title: product.title,
-      description: product.shortDescription,
-      // Sanity crops to the social-card size on request; admin photos are used as-is.
-      images: image ? [{ url: image.includes("cdn.sanity.io") ? `${image}?w=1200&h=630&fit=crop` : image }] : undefined,
-    },
+    openGraph: { title: product.title, description: product.shortDescription },
   };
 }
 
