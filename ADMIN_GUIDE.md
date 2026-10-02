@@ -128,6 +128,7 @@ automatically. (The site can also still use Sanity instead. Set
 | Read contact messages and newsletter sign-ups | **Inbox** (reply by email, or download sign-ups as CSV) |
 | Tag a product's craft and origin | Product → **Details → Craft / Made in**. It links to the Crafts guide and the craft filter |
 | Edit About / FAQ / Care guide / policies | **Pages**, then pick the page |
+| Photos on About / FAQ / Care guide | **Pages** → the page → **Photos**: each goes under the intro or with a section (by its “## ” heading), with a description and an optional caption |
 
 ---
 

@@ -73,7 +73,10 @@ export type Collection = {
   image?: ProductImage;
 };
 
-export type ContentSection = { heading?: string; paragraphs: string[] };
+/** A photo on a page, with its size so it can be shown whole (never cropped). */
+export type PagePhoto = ProductImage & { url: string; width: number; height: number; caption?: string };
+
+export type ContentSection = { heading?: string; paragraphs: string[]; photos?: PagePhoto[] };
 
 export type ContentPage = {
   slug: string;
@@ -81,6 +84,8 @@ export type ContentPage = {
   intro?: string;
   /** Rich text from Sanity, or plain sections from the built-in defaults. */
   body: PortableTextBlock[] | ContentSection[];
+  /** Photos under the intro (photos that go with a section are in that section). */
+  photos?: PagePhoto[];
 };
 
 export type Testimonial = {
