@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   description: site.description,
   openGraph: { siteName: site.name, type: "website", locale: "en_US" },
   twitter: { card: "summary_large_image" },
+  // The name under the icon when it's added to an iPhone home screen.
+  appleWebApp: { title: "Om Threads" },
 };
 
 export const viewport: Viewport = {
