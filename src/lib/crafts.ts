@@ -1,6 +1,8 @@
 /**
  * Textile crafts of North India. Used for the product "Craft" field, the
- * craft filter and the /crafts guide page. Add or edit entries here.
+ * craft filter and the /crafts guide page. Add or edit entries here. The site
+ * only shows the crafts of pieces it has (see carriedCrafts); the rest wait
+ * here for the day a piece of that craft is added.
  */
 export type Craft = {
   value: string;
@@ -18,9 +20,9 @@ export const crafts: Craft[] = [
     label: "Pashmina",
     hindi: "पश्मीना",
     region: "Kashmir",
-    summary: "The finest cashmere, hand-spun and hand-woven in Srinagar.",
+    summary: "Kashmir's famously soft wool, and the shawls named after it.",
     story:
-      "Pashmina comes from the soft undercoat of Changthangi goats that graze the high plateaus of Ladakh. The fibre is combed by hand, spun on a wooden charkha and woven on handlooms in Srinagar. The finest are said to be light enough to pass through a ring, yet warm enough for a Himalayan winter.",
+      "Pashmina takes its name from pashm, the Persian word for the fine winter undercoat of Himalayan mountain goats. Kashmir has made shawls from it for centuries, and the name has come to stand for their light, soft warmth. Each piece's description says what it is made of.",
   },
   {
     value: "kani",
@@ -66,6 +68,15 @@ export const crafts: Craft[] = [
     summary: "Bright geometric borders on warm mountain wool.",
     story:
       "In the Kullu Valley, weavers work bold geometric borders into warm wool, often in bright colours on a natural ground. Kullu shawls carry a Geographical Indication tag, which recognises their origin in Himachal Pradesh.",
+  },
+  {
+    value: "lohi",
+    label: "Lohi",
+    hindi: "लोई",
+    region: "Punjab",
+    summary: "Punjab's broad, warm winter shawl, worn by men and women alike.",
+    story:
+      "A lohi is the shawl Punjab reaches for when winter sets in: broad enough to wrap around the shoulders, warm, and worn by men and women alike over a kurta or a coat. Lohis come in solid colours and in checks, from everyday plain ones to bolder patterns.",
   },
   {
     value: "phulkari",
@@ -116,4 +127,14 @@ export const crafts: Craft[] = [
 
 export function craftByValue(value?: string) {
   return value ? crafts.find((c) => c.value === value) : undefined;
+}
+
+/**
+ * The crafts of the pieces on the site, in the order above. Until any piece
+ * has a craft set, all of them, so the guide is never empty.
+ */
+export function carriedCrafts(products: { craft?: string }[]): Craft[] {
+  const carried = new Set(products.map((p) => p.craft).filter(Boolean));
+  const list = crafts.filter((c) => carried.has(c.value));
+  return list.length ? list : crafts;
 }
