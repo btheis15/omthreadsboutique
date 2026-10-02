@@ -359,26 +359,26 @@ export const sampleCollections: Collection[] = [
 export const samplePages: ContentPage[] = [
   {
     slug: "about",
-    title: "Our story",
-    intro:
-      "Every piece we carry is sourced from northern India, from the snowy valleys of Kashmir to the busy workshops of Varanasi, Lucknow and Rajasthan.",
+    title: "My Story — From India to the USA",
     body: [
       {
         paragraphs: [
-          "Om Threads Boutique began with a love for the textiles of North India, and for the artisans who keep centuries-old crafts alive. Pashmina hand-spun in Srinagar. Kani shawls woven bobbin by bobbin. Phulkari stitched in Punjab, Banarasi silk, and Lucknow's chikankari. Each tradition has its own language of pattern and colour.",
-          "We choose every shawl and stole by hand, for how it feels, how it drapes and how long it will last. Then we bring it from its home in India to ours in Lake Villa, Illinois, and ship it on to you.",
+          "OmthreadsBoutique was born from a personal connection to India.",
+          "Mimi Enterprises, in India, comes from a family involved in the garments business. Their daughter moved to the USA for higher studies and eventually we married in India. I had the opportunity to experience India not simply as a visitor, but through its family traditions, celebrations and everyday culture.",
+          "Sometimes, it is only after leaving one's birthplace that its culture and traditions are truly appreciated. For me, travelling through Northern India revealed how wonderfully diverse and vibrant Indian culture is—how every region, state and community carries its own history, textiles, rituals and traditions.",
+          "During my travels, I also had the opportunity to meet local artisans and witness the shawl-making process first-hand—from the patient weaving of wool threads into beautiful fabrics to the intricate hand embroidery that transforms each piece into something unique. Seeing the skill, patience and dedication behind these textiles gave me a deeper appreciation for the people and traditions that keep this heritage alive.",
+          "One experience became particularly meaningful. At our wedding in Jaipur, Indian stoles were gifted during the Milni, a beautiful tradition where the families of the bride and groom formally meet and exchange greetings and gifts. What touched me was the symbolism behind it—a simple gesture that brings two families closer and represents an enduring bond between them.",
+          "That moment became the inspiration behind OmthreadsBoutique: to bring a small but meaningful part of India's heritage to the USA—for Indians living far from their homeland and for those discovering the richness of Indian culture for the first time.",
         ],
       },
       {
-        heading: "Why “Om”",
+        heading: "Woven with Heritage. Wrapped in Tradition.",
         paragraphs: [
-          "ॐ (Om) is the sound at the heart of stillness. We hope each piece brings a little of that calm: something soft to wrap yourself in, or a gift that tells someone they are cherished.",
-        ],
-      },
-      {
-        heading: "What we promise",
-        paragraphs: [
-          "Every item is inspected before it ships. Our photos show true colours in natural light. Handmade textiles carry small irregularities; they are the signature of the maker, not flaws. And if something isn't right, we'll make it right.",
+          "For generations, shawls and draped textiles have been woven into India's cultural, artistic and spiritual traditions. At OmthreadsBoutique, I believe these beautiful textiles can carry that heritage forward.",
+          "Our shawls and stoles are sourced through ethical, eco-friendly and fair-trade practices from skilled artisans in Kashmir, Himachal Pradesh and remote villages of Punjab, drawing upon generations-old weaving and hand-embroidery traditions.",
+          "And behind every piece are the artisans—especially women—who are not merely participants in this tradition, but its silent creators, custodians and heartbeat.",
+          "When you choose one of our shawls, you are choosing more than a beautiful textile. You are helping keep a living tradition alive, supporting artisan livelihoods and carrying a piece of India's culture and heritage into the future.",
+          "Every thread carries a story. Every shawl carries a piece of India.",
         ],
       },
     ],
