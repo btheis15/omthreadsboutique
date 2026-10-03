@@ -199,15 +199,19 @@ export function BchReceipt({ breakdown, paid, left, flat = false }: { breakdown:
   );
 }
 
-/** The Bitcoin Cash mark (its green disc and tilted ₿): the one touch of BCH's own colors. */
+/**
+ * The Bitcoin Cash mark, exactly as the BCH community uses it (from the Paytaca wallet's assets): the green
+ * disc (#0AC18E) and the white ₿ leaning to the left. Not Bitcoin's (BTC) orange mark, whose ₿ leans right.
+ * The one touch of Bitcoin Cash's own colors on the shop's pages.
+ */
 export function BchIcon({ size = 18, className = "", label }: { size?: number; className?: string; label?: string }) {
   return (
-    <svg viewBox="0 0 32 32" width={size} height={size} className={`shrink-0 ${className}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
-      <circle cx="16" cy="16" r="16" fill="#0ac18e" />
-      <g transform="rotate(-28 16 16)" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11.6 9.6h5a3 3 0 0 1 0 6h-5zM11.6 15.6h5.8a3.2 3.2 0 0 1 0 6.4h-5.8zM11.6 9.6v12.4" />
-        <path d="M13.8 7.3v2.3M16.8 7.3v2.3M13.8 22v2.4M16.8 22v2.4" />
-      </g>
+    <svg viewBox="0 0 788 788" width={size} height={size} className={`shrink-0 ${className}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+      <circle cx="394" cy="394" r="394" fill="#0AC18E" />
+      <path
+        fill="#FFFFFF"
+        d="M516.9 261.7c-19.8-44.9-65.3-54.5-121-45.2L378 147.1l-42.2 10.9 17.6 69.2c-11.1 2.8-22.5 5.2-33.8 8.4L302 166.8l-42.2 10.9 17.9 69.4c-9.1 2.6-85.2 22.1-85.2 22.1l11.6 45.2s31-8.7 30.7-8c17.2-4.5 25.3 4.1 29.1 12.2l49.2 190.2c.6 5.5-.4 14.9-12.2 18.1.7.4-30.7 7.9-30.7 7.9l4.6 52.7s75.4-19.3 85.3-21.8l18.1 70.2 42.2-10.9-18.1-70.7c11.6-2.7 22.9-5.5 33.9-8.4l18 70.3 42.2-10.9-18.1-70.1c65-15.8 110.9-56.8 101.5-119.5-6-37.8-47.3-68.8-81.6-72.3 21-18.6 31.7-45.9 18.6-81.6zm-20.3 165.5c8.4 62.1-77.9 69.7-106.4 77.2l-24.8-92.9c28.6-7.5 117-39 131.2 15.7zm-52-126.5c8.9 55.2-64.9 61.6-88.7 67.7l-22.6-84.3c23.9-5.9 93.2-34.5 111.3 16.6z"
+      />
     </svg>
   );
 }
