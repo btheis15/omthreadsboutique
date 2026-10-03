@@ -181,21 +181,21 @@ function CouponStep({ coupon }: { coupon: NonNullable<BchPayment["coupon"]> }) {
       {!show ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p>
-            <span className="font-medium">Have an Om Threads coupon token?</span>{" "}
-            <span className="text-ink/80">Send it before you pay and the discount comes off.</span>
+            <span className="font-medium">{coupon.stack ? "Have Om Threads tokens?" : "Have an Om Threads coupon token?"}</span>{" "}
+            <span className="text-ink/80">{coupon.stack ? "Send them before you pay: each one takes Bitcoin Cash off." : "Send it before you pay and the discount comes off."}</span>
           </p>
           <button type="button" onClick={() => setShow(true)} className="btn btn-outline h-10 min-h-0 px-4 text-sm">
-            Use a coupon
+            {coupon.stack ? "Use my tokens" : "Use a coupon"}
           </button>
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-[auto_1fr]">
           <div className="order-2 flex flex-col items-center gap-2 sm:order-1">
             <QrCode text={coupon.uri} size={176} label="QR code with the coupon address" />
-            <p className="text-center text-sm text-muted">Scan to send your coupon</p>
+            <p className="text-center text-sm text-muted">{coupon.stack ? "Scan to send your tokens" : "Scan to send your coupon"}</p>
           </div>
           <div className="order-1 min-w-0 sm:order-2">
-            <p className="font-medium">Send your coupon token to this address</p>
+            <p className="font-medium">{coupon.stack ? "Send your tokens to this address" : "Send your coupon token to this address"}</p>
             <ul className="mt-2 space-y-1 text-[0.95rem]">
               {coupon.coupons.map((c) => (
                 <li key={c.label}>
@@ -208,10 +208,12 @@ function CouponStep({ coupon }: { coupon: NonNullable<BchPayment["coupon"]> }) {
               <CopyButton value={coupon.address} label="coupon address" />
             </div>
             <a href={coupon.uri} className="btn btn-outline mt-4 w-full">
-              Send it from my wallet app
+              {coupon.stack ? "Send them from my wallet app" : "Send it from my wallet app"}
             </a>
             <p className="mt-2 text-sm leading-relaxed text-ink/80">
-              It takes a few seconds: the discount appears above and the amount to pay updates by itself. Then pay as usual. One coupon per order; it comes back to us when you use it.
+              {coupon.stack
+                ? "Send them all at once or a few at a time. Each takes its Bitcoin Cash off in a few seconds, and the amount to pay updates by itself. Then pay as usual."
+                : "It takes a few seconds: the discount appears above and the amount to pay updates by itself. Then pay as usual. One coupon per order; it comes back to us when you use it."}
             </p>
           </div>
         </div>
@@ -313,8 +315,11 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
       )}
 
       {bch.applied && (
-        <p className="mb-5 rounded-lg border border-peacock bg-peacock/5 p-3 text-[0.95rem]" role="status">
-          <span className="font-medium">Coupon applied: {bch.applied.label}</span> · {dollars(bch.applied.discountCents)} off. The amount below is your new total.
+        <p key={bch.applied.label} className="bch-rise mb-5 rounded-lg border border-peacock bg-peacock/5 p-3 text-[0.95rem]" style={{ animationDelay: "0s" }} role="status">
+          <span className="font-medium">
+            {bch.applied.bch ? "Tokens applied" : "Coupon applied"}: {bch.applied.label}
+          </span>{" "}
+          · {bch.applied.bch ? `${bch.applied.bch} BCH (${dollars(bch.applied.discountCents)})` : dollars(bch.applied.discountCents)} off. The amount below is your new total.
         </p>
       )}
 

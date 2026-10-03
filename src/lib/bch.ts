@@ -21,9 +21,15 @@ export type BchPayment = {
   canRenew: boolean;
   txUrl: string | null;
   /** CashTokens coupons the shopper can send (to the order's token address) before paying. */
-  coupon: { address: string; uri: string; coupons: { label: string; off: string; send: string }[] } | null;
-  /** The coupon taken off this order. */
-  applied: { label: string; discountCents: number } | null;
+  coupon: {
+    address: string;
+    uri: string;
+    coupons: { label: string; off: string; send: string }[];
+    /** Tokens each worth some BCH: any number, sent all at once or a few at a time (otherwise one coupon per order). */
+    stack?: boolean;
+  } | null;
+  /** The coupon taken off this order (`bch`: what BCH-valued tokens took off, e.g. "0.03"). */
+  applied: { label: string; discountCents: number; bch?: string } | null;
 };
 
 // Wallets that pay Bitcoin Cash links (and hold CashTokens).
