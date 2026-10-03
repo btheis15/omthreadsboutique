@@ -529,6 +529,149 @@
   white-space: nowrap;
 }
 
+/* Two ways to pay: a sliding pill under "Connect wallet" / "Scan QR code". */
+.bch-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: var(--color-sand);
+  animation: bch-rise 0.5s 0.15s var(--ease-soft) both;
+}
+.bch-switch button {
+  position: relative;
+  z-index: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color 0.3s;
+}
+.bch-switch button[aria-selected="true"] {
+  color: var(--color-ivory);
+}
+.bch-switch-pill {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc(50% - 0.25rem);
+  border-radius: 9999px;
+  background: var(--color-ink);
+  box-shadow: 0 4px 14px rgb(35 49 66 / 0.25);
+  transition: transform 0.45s cubic-bezier(0.2, 1.1, 0.35, 1);
+}
+
+/* Connect wallet: a deep ink button with a slow green-and-gold glow moving through it. */
+.bch-connect {
+  position: relative;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  padding: 1.15rem 1.25rem;
+  background: var(--color-ink);
+  color: var(--color-ivory);
+  box-shadow: 0 10px 30px rgb(35 49 66 / 0.25);
+  transition:
+    transform 0.2s var(--ease-soft),
+    box-shadow 0.3s;
+  animation: bch-qr-pop 0.7s 0.1s cubic-bezier(0.2, 1.2, 0.35, 1) both;
+}
+.bch-connect:hover:not(:disabled) {
+  box-shadow: 0 14px 38px rgb(10 193 142 / 0.28);
+}
+.bch-connect:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.bch-connect:disabled {
+  cursor: progress;
+}
+.bch-connect-glow {
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, transparent 0 55%, rgb(10 193 142 / 0.35) 65%, rgb(227 191 128 / 0.35) 75%, transparent 85%);
+  animation: spin-slow 6s linear infinite;
+}
+.bch-connect:disabled .bch-connect-glow {
+  animation-duration: 1.4s;
+}
+
+/* The tokens: a soft green card with a stepper and a slider. */
+.bch-tokens {
+  border-radius: 1.1rem;
+  border: 1px solid rgb(10 193 142 / 0.3);
+  background: linear-gradient(160deg, rgb(10 193 142 / 0.07), rgb(227 191 128 / 0.08));
+  padding: 1rem 1.1rem 0.9rem;
+}
+.bch-step {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line);
+  background: var(--color-ivory);
+  font-size: 1.35rem;
+  transition:
+    transform 0.14s,
+    border-color 0.2s;
+}
+.bch-step:hover:not(:disabled) {
+  border-color: var(--color-ink);
+}
+.bch-step:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.bch-step:disabled {
+  opacity: 0.35;
+}
+.bch-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #0ac18e var(--fill), var(--color-line) var(--fill));
+  cursor: pointer;
+}
+.bch-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: var(--color-ivory);
+  border: 2px solid #0ac18e;
+  box-shadow: 0 3px 10px rgb(10 193 142 / 0.35);
+  transition: transform 0.15s;
+}
+.bch-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.bch-range::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: var(--color-ivory);
+  border: 2px solid #0ac18e;
+  box-shadow: 0 3px 10px rgb(10 193 142 / 0.35);
+}
+.bch-skeleton {
+  background: linear-gradient(100deg, var(--color-sand) 40%, #fbf7ee 50%, var(--color-sand) 60%) 0 0 / 250% 100%;
+  animation: bch-shimmer 1.1s linear infinite;
+}
+@keyframes bch-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
 /* Payment received: the green tick pops, rings spread and threads in the logo's colors burst out. */
 .bch-landed {
   animation: bch-card-in 0.6s var(--ease-soft) both;
@@ -715,6 +858,7 @@
     animation: none !important;
   }
   .bch-sonar,
+  .bch-connect-glow,
   .bch-thread,
   .bch-landed-wave,
   .bch-hold::after {

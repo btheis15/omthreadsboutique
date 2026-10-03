@@ -38,6 +38,8 @@ export type BchPayment = {
     lines: { kind: "items" | "tokens" | "coupon" | "shipping" | "tax"; label: string; bch: string; cents: number; tokens?: string; each?: string }[];
     total: { bch: string; cents: number };
   } | null;
+  /** The admin can take the payment from a connected wallet ("Connect wallet": the BCH and any tokens in one transaction). */
+  walletPay?: boolean;
   /** The coupon taken off this order (`bch`: what BCH-valued tokens took off, e.g. "0.03"). */
   applied: { label: string; discountCents: number; bch?: string } | null;
 };
@@ -49,3 +51,13 @@ export const BCH_WALLETS = [
   { name: "Cashonize", url: "https://cashonize.com" },
   { name: "Electron Cash", url: "https://electroncash.org" },
 ] as const;
+
+/** What a connected wallet holds that the order can use (the shop's BCH-valued tokens, with how many are useful). */
+export type BchWalletInfo = {
+  address: string;
+  bch: string;
+  tokens: { category: string; label: string; symbol: string | null; decimals: number; value: number; have: string; max: string; useful: string; haveText: string; maxText: string }[];
+};
+
+/** The amount to pay with some tokens taken off, and the order in BCH. */
+export type BchQuote = { amountBch: string; tokens: { category: string; amount: string; text: string } | null; breakdown: BchPayment["breakdown"] };
