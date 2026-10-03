@@ -19,7 +19,11 @@ const shortAddress = (a: string) => {
   const body = a.replace(/^bitcoincash:/, "");
   return `${body.slice(0, 6)}…${body.slice(-6)}`;
 };
-const longDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+const paidWhen = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+const short = (s: string) => {
+  const body = s.replace(/^bitcoincash:/, "");
+  return body.length > 16 ? `${body.slice(0, 8)}…${body.slice(-8)}` : body;
+};
 const played = (name: string, set = false) => {
   try {
     if (set) sessionStorage.setItem(`omt-receipt:${name}`, "1");
@@ -210,8 +214,8 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
                 <header className="flex items-center gap-3">
                   <Image src={logo} alt="" sizes="44px" className="size-11 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-display text-lg leading-tight">Om Threads Boutique</p>
-                    <p className="text-sm text-muted">{longDate(r.date)}</p>
+                    <p className="font-display text-lg leading-tight">{r.shop}</p>
+                    <p className="text-sm text-muted">{paidWhen(r.paidAt)}</p>
                   </div>
                   <span className="receipt-badge">{rt.name.replace(` #${number}`, "")}</span>
                 </header>
@@ -219,25 +223,38 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
                 {r.test && <p className="mt-1 text-xs text-muted">A test order: a real CashToken for a tiny real payment.</p>}
                 <dl className="receipt-lines mt-3">
                   {r.items.map((i) => (
-                    <div key={`${i.title}-${i.qty}`}>
+                    <div key={`${i.title}-${i.option}-${i.qty}`}>
                       <dt>
                         {i.qty} × {i.title}
+                        {i.option && <span className="block text-xs text-muted">{i.option}</span>}
+                        {i.qty > 1 && <span className="block text-xs text-muted">{dollars(i.unitCents)} each</span>}
                       </dt>
                       <dd>{dollars(i.cents)}</dd>
                     </div>
                   ))}
+                  <div>
+                    <dt>Subtotal</dt>
+                    <dd>{dollars(r.subtotalCents)}</dd>
+                  </div>
                   {r.discount && (
                     <div className="text-peacock">
                       <dt>
                         {r.discount.label}
-                        {r.discount.tokens ? ` (${r.discount.tokens})` : ""}
+                        {r.discount.tokens && (
+                          <span className="block text-xs">
+                            {r.discount.tokens}
+                            {r.discount.bch ? ` · ${r.discount.bch} BCH` : ""}
+                          </span>
+                        )}
                       </dt>
                       <dd>−{dollars(r.discount.cents)}</dd>
                     </div>
                   )}
                   <div>
-                    <dt>Shipping</dt>
-                    <dd>{r.shippingCents ? dollars(r.shippingCents) : "Free"}</dd>
+                    <dt>
+                      Shipping<span className="block text-xs text-muted">{r.shipping.label}</span>
+                    </dt>
+                    <dd>{r.shipping.cents ? dollars(r.shipping.cents) : "Free"}</dd>
                   </div>
                   {r.taxCents > 0 && (
                     <div>
@@ -250,9 +267,52 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
                     <dd>{dollars(r.totalCents)}</dd>
                   </div>
                 </dl>
-                <p className="mt-3 flex items-center gap-1.5 text-sm text-ink/75">
-                  <BchIcon size={13} /> Paid {r.paidBch} BCH
-                </p>
+                <dl className="receipt-pay mt-3">
+                  <div>
+                    <dt className="flex items-center gap-1.5">
+                      <BchIcon size={12} /> Paid
+                    </dt>
+                    <dd>
+                      {r.payment.paidBch} BCH
+                      {r.payment.usdPerBch ? <span className="block text-xs text-muted">at ${r.payment.usdPerBch.toFixed(2)} per BCH</span> : null}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>How</dt>
+                    <dd>{r.payment.method}</dd>
+                  </div>
+                  {r.payment.paidTo && (
+                    <div>
+                      <dt>To</dt>
+                      <dd className="font-mono text-xs" title={r.payment.paidTo}>
+                        {short(r.payment.paidTo)}
+                      </dd>
+                    </div>
+                  )}
+                  {r.payment.tx && (
+                    <div>
+                      <dt>Transaction</dt>
+                      <dd>
+                        <a href={`https://blockchair.com/bitcoin-cash/transaction/${r.payment.tx}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs underline underline-offset-4">
+                          {short(r.payment.tx)}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                  {r.reward && (
+                    <div>
+                      <dt>Earned</dt>
+                      <dd>{r.reward}</dd>
+                    </div>
+                  )}
+                </dl>
+                {(r.returns || r.website || r.contact) && (
+                  <p className="mt-3 text-center text-xs leading-relaxed text-muted">
+                    {r.returns && <span className="block">{r.returns.replace(/:\s*https?:\/\/\S+$/, "")}</span>}
+                    {[r.website?.replace(/^https?:\/\//, ""), r.contact].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                {r.note && <p className="mt-2 text-center font-display text-[0.95rem] italic text-ink/80">{r.note}</p>}
                 <p className="receipt-foot">One of a kind · numbered by your order · yours to keep</p>
               </div>
             </div>
