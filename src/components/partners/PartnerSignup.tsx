@@ -146,7 +146,10 @@ export function PartnerSignup({ ratePercent, business, countries }: { ratePercen
       </details>
       <label className="flex items-start gap-3 text-sm">
         <input type="checkbox" name="certify" className="mt-1 size-4" required />
-        <span>I don&apos;t live in a country or region under US embargo, and I&apos;m not on a US sanctions list.</span>
+        <span>
+          The information I&apos;ve given is true, this is my only account, I don&apos;t live in a country or region under US embargo, and I&apos;m not on
+          a US sanctions list.
+        </span>
       </label>
       {err("certify")}
       <label className="flex items-start gap-3 text-sm">

@@ -3,7 +3,7 @@
  * Protection Act asks for one, naming both parties, the work, the pay and how and when it's paid). Changing the
  * terms means a new TERMS_VERSION: the admin keeps which version each partner agreed to, and when.
  */
-export const TERMS_VERSION = "2026-10b";
+export const TERMS_VERSION = "2026-10c";
 
 export type Business = { name: string; address: string | null; email: string | null };
 
@@ -49,6 +49,13 @@ export function SellerTerms({ ratePercent, business }: { ratePercent: number | n
         <li>
           <b className="text-ink">Sanctions.</b> You confirm you don&apos;t live in a country or region under US embargo and aren&apos;t on a US sanctions
           list. If that changes, stop sharing and tell us.
+        </li>
+        <li>
+          <b className="text-ink">The information you give.</b> You confirm that what you tell us at sign-up and later (your name, country, mailing
+          address, whether you&apos;re a US person, and that you have only one account) is true, and you&apos;ll keep it up to date. We rely on it to
+          pay you and to meet our legal duties, and we have no way to check it. If any of it is false, or you open more than one account, you&apos;re
+          breaking these terms: we may end your account and cancel commissions not yet paid, and you&apos;re responsible for any taxes, penalties or
+          costs that result.
         </li>
         <li>
           <b className="text-ink">Independent.</b> You&apos;re an independent seller, not our employee or agent. Either of us can end this at any time;
