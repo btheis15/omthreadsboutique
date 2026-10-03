@@ -14,6 +14,9 @@ const CHAIN = "bch:bitcoincash";
 const NAMESPACES = {
   bch: { chains: [CHAIN], methods: ["bch_getAddresses", "bch_signTransaction", "bch_signMessage"], events: ["addressesChanged"] },
 };
+// Lets the page withdraw a payment the shopper hasn't approved yet (Cashonize closes its dialog).
+const OPTIONAL = { bch: { chains: [CHAIN], methods: ["bch_cancelPendingRequests"], events: [] } };
+const CANCEL = "bch_cancelPendingRequests";
 // Set once a wallet is connected, so a later visit picks the session back up without asking again.
 const REMEMBER = "omt-bch-wallet";
 
@@ -34,7 +37,14 @@ function client() {
   return clientP;
 }
 
-export type WalletSession = { topic: string; address: string; name: string };
+export type WalletSession = {
+  topic: string;
+  pairingTopic: string;
+  address: string;
+  /** The wallet's own name ("Cashonize", "Paytaca"…), from the connection. */
+  name: string;
+  canCancel: boolean;
+};
 
 const accountAddress = (s: SessionTypes.Struct) => s.namespaces.bch?.accounts?.[0]?.slice(4) ?? "";
 
@@ -46,7 +56,13 @@ async function describe(c: Client, s: SessionTypes.Struct): Promise<WalletSessio
   } catch {
     /* the session's own account says it too */
   }
-  return { topic: s.topic, address: address || accountAddress(s), name: s.peer.metadata?.name || "your wallet" };
+  return {
+    topic: s.topic,
+    pairingTopic: s.pairingTopic,
+    address: address || accountAddress(s),
+    name: s.peer.metadata?.name || "your wallet",
+    canCancel: Boolean(s.namespaces.bch?.methods?.includes(CANCEL)),
+  };
 }
 
 const remembered = () => {
@@ -77,15 +93,28 @@ export async function resumeWallet(): Promise<WalletSession | null> {
   return describe(c, s);
 }
 
-/** Starts a connection: `onUri` gets the wc: link to show as a QR code or open in a wallet app. */
-export async function connectWallet(onUri: (uri: string) => void): Promise<WalletSession> {
+/**
+ * Starts a connection: the wc: link (to show as a QR code, or open in the wallet app on a phone),
+ * and the wallet once the shopper approves it there.
+ */
+export async function startConnection(): Promise<{ uri: string; connected: Promise<WalletSession> }> {
   const c = await client();
-  const { uri, approval } = await c.connect({ requiredNamespaces: NAMESPACES });
-  if (uri) onUri(uri);
-  const s = await approval();
-  remember(true);
-  return describe(c, s);
+  const { uri, approval } = await c.connect({ requiredNamespaces: NAMESPACES, optionalNamespaces: OPTIONAL });
+  if (!uri) throw new Error("Couldn't start a connection.");
+  return {
+    uri,
+    connected: approval().then((s) => {
+      remember(true);
+      return describe(c, s);
+    }),
+  };
 }
+
+/**
+ * Opens the connected wallet app on a phone, straight to the waiting request (the WalletConnect
+ * convention: a wc: link with a requestId is a request on an existing session, not a new pairing).
+ */
+export const walletAppLink = (w: WalletSession) => `wc:${w.pairingTopic}@2?requestId=1&sessionTopic=${w.topic}`;
 
 export async function disconnectWallet(w: WalletSession) {
   remember(false);
@@ -97,11 +126,24 @@ export async function disconnectWallet(w: WalletSession) {
   }
 }
 
-/** Asks the wallet to sign the payment the shop built; its signed transaction (hex). */
-export async function signInWallet(w: WalletSession, request: unknown): Promise<string> {
+export class Cancelled extends Error {}
+
+/**
+ * Asks the wallet to approve the payment the shop built; its signed transaction (hex). The wallet sends
+ * it to the network itself once approved. Aborting withdraws the request (if the wallet allows it).
+ */
+export async function signInWallet(w: WalletSession, request: unknown, signal?: AbortSignal): Promise<string> {
   const c = await client();
-  const r = (await c.request({ chainId: CHAIN, topic: w.topic, request: { method: "bch_signTransaction", params: request } })) as { signedTransaction?: string };
-  if (!r?.signedTransaction) throw new Error("The wallet didn't sign the payment.");
+  const asked = c.request({ chainId: CHAIN, topic: w.topic, request: { method: "bch_signTransaction", params: request } }) as Promise<{ signedTransaction?: string }>;
+  const stopped = new Promise<never>((_, reject) => {
+    if (signal?.aborted) reject(new Cancelled());
+    signal?.addEventListener("abort", () => {
+      if (w.canCancel) void c.request({ chainId: CHAIN, topic: w.topic, request: { method: CANCEL, params: {} } }).catch(() => {});
+      reject(new Cancelled());
+    });
+  });
+  const r = await Promise.race([asked, stopped]);
+  if (!r?.signedTransaction) throw new Error("The wallet didn't approve the payment.");
   return r.signedTransaction;
 }
 

@@ -672,6 +672,257 @@
   }
 }
 
+/* The payment sheet: slides up from the bottom on a phone (a card in the middle on a computer), over a
+   blurred page, like Apple Pay's. Each step slides in; the top can be dragged down to close it. */
+.pay-sheet-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.pay-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(20 30 42 / 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: pay-fade 0.3s ease-out both;
+}
+.pay-sheet {
+  position: relative;
+  width: 100%;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 1.6rem 1.6rem 0 0;
+  background: var(--color-ivory);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -12px 50px rgb(20 30 42 / 0.25);
+  outline: none;
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+  animation: pay-up 0.5s cubic-bezier(0.2, 1, 0.3, 1) both;
+}
+.pay-sheet-wrap.closing .pay-sheet {
+  animation: pay-down 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+}
+.pay-sheet-wrap.closing .pay-sheet-backdrop {
+  animation: pay-fade-out 0.26s ease-in both;
+}
+@media (width >= 40rem) {
+  .pay-sheet-wrap {
+    align-items: center;
+  }
+  .pay-sheet {
+    max-width: 28rem;
+    border-radius: 1.6rem;
+    box-shadow: 0 30px 80px rgb(20 30 42 / 0.3);
+    animation-name: pay-pop;
+  }
+  .pay-sheet-wrap.closing .pay-sheet {
+    animation-name: pay-pop-out;
+  }
+  /* Nothing to drag on a computer: just a little room at the top. */
+  .pay-sheet-grab {
+    padding: 0.75rem 0 0;
+  }
+  .pay-sheet-grab span {
+    visibility: hidden;
+  }
+}
+.pay-sheet-grab {
+  display: flex;
+  justify-content: center;
+  padding: 0.6rem 0 0.9rem;
+  cursor: grab;
+  touch-action: none;
+}
+.pay-sheet-grab span {
+  width: 2.5rem;
+  height: 0.3rem;
+  border-radius: 9999px;
+  background: var(--color-line);
+}
+.pay-sheet-x {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--color-sand);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+.pay-step {
+  animation: pay-step-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.pay-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-top: 1px solid var(--color-line);
+  padding: 0.95rem 1.25rem;
+}
+.pay-row.stack {
+  display: block;
+}
+.pay-row-label {
+  width: 4.5rem;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+.pay-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: 9999px;
+  background: var(--color-ivory);
+}
+.pay-stepper button {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1.25rem;
+  transition: transform 0.12s;
+}
+.pay-stepper button:active:not(:disabled) {
+  transform: scale(0.85);
+}
+.pay-stepper button:disabled {
+  opacity: 0.3;
+}
+.pay-stepper span {
+  min-width: 2.2rem;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+.pay-details {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.pay-details > * {
+  overflow: hidden;
+}
+.pay-details.open {
+  grid-template-rows: 1fr;
+}
+/* The one big button, as on a payment sheet: full width, ink, a green light passing over it. */
+.pay-primary {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--color-ink);
+  color: var(--color-ivory);
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition:
+    transform 0.15s,
+    opacity 0.2s;
+}
+.pay-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgb(10 193 142 / 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: bch-sheen 1.2s 0.6s ease-in-out both;
+}
+.pay-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.pay-primary:disabled {
+  opacity: 0.45;
+}
+/* Waiting for the wallet: rings ripple out from it. */
+.pay-approve-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  margin: 0.5rem auto 0;
+}
+.pay-approve-mark > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid #0ac18e;
+  animation: pay-ring 2s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+}
+.pay-approve-mark > span + span {
+  animation-delay: 1s;
+}
+.pay-done-mark {
+  width: 5rem;
+  height: 5rem;
+  filter: drop-shadow(0 10px 22px rgb(10 193 142 / 0.35));
+  animation: bch-logo-in 0.6s cubic-bezier(0.2, 1.5, 0.35, 1) both;
+}
+.pay-done-mark path {
+  stroke-dasharray: 1;
+  animation: bch-draw 0.45s 0.3s ease-out both;
+}
+@keyframes pay-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes pay-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes pay-pop {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+}
+@keyframes pay-pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+@keyframes pay-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pay-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pay-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes pay-ring {
+  from {
+    opacity: 0.7;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
 /* Payment received: the green tick pops, rings spread and threads in the logo's colors burst out. */
 .bch-landed {
   animation: bch-card-in 0.6s var(--ease-soft) both;
@@ -859,6 +1110,7 @@
   }
   .bch-sonar,
   .bch-connect-glow,
+  .pay-approve-mark > span,
   .bch-thread,
   .bch-landed-wave,
   .bch-hold::after {

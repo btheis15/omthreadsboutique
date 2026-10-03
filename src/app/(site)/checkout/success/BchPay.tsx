@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BCH_WALLETS, type BchPayment, type BchQuote } from "@/lib/bch";
 import { wcProjectId } from "@/lib/bchWalletConnect";
 import { Address, BchReceipt, CopyButton, dollars, QrCode, RollingAmount } from "./bchParts";
-import { WalletPay } from "./WalletPay";
+import { PaySheet } from "./PaySheet";
 
 // The burst when the payment lands: threads in the logo's colors fly out from the tick.
 const THREADS = ["#b8873a", "#a52b57", "#23706f", "#0ac18e", "#6f93b3", "#e2a93f"];
@@ -114,7 +114,7 @@ const noClock = () => null;
  * and the payment's status, which updates by itself. When the payment
  * arrives the page turns into the thank-you page.
  */
-export function BchPay({ token, initial, test }: { token: string; initial: BchPayment; test: boolean }) {
+export function BchPay({ token, initial, test, orderNo }: { token: string; initial: BchPayment; test: boolean; orderNo?: string }) {
   const router = useRouter();
   const [bch, setBch] = useState(initial);
   const now = useSyncExternalStore(subscribeClock, clockNow, noClock);
@@ -127,6 +127,34 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
   const viaWallet = canConnect && method === "wallet";
   // What the wallet panel's token choice makes of the order (shown in the receipt as the slider moves).
   const [preview, setPreview] = useState<BchQuote | null>(null);
+  // The payment sheet: slides up by itself when the shopper arrives from checkout (once per order).
+  const [sheet, setSheet] = useState(false);
+  const seen = `omt-pay-sheet:${token}`;
+  useEffect(() => {
+    if (!canConnect || initial.state !== "waiting") return;
+    const remembered = (set?: boolean) => {
+      try {
+        if (set) sessionStorage.setItem(seen, "1");
+        return Boolean(sessionStorage.getItem(seen));
+      } catch {
+        return false; // private browsing: it opens every time
+      }
+    };
+    if (remembered()) return;
+    const t = setTimeout(() => {
+      remembered(true);
+      setSheet(true);
+    }, 450);
+    return () => clearTimeout(t);
+  }, [canConnect, initial.state, seen]);
+  // Back from the wallet app (or another tab): look at the payment straight away.
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState === "visible") void checkNowRef.current();
+    };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, []);
 
   const settled = bch.state === "expired_partial";
   const bchArriving = useRef(false);
@@ -162,6 +190,10 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
   }, [token, router, settled, bch.applied]);
 
   /** Paid from the wallet: look now rather than at the next check. */
+  const checkNowRef = useRef(checkNow);
+  useEffect(() => {
+    checkNowRef.current = checkNow;
+  });
   async function checkNow() {
     try {
       const res = await fetch(`/api/checkout/status?order=${encodeURIComponent(token)}`, { cache: "no-store" });
@@ -234,7 +266,21 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
           )}
           {viaWallet ? (
             <div key="wallet" className="p-5 sm:p-6">
-              <WalletPay token={token} bch={bch} onPreview={setPreview} onSent={checkNow} />
+              <button type="button" onClick={() => setSheet(true)} className="bch-connect">
+                <span className="bch-connect-glow" aria-hidden="true" />
+                <span className="relative flex items-center gap-3">
+                  <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true" className="shrink-0">
+                    <rect x="3" y="8" width="26" height="18" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <path d="M7 8l13-4 2 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                    <rect x="20" y="14" width="9" height="6" rx="2" fill="#0ac18e" />
+                  </svg>
+                  <span className="text-left">
+                    <span className="block text-lg font-medium">Pay with your wallet</span>
+                    <span className="block text-sm text-ivory/75">One tap from Cashonize, Paytaca or Zapit{bch.coupon?.stack ? ", with your Om Threads tokens" : ""}</span>
+                  </span>
+                </span>
+              </button>
+              <p className="mt-3 text-center text-xs text-muted">You see the total and approve it in your wallet. Nothing is sent before that.</p>
               {left !== null && (
                 <p className="mt-4 text-center text-sm text-muted">
                   Price held for{" "}
@@ -368,6 +414,19 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
       )}
 
       {open && bch.coupon && !viaWallet && <CouponStep coupon={bch.coupon} />}
+
+      {canConnect && (
+        <PaySheet
+          open={sheet}
+          onClose={() => setSheet(false)}
+          token={token}
+          bch={bch}
+          orderNo={orderNo}
+          left={left}
+          onPreview={setPreview}
+          onSent={checkNow}
+        />
+      )}
 
       <div className="mt-6 divide-y divide-line rounded-xl border border-line text-[0.95rem]">
         <details className="group px-4 py-3">

@@ -85,7 +85,7 @@ export default async function SuccessPage({ searchParams }: Props) {
                   ? "We're sorting out your payment"
                   : "Your payment didn't go through"}
       </h1>
-      {bch && order && <BchPay token={order} initial={bch} test={summary.test} />}
+      {bch && order && <BchPay token={order} initial={bch} test={summary.test} orderNo={summary.number} />}
       {zelle && (
         <div className="mt-6 rounded-xl border border-ink p-5">
           <p className="text-lg">
