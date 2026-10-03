@@ -58,7 +58,7 @@ export default async function HomePage() {
             </li>
           )}
           <li className="flex flex-col items-center gap-1.5 md:flex-row md:justify-center md:gap-2" data-reveal style={delay(2)}>
-            <ReturnIcon size={20} className="text-zari" /> {settings.returnDays}-day returns
+            <ReturnIcon size={20} className="text-zari" /> {settings.returnDays}-day US returns
           </li>
         </ul>
       </section>

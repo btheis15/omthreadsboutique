@@ -113,7 +113,7 @@ export default async function ProductPage({ params }: Props) {
                   <TruckIcon size={18} /> Ships in {settings.shipsWithin}
                 </li>
                 <li className="flex items-center gap-2">
-                  <ReturnIcon size={18} /> {settings.returnDays}-day returns
+                  <ReturnIcon size={18} /> {settings.returnDays}-day US returns
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldIcon size={18} /> Secure checkout
@@ -161,8 +161,8 @@ export default async function ProductPage({ params }: Props) {
                 )}
                 <Accordion title="Shipping & returns">
                   <p className="leading-relaxed">
-                    Packed with care and shipped within {settings.shipsWithin}. Unworn items can be returned within{" "}
-                    {settings.returnDays} days.{" "}
+                    Packed with care and shipped within {settings.shipsWithin}. Unworn items shipped within the US can be returned within{" "}
+                    {settings.returnDays} days. International orders are final sale.{" "}
                     <Link href="/policies/shipping" className="underline underline-offset-4">
                       Shipping
                     </Link>{" "}

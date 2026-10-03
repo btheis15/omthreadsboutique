@@ -3,7 +3,7 @@
  * Protection Act asks for one, naming both parties, the work, the pay and how and when it's paid). Changing the
  * terms means a new TERMS_VERSION: the admin keeps which version each partner agreed to, and when.
  */
-export const TERMS_VERSION = "2026-10d";
+export const TERMS_VERSION = "2026-10e";
 
 export type Business = { name: string; address: string | null; email: string | null };
 
@@ -25,7 +25,7 @@ export function SellerTerms({ ratePercent, business }: { ratePercent: number | n
         </li>
         <li>
           <b className="text-ink">Your pay.</b> For each order paid with Bitcoin Cash through your link within 30 days of the visit, you earn {rate} of the
-          price of the items (after any coupon; not tax or shipping). We may give you a different rate; your seller page always shows yours.
+          price the items sold for: the product subtotal at any sale price we&apos;re running, after any coupon, never including tax or shipping. We may give you a different rate; your seller page always shows yours.
         </li>
         <li>
           <b className="text-ink">How and when you&apos;re paid.</b> In Bitcoin Cash, to the address you give us, at the moment the shopper pays: as part of
