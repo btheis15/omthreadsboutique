@@ -194,12 +194,9 @@ export function BchPay({ token, initial, test, orderNo }: { token: string; initi
       {bch.applied && (
         <p key={bch.applied.label} className="bch-rise mb-5 rounded-xl border border-peacock/40 bg-peacock/5 p-3 text-[0.95rem]" style={{ animationDelay: "0s" }} role="status">
           <span className="font-medium">
-            {bch.applied.payment ? "Paid with tokens" : bch.applied.bch ? "Tokens applied" : "Coupon applied"}: {bch.applied.label}
+            {bch.applied.bch ? "Tokens applied" : "Coupon applied"}: {bch.applied.label}
           </span>{" "}
-          ·{" "}
-          {bch.applied.payment
-            ? `${bch.applied.bch} BCH (${dollars(bch.applied.paidCents ?? 0)}) toward your total. The amount below is what's left to pay.`
-            : `${bch.applied.bch ? `${bch.applied.bch} BCH (${dollars(bch.applied.discountCents)})` : dollars(bch.applied.discountCents)} off. The amount below is your new total.`}
+          · {bch.applied.bch ? `${bch.applied.bch} BCH (${dollars(bch.applied.discountCents)})` : dollars(bch.applied.discountCents)} off. The amount below is your new total.
         </p>
       )}
 

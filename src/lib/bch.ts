@@ -35,16 +35,13 @@ export type BchPayment = {
   breakdown?: {
     usdPerBch: number;
     sources: string[];
-    /** `payment`: tokens counted as a payment (sold tokens): they come after the tax, which stays on the full price. */
-    lines: { kind: "items" | "tokens" | "coupon" | "shipping" | "tax"; label: string; bch: string; cents: number; tokens?: string; each?: string; payment?: boolean }[];
-    /** The order's own total, when tokens paid part of it (the total below is then what's left to pay). */
-    orderTotal?: { bch: string; cents: number };
+    lines: { kind: "items" | "tokens" | "coupon" | "shipping" | "tax"; label: string; bch: string; cents: number; tokens?: string; each?: string }[];
     total: { bch: string; cents: number };
   } | null;
   /** The admin can take the payment from a connected wallet ("Connect wallet": the BCH and any tokens in one transaction). */
   walletPay?: boolean;
   /** The coupon taken off this order (`bch`: what BCH-valued tokens took off, e.g. "0.03"). */
-  applied: { label: string; discountCents: number; bch?: string; payment?: boolean; paidCents?: number } | null;
+  applied: { label: string; discountCents: number; bch?: string } | null;
 };
 
 // Wallets that pay Bitcoin Cash links (and hold CashTokens).
@@ -59,7 +56,7 @@ export const BCH_WALLETS = [
 export type BchWalletInfo = {
   address: string;
   bch: string;
-  tokens: { category: string; label: string; symbol: string | null; decimals: number; value: number; payment?: boolean; have: string; max: string; useful: string; haveText: string; maxText: string }[];
+  tokens: { category: string; label: string; symbol: string | null; decimals: number; value: number; have: string; max: string; useful: string; haveText: string; maxText: string }[];
 };
 
 /** The amount to pay with some tokens taken off, and the order in BCH. */

@@ -914,11 +914,6 @@
     box-shadow: 0 0 0 0 rgb(35 112 111 / 0);
   }
 }
-.bch-line.subtotal {
-  border-top: 1px solid var(--color-line);
-  margin-top: 0.3rem;
-  padding-top: 0.6rem;
-}
 .bch-qr-pop-in {
   animation: bch-logo-in 0.8s 0.2s cubic-bezier(0.2, 1.4, 0.35, 1) both;
 }

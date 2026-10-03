@@ -133,11 +133,11 @@ export function Address({ value }: { value: string }) {
   );
 }
 
-/** The order in BCH, line by line, at the price being held: what the tokens took off (or paid), and the total. */
+/** The order in BCH, line by line, at the price being held: what the tokens took off, and the total. */
 export function BchReceipt({ breakdown, paid, left, flat = false }: { breakdown: NonNullable<BchPayment["breakdown"]>; paid: string | null; left: string | null; flat?: boolean }) {
   const minus = (l: { kind: string }) => l.kind === "tokens" || l.kind === "coupon";
   const name = (l: NonNullable<BchPayment["breakdown"]>["lines"][number]) =>
-    l.kind === "items" ? "Items" : l.kind === "shipping" ? "Shipping" : l.kind === "tax" ? "Sales tax" : l.payment ? `Paid with ${l.label} tokens` : l.label;
+    l.kind === "items" ? "Items" : l.kind === "shipping" ? "Shipping" : l.kind === "tax" ? "Sales tax" : l.label;
   return (
     <div className={flat ? "" : "bch-receipt border-t border-line px-5 py-5 sm:px-6"}>
       {!flat && (
@@ -147,17 +147,7 @@ export function BchReceipt({ breakdown, paid, left, flat = false }: { breakdown:
       )}
       <dl className={`${flat ? "" : "mt-3"} text-[0.95rem]`}>
         {breakdown.lines.map((l, i) => (
-          <div key={`${l.kind}${l.payment ? "-paid" : ""}`}>
-            {/* Tokens that pay part of it come after the order's total (its tax is on the full price). */}
-            {l.payment && breakdown.orderTotal && (
-              <div className="bch-line subtotal" style={{ animationDelay: `${0.66 + i * 0.07}s` }}>
-                <dt>Order total</dt>
-                <dd className="shrink-0 text-right">
-                  <span className="whitespace-nowrap tabular-nums">{breakdown.orderTotal.bch} BCH</span>
-                  <span className="block text-xs text-muted tabular-nums">{dollars(breakdown.orderTotal.cents)}</span>
-                </dd>
-              </div>
-            )}
+          <div key={l.kind}>
             <div className={`bch-line ${l.kind === "tokens" ? "tokens" : ""}`} style={{ animationDelay: `${0.7 + i * 0.07}s` }}>
               <dt className="min-w-0">
                 {name(l)}
@@ -183,7 +173,7 @@ export function BchReceipt({ breakdown, paid, left, flat = false }: { breakdown:
           </div>
         ))}
         <div className="bch-line total" style={{ animationDelay: `${0.7 + breakdown.lines.length * 0.07}s` }}>
-          <dt className="font-medium">{breakdown.orderTotal ? "To pay in Bitcoin Cash" : "Total"}</dt>
+          <dt className="font-medium">Total</dt>
           <dd className="shrink-0 text-right">
             <span className="whitespace-nowrap font-display text-xl tabular-nums">{breakdown.total.bch} BCH</span>
             <span className="block text-xs text-muted tabular-nums">{dollars(breakdown.total.cents)}</span>

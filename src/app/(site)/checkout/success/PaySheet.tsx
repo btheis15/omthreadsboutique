@@ -360,7 +360,7 @@ export function PaySheet({
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{offer.label} tokens</p>
-                <p className="text-sm text-peacock">{offer.payment ? `Worth ${offer.value} BCH each, toward your total` : `${offer.value} BCH off each`}</p>
+                <p className="text-sm text-peacock">{offer.value} BCH off each</p>
               </div>
               {max > 0 && (
                 <div className="pay-stepper">
@@ -394,7 +394,7 @@ export function PaySheet({
                 <span className="text-muted">None in this wallet.</span>
               ) : off && amount > 0 ? (
                 <span className="text-peacock">
-                  {offer.payment ? "Pays" : "Saves"} {off.bch} BCH ({dollars(off.cents)}) · using {tokenCount(amount, offer.decimals)} of {offer.haveText}
+                  Saves {off.bch} BCH ({dollars(off.cents)}) · using {tokenCount(amount, offer.decimals)} of {offer.haveText}
                 </span>
               ) : (
                 <span className="text-muted">Keeping all {offer.haveText} for another time</span>
