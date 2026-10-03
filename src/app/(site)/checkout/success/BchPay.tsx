@@ -1,111 +1,53 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { encode } from "uqr";
-import { BCH_WALLETS, type BchPayment } from "@/lib/bch";
-import { formatPrice } from "@/lib/site";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import logo from "@/assets/logo.png";
+import { BCH_WALLETS, type BchPayment, type BchQuote } from "@/lib/bch";
+import { wcProjectId } from "@/lib/bchWalletConnect";
+import { BchIcon, BchReceipt, dollars, RewardGlyph, RollingAmount } from "./bchParts";
+import { PaySheet } from "./PaySheet";
 
-const dollars = (cents: number) => formatPrice(cents / 100);
+// The burst when the payment lands: threads in the logo's colors fly out from the tick.
+const THREADS = ["#b8873a", "#a52b57", "#23706f", "#e3bf80", "#6f93b3", "#e2a93f"];
+const BURST = Array.from({ length: 22 }, (_, i) => ({
+  angle: i * (360 / 22) + ((i * 37) % 11) - 5,
+  dist: 74 + ((i * 53) % 46),
+  spin: ((i * 71) % 300) - 150,
+  color: THREADS[i % THREADS.length],
+  delay: (i % 4) * 18,
+}));
 
-/** The payment link as a QR code, drawn here (nothing is sent to a QR service). */
-function QrCode({ text, size }: { text: string; size: number }) {
-  const { d, n } = useMemo(() => {
-    const qr = encode(text, { ecc: "M", border: 2 });
-    let path = "";
-    qr.data.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        if (!row[x]) continue;
-        let run = 1;
-        while (row[x + run]) run++;
-        path += `M${x} ${y}h${run}v1h-${run}z`;
-        x += run - 1;
-      }
-    });
-    return { d: path, n: qr.size };
-  }, [text]);
+function PaymentLanded() {
   return (
-    <svg viewBox={`0 0 ${n} ${n}`} width={size} height={size} shapeRendering="crispEdges" role="img" aria-label="QR code with the payment address and amount">
-      <rect width={n} height={n} fill="#ffffff" />
-      <path d={d} fill="#233142" />
-    </svg>
-  );
-}
-
-function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
-    } catch {
-      const el = document.createElement("textarea");
-      el.value = value;
-      document.body.append(el);
-      el.select();
-      document.execCommand("copy");
-      el.remove();
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-  return (
-    <button type="button" onClick={copy} className="shrink-0 rounded-full border border-line bg-ivory px-3 py-1.5 text-sm hover:border-ink" aria-label={`Copy the ${label}`}>
-      <span aria-live="polite">{copied ? "Copied ✓" : "Copy"}</span>
-    </button>
+    <div className="bch-landed rounded-2xl border border-peacock bg-peacock/5 px-5 py-9 text-center" role="status" aria-live="polite">
+      <div className="bch-landed-mark" aria-hidden="true">
+        <span className="bch-landed-wave" />
+        <span className="bch-landed-wave" style={{ animationDelay: "0.25s" }} />
+        {BURST.map((b, i) => (
+          <span
+            key={i}
+            className="bch-thread"
+            style={{ "--a": `${b.angle}deg`, "--d": `${b.dist}px`, "--s": `${b.spin}deg`, background: b.color, animationDelay: `${180 + b.delay}ms` } as React.CSSProperties}
+          />
+        ))}
+        <svg viewBox="0 0 64 64" className="bch-landed-tick">
+          <circle cx="32" cy="32" r="30" fill="var(--color-peacock)" />
+          <circle cx="32" cy="32" r="27" fill="none" stroke="var(--color-zari-light)" strokeWidth="1.5" />
+          <path d="M19 33.5l8.5 8.5L45.5 23" fill="none" stroke="var(--color-ivory)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" pathLength={1} />
+        </svg>
+      </div>
+      <p className="bch-landed-text mt-6 font-display text-2xl">Payment received!</p>
+      <p className="bch-landed-text mt-1 text-ink/75" style={{ animationDelay: "0.55s" }}>
+        Thank you. Just a moment while we finish your order<span className="bch-dots" />
+      </p>
+    </div>
   );
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
-
-/** "Have a coupon token?": send it to the order's token address and the price comes down. */
-function CouponStep({ coupon }: { coupon: NonNullable<BchPayment["coupon"]> }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="mt-5 rounded-2xl border border-dashed border-zari bg-sand/60 p-5">
-      {!show ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p>
-            <span className="font-medium">Have an Om Threads coupon token?</span>{" "}
-            <span className="text-ink/80">Send it before you pay and the discount comes off.</span>
-          </p>
-          <button type="button" onClick={() => setShow(true)} className="btn btn-outline h-10 min-h-0 px-4 text-sm">
-            Use a coupon
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-[auto_1fr]">
-          <div className="order-2 flex flex-col items-center gap-2 sm:order-1">
-            <div className="rounded-xl border border-line bg-white p-2">
-              <QrCode text={coupon.uri} size={168} />
-            </div>
-            <p className="text-center text-sm text-muted">Scan to send your coupon</p>
-          </div>
-          <div className="order-1 min-w-0 sm:order-2">
-            <p className="font-medium">Send your coupon token to this address</p>
-            <ul className="mt-2 space-y-1 text-[0.95rem]">
-              {coupon.coupons.map((c) => (
-                <li key={c.label}>
-                  <span className="font-medium">{c.label}</span>: {c.off} <span className="text-muted">· send {c.send}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 flex items-start justify-between gap-3">
-              <p className="min-w-0 break-all font-mono text-[0.85rem] leading-relaxed">{coupon.address}</p>
-              <CopyButton value={coupon.address} label="coupon address" />
-            </div>
-            <a href={coupon.uri} className="btn btn-outline mt-4 w-full">
-              Send it from my wallet app
-            </a>
-            <p className="mt-2 text-sm leading-relaxed text-ink/80">
-              It takes a few seconds: the discount appears above and the amount to pay updates by itself. Then pay as usual. One coupon per order; it comes back to us when you use it.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // A clock that ticks every second once the page is in the browser (null while rendering on the server).
 let clock = 0;
@@ -126,12 +68,46 @@ const noClock = () => null;
  * and the payment's status, which updates by itself. When the payment
  * arrives the page turns into the thank-you page.
  */
-export function BchPay({ token, initial, test }: { token: string; initial: BchPayment; test: boolean }) {
+export function BchPay({ token, initial, test, orderNo }: { token: string; initial: BchPayment; test: boolean; orderNo?: string }) {
   const router = useRouter();
   const [bch, setBch] = useState(initial);
   const now = useSyncExternalStore(subscribeClock, clockNow, noClock);
   const [renewing, setRenewing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Om Threads Pay: one sheet with both ways to pay, connecting a wallet (one tap, tokens and BCH
+  // together; when the site has a WalletConnect project) or any wallet (QR code or link).
+  const canConnect = Boolean(wcProjectId && bch.walletPay);
+  // What the token choice in the sheet makes of the order (shown in the receipt as the slider moves).
+  const [preview, setPreview] = useState<BchQuote | null>(null);
+  // The sheet slides up by itself when the shopper arrives from checkout (once per order).
+  const [sheet, setSheet] = useState(false);
+  const seen = `omt-pay-sheet:${token}`;
+  useEffect(() => {
+    if (initial.state !== "waiting") return;
+    const remembered = (set?: boolean) => {
+      try {
+        if (set) sessionStorage.setItem(seen, "1");
+        return Boolean(sessionStorage.getItem(seen));
+      } catch {
+        return false; // private browsing: it opens every time
+      }
+    };
+    if (remembered()) return;
+    const t = setTimeout(() => {
+      remembered(true);
+      setSheet(true);
+    }, 450);
+    return () => clearTimeout(t);
+  }, [initial.state, seen]);
+  // Back from the wallet app (or another tab): look at the payment straight away.
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState === "visible") void checkNowRef.current();
+    };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, []);
 
   const settled = bch.state === "expired_partial";
   const bchArriving = useRef(false);
@@ -166,6 +142,22 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
     };
   }, [token, router, settled, bch.applied]);
 
+  /** Paid from the wallet: look now rather than at the next check. */
+  const checkNowRef = useRef(checkNow);
+  useEffect(() => {
+    checkNowRef.current = checkNow;
+  });
+  async function checkNow() {
+    try {
+      const res = await fetch(`/api/checkout/status?order=${encodeURIComponent(token)}`, { cache: "no-store" });
+      const data = (await res.json()) as { status: string; bch: BchPayment | null };
+      if (data.status !== "awaiting_bch") router.refresh();
+      else if (data.bch) setBch(data.bch);
+    } catch {
+      /* the regular check follows */
+    }
+  }
+
   async function renew() {
     setRenewing(true);
     setError(null);
@@ -189,6 +181,7 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
   const timeUp = left === 0;
   const open = (bch.state === "waiting" || bch.state === "partial") && !timeUp && bch.uri && bch.address && bch.amountBch;
   const lowTime = left !== null && left <= 120;
+  const held = left === null ? 1 : Math.min(1, left / (bch.minutes * 60));
 
   return (
     <div className="mt-6">
@@ -199,79 +192,93 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
       )}
 
       {bch.applied && (
-        <p className="mb-5 rounded-lg border border-peacock bg-peacock/5 p-3 text-[0.95rem]" role="status">
-          <span className="font-medium">Coupon applied: {bch.applied.label}</span> · {dollars(bch.applied.discountCents)} off. The amount below is your new total.
+        <p key={bch.applied.label} className="bch-rise mb-5 rounded-xl border border-peacock/40 bg-peacock/5 p-3 text-[0.95rem]" style={{ animationDelay: "0s" }} role="status">
+          <span className="font-medium">
+            {bch.applied.bch ? "Tokens applied" : "Coupon applied"}: {bch.applied.label}
+          </span>{" "}
+          · {bch.applied.bch ? `${bch.applied.bch} BCH (${dollars(bch.applied.discountCents)})` : dollars(bch.applied.discountCents)} off. The amount below is your new total.
         </p>
       )}
 
       {open ? (
-        <div className="overflow-hidden rounded-2xl border border-ink">
-          <div className="grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:p-6">
-            <div className="order-2 flex flex-col items-center gap-2 sm:order-1">
-              <div className="rounded-xl border border-line bg-white p-2">
-                <QrCode text={bch.uri!} size={208} />
-              </div>
-              <p className="text-center text-sm text-muted">Scan with your wallet app</p>
-            </div>
-
-            <div className="order-1 min-w-0 sm:order-2">
-              {bch.state === "partial" && (
-                <p className="mb-4 rounded-lg bg-marigold/15 p-3 text-sm leading-relaxed">
-                  We&apos;ve received {bch.paidBch} BCH. Please send the remaining <strong>{bch.amountBch} BCH</strong> to complete your order.
-                </p>
-              )}
-              <p className="text-sm uppercase tracking-[0.14em] text-muted">{bch.state === "partial" ? "Send the rest" : "Send exactly"}</p>
-              <div className="mt-1 flex items-center justify-between gap-3">
-                <p className="text-3xl font-medium tabular-nums">
-                  {bch.amountBch} <span className="text-xl">BCH</span>
-                </p>
-                <CopyButton value={bch.amountBch!} label="amount" />
-              </div>
-              <p className="mt-1 text-sm text-muted">
-                {bch.state === "partial" ? `Order total ${dollars(bch.usdCents)}` : `${dollars(bch.usdCents)} at today's rate`}
-                {left !== null && (
-                  <>
-                    {" "}
-                    ·{" "}
-                    <span className={lowTime ? "font-medium text-sale" : ""}>
-                      price held for {Math.floor(left / 60)}:{pad(left % 60)}
-                    </span>
-                  </>
-                )}
-              </p>
-
-              <p className="mt-5 text-sm uppercase tracking-[0.14em] text-muted">To this address</p>
-              <div className="mt-1 flex items-start justify-between gap-3">
-                <p className="min-w-0 break-all font-mono text-[0.9rem] leading-relaxed">{bch.address}</p>
-                <CopyButton value={bch.address!} label="address" />
-              </div>
-
-              <a href={bch.uri!} className="btn btn-primary mt-6 w-full">
-                Open in my wallet app
-              </a>
-              <p className="mt-2 text-center text-xs text-muted">Opens Selene, Paytaca, Electron Cash or another BCH wallet with everything filled in.</p>
-            </div>
+        <div className="bch-card overflow-hidden rounded-2xl border border-ink bg-ivory">
+          {/* How long the price is held: a gold thread that runs down, turning rani in the last two minutes. */}
+          <div className="h-1 bg-line/70" aria-hidden="true">
+            <div className={`bch-hold h-full ${lowTime ? "low" : ""}`} style={{ width: `${held * 100}%` }} />
           </div>
+          <div className="p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="bch-rise eyebrow flex items-center gap-1.5" style={{ animationDelay: "0.1s" }}>
+                  <BchIcon size={14} /> {bch.state === "partial" ? "Left to pay" : "Pay with Bitcoin Cash"}
+                </p>
+                <p className="mt-2 font-display text-[2.4rem] leading-none whitespace-nowrap">
+                  <RollingAmount value={bch.amountBch!} /> <span className="bch-unit text-2xl text-zari">BCH</span>
+                </p>
+                <p className="bch-rise mt-2 text-sm text-muted" style={{ animationDelay: "0.35s" }}>
+                  {bch.state === "partial" ? `Order total ${dollars(bch.usdCents)}` : `${dollars(preview?.breakdown?.total.cents ?? bch.breakdown?.total.cents ?? bch.usdCents)} at today's rate`}
+                  {left !== null && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span className={`tabular-nums ${lowTime ? "font-medium text-sale" : ""}`}>
+                        held {Math.floor(left / 60)}:{pad(left % 60)}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+              <Image src={logo} alt="" sizes="64px" className="bch-qr-pop-in size-16 shrink-0" />
+            </div>
+            {bch.state === "partial" && (
+              <p className="bch-rise mt-4 rounded-xl bg-marigold/15 p-3 text-sm leading-relaxed">
+                We&apos;ve received {bch.paidBch} BCH. Please send the remaining <strong>{bch.amountBch} BCH</strong> to complete your order.
+              </p>
+            )}
+            <button type="button" onClick={() => setSheet(true)} className="bch-connect mt-6">
+              <span className="bch-connect-glow" aria-hidden="true" />
+              <span className="relative flex w-full items-center justify-between gap-3">
+                <span className="text-left">
+                  <span className="block font-display text-xl">Pay now</span>
+                  <span className="block text-sm text-ivory/75">{canConnect ? "Connect your wallet, or scan with any wallet" : "Scan or open in any Bitcoin Cash wallet"}</span>
+                </span>
+                <BchIcon size={30} />
+              </span>
+            </button>
+            {bch.rewardOffer && (
+              <p className="pay-reward mx-auto mt-4 w-fit">
+                <RewardGlyph />
+                <span>
+                  Earn {bch.rewardOffer.tokens} {bch.rewardOffer.symbol ?? bch.rewardOffer.label} back for every {bch.rewardOffer.perBch} BCH
+                </span>
+              </p>
+            )}
+            <p className="mt-3 text-center text-xs text-muted">
+              {bch.coupon?.stack ? "Use your Om Threads tokens in the next step. " : ""}Nothing is sent until you approve it in your wallet.
+            </p>
+          </div>
+
+          {(preview?.breakdown ?? bch.breakdown) && (
+            <BchReceipt
+              breakdown={(preview?.breakdown ?? bch.breakdown)!}
+              paid={bch.state === "partial" ? bch.paidBch : null}
+              left={bch.state === "partial" ? bch.amountBch : null}
+            />
+          )}
 
           <div className="flex items-center gap-3 border-t border-line bg-sand px-5 py-4 sm:px-6" role="status" aria-live="polite">
             <span className="relative flex h-3 w-3 shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-peacock opacity-60" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-peacock opacity-50" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-peacock" />
             </span>
             <p className="text-[0.95rem]">
-              <span className="font-medium">Waiting for your payment.</span>{" "}
+              <span className="font-medium">Watching the network for your payment.</span>{" "}
               <span className="text-ink/80">This page updates by itself the moment it arrives, usually within seconds.</span>
             </p>
           </div>
         </div>
       ) : bch.state === "arrived" ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-peacock bg-peacock/5 p-5" role="status" aria-live="polite">
-          <span className="relative flex h-3 w-3 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-peacock opacity-60" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-peacock" />
-          </span>
-          <p className="text-lg font-medium">Payment received! Just a moment…</p>
-        </div>
+        <PaymentLanded />
       ) : bch.state === "checking" ? (
         <div className="rounded-2xl border border-ink p-5" role="status">
           <p className="text-lg font-medium">Payment received: the network is double-checking it</p>
@@ -318,7 +325,20 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
         </div>
       )}
 
-      {open && bch.coupon && <CouponStep coupon={bch.coupon} />}
+      {/* Kept while it's up, so it can show "Paid" when the payment lands. */}
+      {(open || sheet) && (
+        <PaySheet
+          open={sheet}
+          onClose={() => setSheet(false)}
+          token={token}
+          bch={bch}
+          orderNo={orderNo}
+          left={left}
+          canConnect={canConnect}
+          onPreview={setPreview}
+          onSent={checkNow}
+        />
+      )}
 
       <div className="mt-6 divide-y divide-line rounded-xl border border-line text-[0.95rem]">
         <details className="group px-4 py-3">

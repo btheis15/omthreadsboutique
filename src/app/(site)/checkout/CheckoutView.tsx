@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { cart, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
+import { wcProjectId } from "@/lib/bchWalletConnect";
 import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
 import type { CheckoutInfo } from "@/lib/types";
@@ -282,7 +283,9 @@ export function CheckoutView({
                             : p === "exodus"
                               ? `Pay in ${checkout.exodusCoins || "USDC or USDT"} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.`
                               : p === "bch"
-                                ? "Pay from any Bitcoin Cash wallet: scan the QR code or tap to open your wallet. Your order is confirmed seconds after you send it."
+                                ? wcProjectId
+                                  ? "With Om Threads Pay: connect Cashonize, Paytaca or Zapit and pay in one tap (with your Om Threads tokens, if you have some), or scan with any wallet. Confirmed in seconds."
+                                  : "With Om Threads Pay: scan the QR code or open your wallet app, from any Bitcoin Cash wallet. Your order is confirmed seconds after you send it."
                                 : `Place the order, then send the payment from your bank's Zelle. We hold it for you for ${checkout.zelle?.holdHours ?? 48} hours and ship once it arrives.`}
                       </span>
                     </span>
@@ -359,7 +362,7 @@ export function CheckoutView({
                   : provider === "exodus"
                     ? "Continue to Exodus Pay"
                     : provider === "bch"
-                      ? "Continue to Bitcoin Cash payment"
+                      ? "Pay with Bitcoin Cash"
                     : provider === "paypal"
                       ? place.code === "US"
                         ? "Continue to PayPal or Venmo"

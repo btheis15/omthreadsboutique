@@ -13,8 +13,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/checkout", headers: [{ key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }] }];
   },
+  // What wallets show for the shop's token (its name, symbol and icon) is published on this site's address, and
+  // served by the Mac mini too (omthreads-admin: Checkout setup → Rewards).
   async rewrites() {
-    return shopApiUrl ? [{ source: "/media/:path*", destination: `${shopApiUrl}/media/:path*` }] : [];
+    return shopApiUrl
+      ? [
+          { source: "/media/:path*", destination: `${shopApiUrl}/media/:path*` },
+          { source: "/bcmr/:path*", destination: `${shopApiUrl}/bcmr/:path*` },
+        ]
+      : [];
   },
 };
 
