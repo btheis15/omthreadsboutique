@@ -4,8 +4,8 @@ import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.png";
 import type { BchPayment, BchReward } from "@/lib/bch";
-import { declined, resumeWallet, startConnection, wcProjectId } from "@/lib/bchWalletConnect";
-import { QrCode, RewardGlyph } from "./bchParts";
+import { declined, resumeWallet, startConnection, wcProjectId } from "@/lib/bch/walletConnect";
+import { QrCode, RewardGlyph } from "./parts";
 
 const touch = () => window.matchMedia("(pointer: coarse)");
 const subscribeTouch = (fn: () => void) => {

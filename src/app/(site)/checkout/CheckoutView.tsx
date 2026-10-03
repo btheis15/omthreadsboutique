@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { cart, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
-import { wcProjectId } from "@/lib/bchWalletConnect";
+import { wcProjectId } from "@/lib/bch/walletConnect";
 import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
 import type { CheckoutInfo } from "@/lib/types";

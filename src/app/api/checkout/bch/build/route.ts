@@ -1,4 +1,4 @@
-import { bchWalletRoute } from "@/lib/bchWalletProxy";
+import { bchWalletRoute } from "@/lib/bch/proxy";
 
 /** The payment as one transaction (the BCH and any tokens) for the wallet to sign. */
 export const POST = bchWalletRoute("/api/checkout/bch/build", ["address", "category", "amount"], "Couldn't prepare the payment. Please try again.");

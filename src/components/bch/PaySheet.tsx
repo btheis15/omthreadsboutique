@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.png";
-import { rewardEstimate, type BchPayment, type BchQuote, type BchWalletInfo } from "@/lib/bch";
-import { Cancelled, declined, disconnectWallet, resumeWallet, signInWallet, startConnection, walletAppLink, type WalletSession } from "@/lib/bchWalletConnect";
-import { Address, BchIcon, BchReceipt, CopyButton, dollars, QrCode, RewardGlyph, RollingAmount } from "./bchParts";
+import type { BchPayment, BchQuote, BchWalletInfo } from "@/lib/bch";
+import { Cancelled, declined, disconnectWallet, resumeWallet, signInWallet, startConnection, walletAppLink, type WalletSession } from "@/lib/bch/walletConnect";
+import { Address, BchIcon, BchReceipt, CopyButton, dollars, QrCode, RewardGlyph, RollingAmount } from "./parts";
 
 type Phase = "starting" | "connecting" | "loading" | "review" | "approving" | "sending" | "done";
 type Method = "wallet" | "any";
@@ -254,7 +254,8 @@ export function PaySheet({
   const name = wallet?.name ?? "your wallet";
   const busy = phase === "approving" || phase === "sending";
   // The rewards promotion: what this payment earns back in the shop's tokens.
-  const earns = bch.rewardOffer ? rewardEstimate(bch.rewardOffer, asked) : null;
+  // (Worked out by the admin, for the tokens chosen when connected.)
+  const earns = (viaWallet && quote ? quote.rewardEarns : bch.rewardEarns) ?? null;
 
   /** Connecting a wallet (once; remembered), then the tokens, then waiting for the shopper's approval. */
   function walletPane() {
