@@ -25,8 +25,8 @@ export default async function PartnersPage() {
         Sell for Om Threads
       </h1>
       <p className="mt-4 text-lg text-muted" data-reveal style={{ "--i": 2 } as React.CSSProperties}>
-        Love these pieces? Share them. Sign up for your own link, and when someone pays with Bitcoin Cash through it, you earn {rate} of
-        what they bought, sent to your Bitcoin Cash wallet.
+        Love these pieces? Share them. Sign up for your own link, and when someone pays with Bitcoin Cash through it, {rate} of what they
+        bought goes straight to your Bitcoin Cash wallet, the moment they pay.
       </p>
 
       {program ? (
@@ -34,8 +34,8 @@ export default async function PartnersPage() {
           <ol className="mt-10 grid gap-4 sm:grid-cols-3" data-reveal>
             {[
               ["Sign up", "Your name and a Bitcoin Cash address. Your link is ready at once."],
-              ["Share it", "With friends, followers, at a stall: anyone who shops through it within 30 days counts."],
-              ["Get paid", `${rate} of the items (after any coupon), in BCH, ${program.holdDays} days after the sale.`],
+              ["Share it", "The whole shop, or any piece: every page has your link. Anyone who shops through it within 30 days counts."],
+              ["Get paid", `${rate} of the items (after any coupon), in BCH, the moment the shopper pays.`],
             ].map(([title, text], i) => (
               <li key={title} className="rounded-2xl border border-line bg-white p-5">
                 <p className="eyebrow mb-1">Step {i + 1}</p>
@@ -45,7 +45,7 @@ export default async function PartnersPage() {
             ))}
           </ol>
           <div className="mt-10" data-reveal>
-            <PartnerSignup ratePercent={program.ratePercent} holdDays={program.holdDays} />
+            <PartnerSignup ratePercent={program.ratePercent} />
           </div>
           <Divider className="my-12" />
           <h2 className="text-2xl">Already selling with us?</h2>

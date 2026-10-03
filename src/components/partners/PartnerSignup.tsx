@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "./CopyButton";
-import { field, post, saveKey } from "./shared";
+import { field, post, saveCode, saveKey } from "./shared";
 
 type SignedUp = { code: string; name: string; link: string; key: string; pageUrl: string; email: string | null };
 
 /** The sign-up form, then the partner's link and their page's link. */
-export function PartnerSignup({ ratePercent, holdDays }: { ratePercent: number; holdDays: number }) {
+export function PartnerSignup({ ratePercent }: { ratePercent: number }) {
   const [state, setState] = useState<"idle" | "sending">("idle");
   const [error, setError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -18,7 +18,10 @@ export function PartnerSignup({ ratePercent, holdDays }: { ratePercent: number; 
     return (
       <div className="animate-rise rounded-2xl border border-line bg-white p-6 md:p-8" role="status">
         <p className="font-display text-3xl">Welcome, {done.name}!</p>
-        <p className="mt-2 text-muted">Here&apos;s your link. Share it anywhere: Bitcoin Cash sales through it earn you {ratePercent}%.</p>
+        <p className="mt-2 text-muted">
+          Here&apos;s your link to the whole shop. Share it anywhere: Bitcoin Cash sales through it earn you {ratePercent}%. To share one piece, open it
+          here: on this device, each piece&apos;s page now shows your link for it.
+        </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <code className="flex min-h-12 flex-1 items-center rounded-xl border border-line bg-sand px-4 py-2 text-sm break-all">{done.link}</code>
           <CopyButton text={done.link} label="Copy link" />
@@ -27,7 +30,7 @@ export function PartnerSignup({ ratePercent, holdDays }: { ratePercent: number; 
           <p className="font-medium">Bookmark your seller page</p>
           <p className="mt-1 text-sm text-muted">
             It shows your sales and commissions, and it&apos;s where you change your payout address. Keep this link private: it&apos;s your key.
-            {done.email ? " We've also sent a link to confirm your email." : " Add your email there: it's needed before your first payout."}
+            {done.email ? " We've also sent a link to confirm your email." : ""}
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <Link href={`/partners/me#key=${done.key}`} className="btn btn-primary">
@@ -59,6 +62,7 @@ export function PartnerSignup({ ratePercent, holdDays }: { ratePercent: number; 
         setState("idle");
         if (r.ok) {
           saveKey(r.data.key);
+          saveCode(r.data.code);
           setDone(r.data);
         } else {
           setError(r.error);
@@ -91,8 +95,8 @@ export function PartnerSignup({ ratePercent, holdDays }: { ratePercent: number; 
         <summary className="cursor-pointer font-medium">Seller terms</summary>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted">
           <li>You earn {ratePercent}% of the items&apos; price (after any coupon; not tax or shipping) on orders paid with Bitcoin Cash through your link, within 30 days of the visit.</li>
-          <li>It&apos;s paid in Bitcoin Cash to your address {holdDays} days after the sale, at the rate the shopper paid. A refunded order earns nothing (a partial refund, less).</li>
-          <li>Before your first payout you confirm your email, and we approve your account. If your commissions in a year reach the amount the IRS asks us to report, we&apos;ll ask for a W-9 (US) so we can send you a 1099.</li>
+          <li>It&apos;s paid in Bitcoin Cash to your address at the moment the shopper pays, at the rate they pay at. A commission already paid isn&apos;t taken back if the order is later refunded.</li>
+          <li>If your commissions in a year reach the amount the IRS asks us to report, we&apos;ll ask for a W-9 (US) so we can send you a 1099.</li>
           <li>Prices, discounts and the commission rate are set by Om Threads. You can&apos;t offer your own discounts or make promises for us.</li>
           <li>Be honest: say you earn a commission when you share your link, and no spam.</li>
           <li>You&apos;re an independent seller, not an employee. We may change these terms, pause or end the program, or remove an account.</li>
