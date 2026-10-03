@@ -5,8 +5,8 @@ import type { BchPayment } from "@/lib/bch";
 import { shopApi, shopperIp } from "@/lib/catalog";
 import { formatPrice } from "@/lib/site";
 import { AfterPayment } from "./AfterPayment";
-import { BchPay } from "./BchPay";
-import { BchRewardCard } from "./BchRewardCard";
+import { BchPay } from "@/components/bch/BchPay";
+import { BchRewardCard } from "@/components/bch/BchRewardCard";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
 

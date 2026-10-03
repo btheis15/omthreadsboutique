@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.png";
 import { BCH_WALLETS, type BchPayment, type BchQuote } from "@/lib/bch";
-import { wcProjectId } from "@/lib/bchWalletConnect";
-import { BchIcon, BchReceipt, dollars, RewardGlyph, RollingAmount } from "./bchParts";
+import { wcProjectId } from "@/lib/bch/walletConnect";
+import { BchIcon, BchReceipt, dollars, RewardGlyph, RollingAmount } from "./parts";
 import { PaySheet } from "./PaySheet";
 
 // The burst when the payment lands: threads in the logo's colors fly out from the tick.
