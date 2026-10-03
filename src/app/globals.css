@@ -391,13 +391,13 @@
   transform: translateX(-130%);
   animation: bch-sheen 1s 0.95s ease-in-out both;
 }
-/* While it waits for the payment, soft Bitcoin Cash-green rings pulse out behind the code. */
+/* While it waits for the payment, soft gold rings pulse out behind the code. */
 .bch-sonar {
   display: none;
   position: absolute;
   inset: 0;
   border-radius: 1.25rem;
-  border: 2px solid #0ac18e;
+  border: 2px solid var(--color-zari);
   opacity: 0;
 }
 .bch-qr.listening .bch-sonar {
@@ -406,13 +406,6 @@
 }
 .bch-qr.listening .bch-sonar + .bch-sonar {
   animation-delay: 2.9s;
-}
-.bch-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 9999px;
-  background: #0ac18e;
-  box-shadow: 0 0 0 3px rgb(10 193 142 / 0.18);
 }
 
 /* The amount: its digits roll up one after another. */
@@ -425,22 +418,8 @@
   animation: bch-rise 0.5s 0.55s var(--ease-soft) both;
 }
 
-/* Open in wallet: a light passes over the button once everything is in place. */
-.bch-open {
-  position: relative;
-  overflow: hidden;
-}
-.bch-open::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
-  transform: translateX(-120%);
-  animation: bch-sheen 1.1s 1.5s ease-in-out both;
-}
 
-/* Copy: "Copied" rolls up into place, the button turns green and the tick draws itself. */
+/* Copy: "Copied" rolls up into place, the button turns peacock and the tick draws itself. */
 .bch-copy {
   display: inline-grid;
   place-items: center;
@@ -477,8 +456,8 @@
   transform: translateY(14px) scale(0.9);
 }
 .bch-copy.done {
-  background: #087f5d;
-  border-color: #087f5d;
+  background: var(--color-peacock);
+  border-color: var(--color-peacock);
   color: #fff;
   animation: bch-bump 0.4s cubic-bezier(0.2, 1.3, 0.35, 1);
 }
@@ -498,7 +477,7 @@
   animation: bch-tick 0.34s 0.12s ease-out forwards;
 }
 
-/* The order in BCH: each line rises in turn; the tokens' line is picked out in green. */
+/* The order in BCH: each line rises in turn; the tokens' line is picked out in peacock. */
 .bch-line {
   display: flex;
   align-items: baseline;
@@ -511,8 +490,8 @@
   margin-inline: -0.6rem;
   padding-inline: 0.6rem;
   border-radius: 0.6rem;
-  background: rgb(10 193 142 / 0.08);
-  color: #087f5d;
+  background: rgb(35 112 111 / 0.07);
+  color: var(--color-peacock);
 }
 .bch-line.total {
   margin-top: 0.35rem;
@@ -524,47 +503,13 @@
   margin-left: 0.5rem;
   padding: 0.05rem 0.5rem;
   border-radius: 9999px;
-  border: 1px solid rgb(10 193 142 / 0.35);
+  border: 1px solid var(--color-zari-light);
   font-size: 0.78rem;
   white-space: nowrap;
 }
 
-/* Two ways to pay: a sliding pill under "Connect wallet" / "Scan QR code". */
-.bch-switch {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 0.25rem;
-  border-radius: 9999px;
-  background: var(--color-sand);
-  animation: bch-rise 0.5s 0.15s var(--ease-soft) both;
-}
-.bch-switch button {
-  position: relative;
-  z-index: 1;
-  padding: 0.55rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--color-muted);
-  transition: color 0.3s;
-}
-.bch-switch button[aria-selected="true"] {
-  color: var(--color-ivory);
-}
-.bch-switch-pill {
-  position: absolute;
-  top: 0.25rem;
-  bottom: 0.25rem;
-  left: 0.25rem;
-  width: calc(50% - 0.25rem);
-  border-radius: 9999px;
-  background: var(--color-ink);
-  box-shadow: 0 4px 14px rgb(35 49 66 / 0.25);
-  transition: transform 0.45s cubic-bezier(0.2, 1.1, 0.35, 1);
-}
 
-/* Connect wallet: a deep ink button with a slow green-and-gold glow moving through it. */
+/* Pay now: a deep ink button with a slow gold-and-rani glow moving through it, like light on zari thread. */
 .bch-connect {
   position: relative;
   display: flex;
@@ -582,7 +527,7 @@
   animation: bch-qr-pop 0.7s 0.1s cubic-bezier(0.2, 1.2, 0.35, 1) both;
 }
 .bch-connect:hover:not(:disabled) {
-  box-shadow: 0 14px 38px rgb(10 193 142 / 0.28);
+  box-shadow: 0 14px 38px rgb(184 135 58 / 0.3);
 }
 .bch-connect:active:not(:disabled) {
   transform: scale(0.98);
@@ -593,49 +538,19 @@
 .bch-connect-glow {
   position: absolute;
   inset: -40%;
-  background: conic-gradient(from 0deg, transparent 0 55%, rgb(10 193 142 / 0.35) 65%, rgb(227 191 128 / 0.35) 75%, transparent 85%);
+  background: conic-gradient(from 0deg, transparent 0 55%, rgb(227 191 128 / 0.4) 65%, rgb(176 40 94 / 0.3) 75%, transparent 85%);
   animation: spin-slow 6s linear infinite;
 }
 .bch-connect:disabled .bch-connect-glow {
   animation-duration: 1.4s;
 }
 
-/* The tokens: a soft green card with a stepper and a slider. */
-.bch-tokens {
-  border-radius: 1.1rem;
-  border: 1px solid rgb(10 193 142 / 0.3);
-  background: linear-gradient(160deg, rgb(10 193 142 / 0.07), rgb(227 191 128 / 0.08));
-  padding: 1rem 1.1rem 0.9rem;
-}
-.bch-step {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  flex-shrink: 0;
-  border-radius: 9999px;
-  border: 1px solid var(--color-line);
-  background: var(--color-ivory);
-  font-size: 1.35rem;
-  transition:
-    transform 0.14s,
-    border-color 0.2s;
-}
-.bch-step:hover:not(:disabled) {
-  border-color: var(--color-ink);
-}
-.bch-step:active:not(:disabled) {
-  transform: scale(0.9);
-}
-.bch-step:disabled {
-  opacity: 0.35;
-}
 .bch-range {
   -webkit-appearance: none;
   appearance: none;
   height: 0.4rem;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #0ac18e var(--fill), var(--color-line) var(--fill));
+  background: linear-gradient(90deg, var(--color-zari) var(--fill), var(--color-line) var(--fill));
   cursor: pointer;
 }
 .bch-range::-webkit-slider-thumb {
@@ -644,8 +559,8 @@
   height: 1.5rem;
   border-radius: 9999px;
   background: var(--color-ivory);
-  border: 2px solid #0ac18e;
-  box-shadow: 0 3px 10px rgb(10 193 142 / 0.35);
+  border: 2px solid var(--color-zari);
+  box-shadow: 0 3px 10px rgb(184 135 58 / 0.35);
   transition: transform 0.15s;
 }
 .bch-range:active::-webkit-slider-thumb {
@@ -656,8 +571,8 @@
   height: 1.5rem;
   border-radius: 9999px;
   background: var(--color-ivory);
-  border: 2px solid #0ac18e;
-  box-shadow: 0 3px 10px rgb(10 193 142 / 0.35);
+  border: 2px solid var(--color-zari);
+  box-shadow: 0 3px 10px rgb(184 135 58 / 0.35);
 }
 .bch-skeleton {
   background: linear-gradient(100deg, var(--color-sand) 40%, #fbf7ee 50%, var(--color-sand) 60%) 0 0 / 250% 100%;
@@ -812,7 +727,7 @@
 .pay-details.open {
   grid-template-rows: 1fr;
 }
-/* The one big button, as on a payment sheet: full width, ink, a green light passing over it. */
+/* The one big button, as on a payment sheet: full width, ink, a gold light passing over it. */
 .pay-primary {
   position: relative;
   display: flex;
@@ -835,7 +750,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(110deg, transparent 30%, rgb(10 193 142 / 0.35) 50%, transparent 70%);
+  background: linear-gradient(110deg, transparent 30%, rgb(227 191 128 / 0.4) 50%, transparent 70%);
   transform: translateX(-120%);
   animation: bch-sheen 1.2s 0.6s ease-in-out both;
 }
@@ -858,7 +773,7 @@
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  border: 2px solid #0ac18e;
+  border: 2px solid var(--color-zari);
   animation: pay-ring 2s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
 .pay-approve-mark > span + span {
@@ -867,7 +782,7 @@
 .pay-done-mark {
   width: 5rem;
   height: 5rem;
-  filter: drop-shadow(0 10px 22px rgb(10 193 142 / 0.35));
+  filter: drop-shadow(0 10px 22px rgb(35 112 111 / 0.35));
   animation: bch-logo-in 0.6s cubic-bezier(0.2, 1.5, 0.35, 1) both;
 }
 .pay-done-mark path {
@@ -923,7 +838,96 @@
   }
 }
 
-/* Payment received: the green tick pops, rings spread and threads in the logo's colors burst out. */
+/* Om Threads Pay's two ways (connect a wallet, any wallet): two choices with a pill that slides under the one chosen. */
+.pay-methods {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.3rem;
+  border-radius: 1.1rem;
+  background: var(--color-sand);
+}
+.pay-methods button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.55rem 0.5rem;
+  border-radius: 0.85rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  transition: color 0.3s;
+}
+.pay-methods button span {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-muted);
+  transition: color 0.3s;
+}
+.pay-methods button[aria-selected="true"] {
+  color: var(--color-ivory);
+}
+.pay-methods button[aria-selected="true"] span {
+  color: var(--color-zari-light);
+}
+.pay-methods-pill {
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: 0.3rem;
+  width: calc(50% - 0.3rem);
+  border-radius: 0.85rem;
+  background: var(--color-ink);
+  box-shadow: 0 4px 14px rgb(35 49 66 / 0.25);
+  transition: transform 0.45s cubic-bezier(0.2, 1.1, 0.35, 1);
+}
+/* "Have Om Threads tokens?": a soft gold card that unfolds to send them first. */
+.pay-tokens-first {
+  border-radius: 1rem;
+  border: 1px dashed var(--color-zari);
+  background: linear-gradient(160deg, rgb(227 191 128 / 0.14), rgb(35 112 111 / 0.05));
+  padding: 0.9rem 1rem;
+}
+/* Waiting for a payment sent from any wallet: a peacock dot breathing. */
+.pay-watching {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--color-ink);
+}
+.pay-watching span {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 9999px;
+  background: var(--color-peacock);
+  box-shadow: 0 0 0 0 rgb(35 112 111 / 0.5);
+  animation: pay-breathe 1.8s ease-out infinite;
+}
+@keyframes pay-breathe {
+  70% {
+    box-shadow: 0 0 0 10px rgb(35 112 111 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(35 112 111 / 0);
+  }
+}
+.bch-line.subtotal {
+  border-top: 1px solid var(--color-line);
+  margin-top: 0.3rem;
+  padding-top: 0.6rem;
+}
+.bch-qr-pop-in {
+  animation: bch-logo-in 0.8s 0.2s cubic-bezier(0.2, 1.4, 0.35, 1) both;
+}
+.pay-done-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Payment received: the peacock tick pops, gold rings spread and threads in the logo's colors burst out. */
 .bch-landed {
   animation: bch-card-in 0.6s var(--ease-soft) both;
 }
@@ -937,7 +941,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 10px 22px rgb(10 193 142 / 0.35));
+  filter: drop-shadow(0 10px 22px rgb(35 112 111 / 0.35));
   animation: bch-logo-in 0.7s cubic-bezier(0.2, 1.5, 0.35, 1) both;
 }
 .bch-landed-tick path {
@@ -948,7 +952,7 @@
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  border: 2px solid #0ac18e;
+  border: 2px solid var(--color-zari);
   animation: bch-wave 1.3s 0.1s cubic-bezier(0.2, 0.6, 0.35, 1) both;
 }
 .bch-thread {
@@ -1110,6 +1114,7 @@
   }
   .bch-sonar,
   .bch-connect-glow,
+  .pay-watching span,
   .pay-approve-mark > span,
   .bch-thread,
   .bch-landed-wave,

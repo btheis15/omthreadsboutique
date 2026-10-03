@@ -124,7 +124,7 @@ export function Address({ value }: { value: string }) {
   const tail = body.length > 12 ? body.slice(-6) : "";
   const middle = body.slice(head.length, body.length - tail.length);
   return (
-    <p className="min-w-0 break-all font-mono text-[0.9rem] leading-relaxed">
+    <p className="min-w-0 break-all text-[0.95rem] leading-relaxed tracking-[0.02em]">
       <span className="text-muted">{prefix}</span>
       <span className="font-semibold text-indigo">{head}</span>
       {middle}
@@ -133,43 +133,59 @@ export function Address({ value }: { value: string }) {
   );
 }
 
-/** The order in BCH, line by line, at the price being held: what the tokens took off, and the total. */
-export function BchReceipt({ breakdown, paid, left }: { breakdown: NonNullable<BchPayment["breakdown"]>; paid: string | null; left: string | null }) {
-  const minus = (k: string) => k === "tokens" || k === "coupon";
+/** The order in BCH, line by line, at the price being held: what the tokens took off (or paid), and the total. */
+export function BchReceipt({ breakdown, paid, left, flat = false }: { breakdown: NonNullable<BchPayment["breakdown"]>; paid: string | null; left: string | null; flat?: boolean }) {
+  const minus = (l: { kind: string }) => l.kind === "tokens" || l.kind === "coupon";
+  const name = (l: NonNullable<BchPayment["breakdown"]>["lines"][number]) =>
+    l.kind === "items" ? "Items" : l.kind === "shipping" ? "Shipping" : l.kind === "tax" ? "Sales tax" : l.payment ? `Paid with ${l.label} tokens` : l.label;
   return (
-    <div className="bch-receipt border-t border-line px-5 py-5 sm:px-6">
-      <p className="bch-rise text-sm uppercase tracking-[0.14em] text-muted" style={{ animationDelay: "0.6s" }}>
-        Your order in Bitcoin Cash
-      </p>
-      <dl className="mt-3 text-[0.95rem]">
+    <div className={flat ? "" : "bch-receipt border-t border-line px-5 py-5 sm:px-6"}>
+      {!flat && (
+        <p className="bch-rise eyebrow" style={{ animationDelay: "0.6s" }}>
+          Your order in Bitcoin Cash
+        </p>
+      )}
+      <dl className={`${flat ? "" : "mt-3"} text-[0.95rem]`}>
         {breakdown.lines.map((l, i) => (
-          <div key={l.kind} className={`bch-line ${l.kind === "tokens" ? "tokens" : ""}`} style={{ animationDelay: `${0.66 + i * 0.07}s` }}>
-            <dt className="min-w-0">
-              {l.kind === "items" ? "Items" : l.kind === "shipping" ? "Shipping" : l.kind === "tax" ? "Sales tax" : l.label}
-              {l.kind === "tokens" ? (
-                <span className="bch-chip">
-                  {l.tokens} × {l.each}
+          <div key={`${l.kind}${l.payment ? "-paid" : ""}`}>
+            {/* Tokens that pay part of it come after the order's total (its tax is on the full price). */}
+            {l.payment && breakdown.orderTotal && (
+              <div className="bch-line subtotal" style={{ animationDelay: `${0.66 + i * 0.07}s` }}>
+                <dt>Order total</dt>
+                <dd className="shrink-0 text-right">
+                  <span className="whitespace-nowrap tabular-nums">{breakdown.orderTotal.bch} BCH</span>
+                  <span className="block text-xs text-muted tabular-nums">{dollars(breakdown.orderTotal.cents)}</span>
+                </dd>
+              </div>
+            )}
+            <div className={`bch-line ${l.kind === "tokens" ? "tokens" : ""}`} style={{ animationDelay: `${0.7 + i * 0.07}s` }}>
+              <dt className="min-w-0">
+                {name(l)}
+                {l.kind === "tokens" ? (
+                  <span className="bch-chip">
+                    {l.tokens} × {l.each}
+                  </span>
+                ) : l.kind === "items" || l.kind === "shipping" ? (
+                  <span className="text-muted"> · {l.label}</span>
+                ) : null}
+              </dt>
+              <dd className="shrink-0 text-right">
+                <span className="whitespace-nowrap tabular-nums">
+                  {minus(l) ? "−" : ""}
+                  {l.kind === "shipping" && !l.cents ? "Free" : `${l.bch} BCH`}
                 </span>
-              ) : l.kind === "items" || l.kind === "shipping" ? (
-                <span className="text-muted"> · {l.label}</span>
-              ) : null}
-            </dt>
-            <dd className="shrink-0 text-right">
-              <span className="whitespace-nowrap font-mono tabular-nums">
-                {minus(l.kind) ? "−" : ""}
-                {l.kind === "shipping" && !l.cents ? "Free" : `${l.bch} BCH`}
-              </span>
-              <span className="block text-xs text-muted tabular-nums">
-                {minus(l.kind) ? "−" : ""}
-                {dollars(l.cents)}
-              </span>
-            </dd>
+                <span className="block text-xs text-muted tabular-nums">
+                  {minus(l) ? "−" : ""}
+                  {dollars(l.cents)}
+                </span>
+              </dd>
+            </div>
           </div>
         ))}
-        <div className="bch-line total" style={{ animationDelay: `${0.66 + breakdown.lines.length * 0.07}s` }}>
-          <dt className="font-medium">Total</dt>
+        <div className="bch-line total" style={{ animationDelay: `${0.7 + breakdown.lines.length * 0.07}s` }}>
+          <dt className="font-medium">{breakdown.orderTotal ? "To pay in Bitcoin Cash" : "Total"}</dt>
           <dd className="shrink-0 text-right">
-            <span className="whitespace-nowrap font-mono text-lg font-semibold tabular-nums">{breakdown.total.bch} BCH</span>
+            <span className="whitespace-nowrap font-display text-xl tabular-nums">{breakdown.total.bch} BCH</span>
             <span className="block text-xs text-muted tabular-nums">{dollars(breakdown.total.cents)}</span>
           </dd>
         </div>
@@ -177,11 +193,11 @@ export function BchReceipt({ breakdown, paid, left }: { breakdown: NonNullable<B
           <>
             <div className="bch-line">
               <dt>Received so far</dt>
-              <dd className="shrink-0 whitespace-nowrap text-right font-mono tabular-nums">−{paid} BCH</dd>
+              <dd className="shrink-0 whitespace-nowrap text-right tabular-nums">−{paid} BCH</dd>
             </div>
             <div className="bch-line total">
               <dt className="font-medium">Left to send</dt>
-              <dd className="shrink-0 whitespace-nowrap text-right font-mono font-semibold tabular-nums">{left} BCH</dd>
+              <dd className="shrink-0 whitespace-nowrap text-right font-display text-xl tabular-nums">{left} BCH</dd>
             </div>
           </>
         )}
@@ -190,6 +206,19 @@ export function BchReceipt({ breakdown, paid, left }: { breakdown: NonNullable<B
         At ${breakdown.usdPerBch.toFixed(2)} per BCH{breakdown.sources.length ? ` (the middle of ${breakdown.sources.join(", ")})` : ""}, held while the timer runs.
       </p>
     </div>
+  );
+}
+
+/** The Bitcoin Cash mark (its green disc and tilted ₿): the one touch of BCH's own colors. */
+export function BchIcon({ size = 18, className = "", label }: { size?: number; className?: string; label?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} className={`shrink-0 ${className}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+      <circle cx="16" cy="16" r="16" fill="#0ac18e" />
+      <g transform="rotate(-28 16 16)" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11.6 9.6h5a3 3 0 0 1 0 6h-5zM11.6 15.6h5.8a3.2 3.2 0 0 1 0 6.4h-5.8zM11.6 9.6v12.4" />
+        <path d="M13.8 7.3v2.3M16.8 7.3v2.3M13.8 22v2.4M16.8 22v2.4" />
+      </g>
+    </svg>
   );
 }
 

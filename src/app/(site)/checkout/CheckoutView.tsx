@@ -284,8 +284,8 @@ export function CheckoutView({
                               ? `Pay in ${checkout.exodusCoins || "USDC or USDT"} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.`
                               : p === "bch"
                                 ? wcProjectId
-                                  ? "Pay in one tap from Cashonize, Paytaca or Zapit, with your Om Threads tokens if you have some, or scan a QR code from any wallet. Confirmed in seconds."
-                                  : "Pay from any Bitcoin Cash wallet: scan the QR code or tap to open your wallet. Your order is confirmed seconds after you send it."
+                                  ? "With Om Threads Pay: connect Cashonize, Paytaca or Zapit and pay in one tap (with your Om Threads tokens, if you have some), or scan with any wallet. Confirmed in seconds."
+                                  : "With Om Threads Pay: scan the QR code or open your wallet app, from any Bitcoin Cash wallet. Your order is confirmed seconds after you send it."
                                 : `Place the order, then send the payment from your bank's Zelle. We hold it for you for ${checkout.zelle?.holdHours ?? 48} hours and ship once it arrives.`}
                       </span>
                     </span>
