@@ -212,3 +212,14 @@ export function BchIcon({ size = 18, className = "", label }: { size?: number; c
   );
 }
 
+
+/** The rewards mark: a knot of gold thread, as on the logo's tassel. */
+export function RewardGlyph({ size = 18 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" className="shrink-0">
+      <path d="M12 3c2.6 3 2.6 6 0 9-2.6 3-2.6 6 0 9M12 3c-2.6 3-2.6 6 0 9 2.6 3 2.6 6 0 9" fill="none" stroke="var(--color-zari)" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M3 12c3-2.6 6-2.6 9 0 3 2.6 6 2.6 9 0" fill="none" stroke="var(--color-rani)" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="2.2" fill="var(--color-zari)" />
+    </svg>
+  );
+}

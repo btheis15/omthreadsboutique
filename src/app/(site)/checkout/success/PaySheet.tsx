@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.png";
-import type { BchPayment, BchQuote, BchWalletInfo } from "@/lib/bch";
+import { rewardEstimate, type BchPayment, type BchQuote, type BchWalletInfo } from "@/lib/bch";
 import { Cancelled, declined, disconnectWallet, resumeWallet, signInWallet, startConnection, walletAppLink, type WalletSession } from "@/lib/bchWalletConnect";
-import { Address, BchIcon, BchReceipt, CopyButton, dollars, QrCode, RollingAmount } from "./bchParts";
+import { Address, BchIcon, BchReceipt, CopyButton, dollars, QrCode, RewardGlyph, RollingAmount } from "./bchParts";
 
 type Phase = "starting" | "connecting" | "loading" | "review" | "approving" | "sending" | "done";
 type Method = "wallet" | "any";
@@ -253,6 +253,8 @@ export function PaySheet({
   const spending = viaWallet && quote?.tokens && amount > 0 ? quote.tokens.text : null;
   const name = wallet?.name ?? "your wallet";
   const busy = phase === "approving" || phase === "sending";
+  // The rewards promotion: what this payment earns back in the shop's tokens.
+  const earns = bch.rewardOffer ? rewardEstimate(bch.rewardOffer, asked) : null;
 
   /** Connecting a wallet (once; remembered), then the tokens, then waiting for the shopper's approval. */
   function walletPane() {
@@ -448,6 +450,14 @@ export function PaySheet({
             <p className="mt-1 text-ink/75">
               {asked} BCH{spending ? ` and ${spending}` : ""}. Thank you!
             </p>
+            {earns && (
+              <p className="pay-reward mx-auto mt-4 w-fit">
+                <RewardGlyph />
+                <span>
+                  {earns} {viaWallet ? "on their way to your wallet" : "to claim on your order page"}
+                </span>
+              </p>
+            )}
           </section>
         ) : (
           <>
@@ -497,6 +507,14 @@ export function PaySheet({
                       </span>
                     </span>
                   </div>
+                  {earns && (
+                    <p key={earns} className="pay-reward mt-4">
+                      <RewardGlyph />
+                      <span>
+                        You&apos;ll earn <b>{earns}</b> back{viaWallet ? ", straight to this wallet" : ": claim them after paying"}
+                      </span>
+                    </p>
+                  )}
                   {viaWallet ? (
                     <>
                       {short && <p className="mt-3 rounded-xl bg-marigold/15 p-3 text-sm">This wallet has {info?.bch} BCH, a little less than this needs with the network fee. Add some, or choose “Any wallet”.</p>}

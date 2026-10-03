@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.png";
 import { BCH_WALLETS, type BchPayment, type BchQuote } from "@/lib/bch";
 import { wcProjectId } from "@/lib/bchWalletConnect";
-import { BchIcon, BchReceipt, dollars, RollingAmount } from "./bchParts";
+import { BchIcon, BchReceipt, dollars, RewardGlyph, RollingAmount } from "./bchParts";
 import { PaySheet } from "./PaySheet";
 
 // The burst when the payment lands: threads in the logo's colors fly out from the tick.
@@ -245,6 +245,14 @@ export function BchPay({ token, initial, test, orderNo }: { token: string; initi
                 <BchIcon size={30} />
               </span>
             </button>
+            {bch.rewardOffer && (
+              <p className="pay-reward mx-auto mt-4 w-fit">
+                <RewardGlyph />
+                <span>
+                  Earn {bch.rewardOffer.tokens} {bch.rewardOffer.symbol ?? bch.rewardOffer.label} back for every {bch.rewardOffer.perBch} BCH
+                </span>
+              </p>
+            )}
             <p className="mt-3 text-center text-xs text-muted">
               {bch.coupon?.stack ? "Use your Om Threads tokens in the next step. " : ""}Nothing is sent until you approve it in your wallet.
             </p>

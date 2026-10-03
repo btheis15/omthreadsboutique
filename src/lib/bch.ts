@@ -40,6 +40,10 @@ export type BchPayment = {
   } | null;
   /** The admin can take the payment from a connected wallet ("Connect wallet": the BCH and any tokens in one transaction). */
   walletPay?: boolean;
+  /** The order's reward (the shop's tokens, cash back), once it's paid and earned one. */
+  reward?: BchReward | null;
+  /** The rewards promotion running while it's being paid ("earn 1 OMT for every 0.1 BCH"). */
+  rewardOffer?: { label: string; symbol: string | null; decimals: number; perBch: number; tokens: number; maxPerOrder: number | null; endsOn: string | null } | null;
   /** The coupon taken off this order (`bch`: what BCH-valued tokens took off, e.g. "0.03"). */
   applied: { label: string; discountCents: number; bch?: string } | null;
 };
@@ -61,3 +65,19 @@ export type BchWalletInfo = {
 
 /** The amount to pay with some tokens taken off, and the order in BCH. */
 export type BchQuote = { amountBch: string; tokens: { category: string; amount: string; text: string } | null; breakdown: BchPayment["breakdown"] };
+
+/**
+ * A reward: `sending` (on its way to the wallet that paid, or the one it was claimed to), `sent`, `claimable`
+ * (paid from a wallet the shop can't send tokens to safely: the shopper claims it), or `expired` (not claimed in time).
+ */
+export type BchReward = { text: string; label: string; rule: string; state: "sending" | "sent" | "claimable" | "expired"; to: string | null; txUrl: string | null; claimUntil: string | null };
+
+/** What a BCH amount earns under a rewards promotion, as text ("1 OMT"), or null for nothing. */
+export function rewardEstimate(offer: NonNullable<BchPayment["rewardOffer"]>, bch: string) {
+  const steps = Math.floor(Math.round(Number(bch) * 1e8) / Math.round(offer.perBch * 1e8));
+  let n = steps * offer.tokens;
+  if (offer.maxPerOrder) n = Math.min(n, offer.maxPerOrder);
+  if (!(n > 0)) return null;
+  const amount = offer.decimals ? n.toFixed(offer.decimals).replace(/\.?0+$/, "") : String(n);
+  return `${amount} ${offer.symbol ?? offer.label}`;
+}

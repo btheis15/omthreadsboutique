@@ -6,6 +6,7 @@ import { shopApi, shopperIp } from "@/lib/catalog";
 import { formatPrice } from "@/lib/site";
 import { AfterPayment } from "./AfterPayment";
 import { BchPay } from "./BchPay";
+import { BchRewardCard } from "./BchRewardCard";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
 
@@ -130,6 +131,9 @@ export default async function SuccessPage({ searchParams }: Props) {
           )}
         </p>
       )}
+
+      {/* Rewards: the shop's tokens back, sent or to claim (looked for a moment after paying). */}
+      {paid && summary.provider === "bch" && order && <BchRewardCard token={order} initial={summary.bch?.reward ?? null} />}
 
       <ul className="mt-8 divide-y divide-line border-y border-line">
         {summary.items.map((i, n) => (
