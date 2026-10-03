@@ -414,7 +414,7 @@ export function CheckoutView({
             </p>
             <p className="mt-1 text-center text-sm text-muted">
               <Link href="/policies/returns" className="underline underline-offset-4">
-                {returnDays}-day returns
+                {country === "US" ? `${returnDays}-day returns` : "International orders are final sale (no returns)"}
               </Link>{" "}
               ·{" "}
               <Link href="/policies/shipping" className="underline underline-offset-4">

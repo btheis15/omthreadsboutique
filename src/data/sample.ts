@@ -430,7 +430,7 @@ export const samplePages: ContentPage[] = [
       {
         heading: "Can I return or exchange an item?",
         paragraphs: [
-          "Yes. Unworn items in original condition can be returned within 30 days. See our Returns policy for details.",
+          "Yes, for orders shipped within the US: unworn items in original condition can be returned within 30 days. International orders are final sale (no returns or exchanges), but if anything arrives damaged or wrong we'll always put it right. See our Returns policy for details.",
         ],
       },
       {
@@ -481,7 +481,7 @@ export const samplePages: ContentPage[] = [
     body: [
       {
         paragraphs: [
-          "We want you to love your piece. Unworn, unwashed items with tags can be returned within 30 days of delivery for a refund or exchange.",
+          "We want you to love your piece. Unworn, unwashed items with tags from orders shipped within the US can be returned within 30 days of delivery for a refund or exchange. International orders are final sale.",
           "Update this page in the admin with your exact return window, who pays return shipping and how to start a return.",
         ],
       },

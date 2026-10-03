@@ -36,7 +36,7 @@ export default async function PartnersPage() {
             {[
               ["Sign up", "Your name and a Bitcoin Cash address. Your link is ready at once."],
               ["Share it", "The whole shop, or any piece: every page has your link. Anyone who shops through it within 30 days counts."],
-              ["Get paid", `${rate} of the items (after any coupon), in BCH, the moment the shopper pays.`],
+              ["Get paid", `${rate} of what the items sell for (sale prices and coupons included; not tax or shipping), in BCH, the moment the shopper pays.`],
             ].map(([title, text], i) => (
               <li key={title} className="rounded-2xl border border-line bg-white p-5">
                 <p className="eyebrow mb-1">Step {i + 1}</p>
