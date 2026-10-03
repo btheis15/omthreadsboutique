@@ -133,7 +133,7 @@ export function PartnerSignup({ ratePercent, business, countries }: { ratePercen
       </div>
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Mailing address</span>
-        <span className="mb-1.5 block text-sm text-muted">It goes in our agreement with you (and on a 1099, for US partners).</span>
+        <span className="mb-1.5 block text-sm text-muted">It goes in our agreement with you.</span>
         <textarea name="mailingAddress" required rows={2} autoComplete="street-address" className="w-full rounded-xl border border-line bg-white px-4 py-3 text-base outline-none focus:border-ink" />
         {err("mailingAddress")}
       </label>

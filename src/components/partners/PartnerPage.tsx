@@ -133,6 +133,13 @@ export function PartnerPage({ pieces }: { pieces: SharePiece[] }) {
         ))}
       </div>
 
+      {data.limit && (
+        <p className="mt-3 text-sm text-muted">
+          This year: {usd(data.limit.earnedCents)} of your {usd(data.limit.limitCents)} yearly limit
+          {data.limit.reached ? ". Your link earns again from January 1." : ` (${usd(data.limit.leftCents)} left).`}
+        </p>
+      )}
+
       <section className="mt-8">
         <h2 className="text-2xl">Your commissions</h2>
         {data.commissions.length ? (

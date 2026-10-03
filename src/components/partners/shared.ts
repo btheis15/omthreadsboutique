@@ -61,6 +61,6 @@ export type Partner = { code: string; name: string; link: string; address: strin
 export type Commission = { id: string; order: string | null; at: string; test: boolean; ratePercent: number; baseCents: number; cents: number; state: "holding" | "sending" | "sent" | "cancelled" | "test"; how: "split" | "wallet"; waiting: string | null; bch: string | null; txUrl: string | null; note: string | null };
 /** A piece to share (from the catalog): its page, title and first photo. */
 export type SharePiece = { slug: string; title: string; image: { url: string; alt: string } | null; soldOut: boolean };
-export type PartnerPageData = { partner: Partner; totals: { sales: number; paidCents: number; owedCents: number; paidThisYearCents: number }; commissions: Commission[]; todo: string[] };
+export type PartnerPageData = { partner: Partner; totals: { sales: number; paidCents: number; owedCents: number; paidThisYearCents: number }; limit: { limitCents: number; earnedCents: number; leftCents: number; reached: boolean } | null; commissions: Commission[]; todo: string[] };
 
 export const field = "h-12 w-full rounded-xl border border-line bg-white px-4 text-base outline-none focus:border-ink";

@@ -3,7 +3,7 @@
  * Protection Act asks for one, naming both parties, the work, the pay and how and when it's paid). Changing the
  * terms means a new TERMS_VERSION: the admin keeps which version each partner agreed to, and when.
  */
-export const TERMS_VERSION = "2026-10";
+export const TERMS_VERSION = "2026-10b";
 
 export type Business = { name: string; address: string | null; email: string | null };
 
@@ -41,9 +41,10 @@ export function SellerTerms({ ratePercent, business }: { ratePercent: number | n
           from Om Threads&rdquo;). No spam, and nothing untrue about us or our pieces.
         </li>
         <li>
-          <b className="text-ink">Taxes.</b> You&apos;re responsible for reporting and paying your own taxes on what you earn, wherever you live. If
-          you&apos;re a US person, we&apos;ll ask for a W-9 once your commissions reach the amount the IRS asks us to report in a year, send you a 1099,
-          and hold your payouts until we have it.
+          <b className="text-ink">Taxes and the yearly limit.</b> You&apos;re responsible for reporting and paying your own taxes on what you earn,
+          wherever you live. If you&apos;re a US person, your commissions from us are limited to $1 less than the amount the IRS asks businesses to report
+          (a 1099-NEC; $1,999 for 2026) in each calendar year. Once you reach it, sales through your link earn nothing more until January 1. One
+          account per person: accounts that share an email, payout address or mailing address count together.
         </li>
         <li>
           <b className="text-ink">Sanctions.</b> You confirm you don&apos;t live in a country or region under US embargo and aren&apos;t on a US sanctions
