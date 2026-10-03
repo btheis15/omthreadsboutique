@@ -135,6 +135,66 @@ function Address({ value }: { value: string }) {
   );
 }
 
+/** The order in BCH, line by line, at the price being held: what the tokens took off, and the total. */
+function BchReceipt({ breakdown, paid, left }: { breakdown: NonNullable<BchPayment["breakdown"]>; paid: string | null; left: string | null }) {
+  const minus = (k: string) => k === "tokens" || k === "coupon";
+  return (
+    <div className="bch-receipt border-t border-line px-5 py-5 sm:px-6">
+      <p className="bch-rise text-sm uppercase tracking-[0.14em] text-muted" style={{ animationDelay: "0.6s" }}>
+        Your order in Bitcoin Cash
+      </p>
+      <dl className="mt-3 text-[0.95rem]">
+        {breakdown.lines.map((l, i) => (
+          <div key={l.kind} className={`bch-line ${l.kind === "tokens" ? "tokens" : ""}`} style={{ animationDelay: `${0.66 + i * 0.07}s` }}>
+            <dt className="min-w-0">
+              {l.kind === "items" ? "Items" : l.kind === "shipping" ? "Shipping" : l.kind === "tax" ? "Sales tax" : l.label}
+              {l.kind === "tokens" ? (
+                <span className="bch-chip">
+                  {l.tokens} × {l.each}
+                </span>
+              ) : l.kind === "items" || l.kind === "shipping" ? (
+                <span className="text-muted"> · {l.label}</span>
+              ) : null}
+            </dt>
+            <dd className="shrink-0 text-right">
+              <span className="whitespace-nowrap font-mono tabular-nums">
+                {minus(l.kind) ? "−" : ""}
+                {l.kind === "shipping" && !l.cents ? "Free" : `${l.bch} BCH`}
+              </span>
+              <span className="block text-xs text-muted tabular-nums">
+                {minus(l.kind) ? "−" : ""}
+                {dollars(l.cents)}
+              </span>
+            </dd>
+          </div>
+        ))}
+        <div className="bch-line total" style={{ animationDelay: `${0.66 + breakdown.lines.length * 0.07}s` }}>
+          <dt className="font-medium">Total</dt>
+          <dd className="shrink-0 text-right">
+            <span className="whitespace-nowrap font-mono text-lg font-semibold tabular-nums">{breakdown.total.bch} BCH</span>
+            <span className="block text-xs text-muted tabular-nums">{dollars(breakdown.total.cents)}</span>
+          </dd>
+        </div>
+        {paid && left && (
+          <>
+            <div className="bch-line">
+              <dt>Received so far</dt>
+              <dd className="shrink-0 whitespace-nowrap text-right font-mono tabular-nums">−{paid} BCH</dd>
+            </div>
+            <div className="bch-line total">
+              <dt className="font-medium">Left to send</dt>
+              <dd className="shrink-0 whitespace-nowrap text-right font-mono font-semibold tabular-nums">{left} BCH</dd>
+            </div>
+          </>
+        )}
+      </dl>
+      <p className="mt-3 text-xs text-muted">
+        At ${breakdown.usdPerBch.toFixed(2)} per BCH{breakdown.sources.length ? ` (the middle of ${breakdown.sources.join(", ")})` : ""}, held while the timer runs.
+      </p>
+    </div>
+  );
+}
+
 // The burst when the payment lands: threads in the logo's colors fly out from the tick.
 const THREADS = ["#b8873a", "#a52b57", "#23706f", "#0ac18e", "#6f93b3", "#e2a93f"];
 const BURST = Array.from({ length: 22 }, (_, i) => ({
@@ -382,6 +442,8 @@ export function BchPay({ token, initial, test }: { token: string; initial: BchPa
               </div>
             </div>
           </div>
+
+          {bch.breakdown && <BchReceipt breakdown={bch.breakdown} paid={bch.state === "partial" ? bch.paidBch : null} left={bch.state === "partial" ? bch.amountBch : null} />}
 
           <div className="flex items-center gap-3 border-t border-line bg-sand px-5 py-4 sm:px-6" role="status" aria-live="polite">
             <span className="relative flex h-3 w-3 shrink-0">

@@ -28,6 +28,16 @@ export type BchPayment = {
     /** Tokens each worth some BCH: any number, sent all at once or a few at a time (otherwise one coupon per order). */
     stack?: boolean;
   } | null;
+  /**
+   * The order in BCH at the price being held (live orders): items, coupon or tokens, shipping, sales tax and
+   * the total, which is exactly what's asked. Null for a test order (it asks for the small test amount).
+   */
+  breakdown?: {
+    usdPerBch: number;
+    sources: string[];
+    lines: { kind: "items" | "tokens" | "coupon" | "shipping" | "tax"; label: string; bch: string; cents: number; tokens?: string; each?: string }[];
+    total: { bch: string; cents: number };
+  } | null;
   /** The coupon taken off this order (`bch`: what BCH-valued tokens took off, e.g. "0.03"). */
   applied: { label: string; discountCents: number; bch?: string } | null;
 };

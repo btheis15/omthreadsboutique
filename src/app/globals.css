@@ -498,6 +498,37 @@
   animation: bch-tick 0.34s 0.12s ease-out forwards;
 }
 
+/* The order in BCH: each line rises in turn; the tokens' line is picked out in green. */
+.bch-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.45rem;
+  animation: bch-rise 0.5s var(--ease-soft) both;
+}
+.bch-line.tokens {
+  margin-inline: -0.6rem;
+  padding-inline: 0.6rem;
+  border-radius: 0.6rem;
+  background: rgb(10 193 142 / 0.08);
+  color: #087f5d;
+}
+.bch-line.total {
+  margin-top: 0.35rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--color-line);
+}
+.bch-chip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgb(10 193 142 / 0.35);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 /* Payment received: the green tick pops, rings spread and threads in the logo's colors burst out. */
 .bch-landed {
   animation: bch-card-in 0.6s var(--ease-soft) both;
