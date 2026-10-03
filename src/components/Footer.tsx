@@ -32,7 +32,7 @@ const groups = [
   },
 ];
 
-export function Footer({ settings }: { settings: SiteSettings }) {
+export function Footer({ settings, partnersOpen = false }: { settings: SiteSettings; partnersOpen?: boolean }) {
   return (
     <footer className="relative mt-24 overflow-hidden bg-indigo-deep text-ivory">
       <BorderBand id="footer-band" className="text-zari" />
@@ -76,7 +76,7 @@ export function Footer({ settings }: { settings: SiteSettings }) {
               )}
             </div>
           </div>
-          {groups.map((g) => (
+          {(partnersOpen ? groups.map((g) => (g.title === "About" ? { ...g, links: [...g.links, { href: "/partners", label: "Sell for Om Threads" }] } : g)) : groups).map((g) => (
             <div key={g.title}>
               <h3 className="mb-3 font-sans text-xs font-semibold tracking-[0.2em] text-zari-light uppercase">{g.title}</h3>
               <ul className="space-y-1">

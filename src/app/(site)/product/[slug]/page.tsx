@@ -5,6 +5,7 @@ import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons"
 import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
+import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
 import { getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { craftByValue } from "@/lib/crafts";
@@ -101,6 +102,8 @@ export default async function ProductPage({ params }: Props) {
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
               <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} />
+              {/* A sales partner signed in on this device: their link for this piece. */}
+              <PartnerShareBar title={product.title} />
 
               <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-muted">
                 <li className="flex items-center gap-2">
