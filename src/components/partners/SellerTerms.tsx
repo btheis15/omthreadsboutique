@@ -3,7 +3,7 @@
  * Protection Act asks for one, naming both parties, the work, the pay and how and when it's paid). Changing the
  * terms means a new TERMS_VERSION: the admin keeps which version each partner agreed to, and when.
  */
-export const TERMS_VERSION = "2026-10c";
+export const TERMS_VERSION = "2026-10d";
 
 export type Business = { name: string; address: string | null; email: string | null };
 
@@ -29,8 +29,9 @@ export function SellerTerms({ ratePercent, business }: { ratePercent: number | n
         </li>
         <li>
           <b className="text-ink">How and when you&apos;re paid.</b> In Bitcoin Cash, to the address you give us, at the moment the shopper pays: as part of
-          their payment, or sent by us right away, at the BCH rate they paid at. A commission already paid isn&apos;t taken back if the order is
-          later refunded. Test orders earn nothing.
+          their payment, or sent by us right away, at the BCH rate they paid at. If the payment needs a block to be safe (for example a double-spend
+          warning), we send it after one block. If an order is refunded after your commission was paid, that commission (or the refunded share of
+          it) comes off your next commissions. Test orders earn nothing.
         </li>
         <li>
           <b className="text-ink">Prices are ours.</b> We set prices, discounts and your rate. You can&apos;t offer your own discounts, take orders or
@@ -48,7 +49,7 @@ export function SellerTerms({ ratePercent, business }: { ratePercent: number | n
         </li>
         <li>
           <b className="text-ink">Sanctions.</b> You confirm you don&apos;t live in a country or region under US embargo and aren&apos;t on a US sanctions
-          list. If that changes, stop sharing and tell us.
+          list. We check payout addresses against the US sanctions list and can&apos;t pay one that&apos;s on it. If that changes, stop sharing and tell us.
         </li>
         <li>
           <b className="text-ink">The information you give.</b> You confirm that what you tell us at sign-up and later (your name, country, mailing

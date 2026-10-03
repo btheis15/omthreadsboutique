@@ -133,6 +133,9 @@ export function PartnerPage({ pieces }: { pieces: SharePiece[] }) {
         ))}
       </div>
 
+      {data.owedBackCents > 0 && (
+        <p className="mt-3 text-sm text-muted">{usd(data.owedBackCents)} from refunded orders will come off your next commissions.</p>
+      )}
       {data.limit && (
         <p className="mt-3 text-sm text-muted">
           This year: {usd(data.limit.earnedCents)} of your {usd(data.limit.limitCents)} yearly limit
