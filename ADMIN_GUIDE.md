@@ -112,6 +112,16 @@ Threads token, what wallets show for it) is set up in the admin under
 [omthreads-admin → docs/CHECKOUT.md](https://github.com/btheis15/omthreads-admin/blob/main/docs/CHECKOUT.md#bitcoin-cash-in-detail).
 The site passes `/bcmr/*` (what wallets show for the token) on to the Mac mini.
 
+**Sales partners.** When they're turned on in the admin (**Checkout setup →
+Bitcoin Cash → Sales partners**), anyone can sign up at `/partners` for their own
+link (`/?s=<code>`, or on any page). The site keeps the code for 30 days and
+passes it on with a Bitcoin Cash checkout, so the partner earns their commission.
+Partners see their sales and commissions at `/partners/me`, and our emails'
+links land on `/partners/confirm`. "Sell for Om Threads" shows in the footer
+while checkout is live and sign-ups are open. The admin decides everything
+(prices, rates, payouts); the link only says who sent the shopper. See
+[omthreads-admin → docs/CHECKOUT.md](https://github.com/btheis15/omthreads-admin/blob/main/docs/CHECKOUT.md#sales-partners).
+
 - **Test** is only visible to browsers that opened the admin's tester link
   (`/api/tester?key=…`, a cookie). Everyone else still sees "Buy on Etsy".
   `/api/tester?off=1` leaves test mode.

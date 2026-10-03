@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { catalogSource, shopApi, shopperIp } from "@/lib/catalog";
+import { PARTNER_COOKIE, partnerCodeOk } from "@/lib/partner-ref";
 import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
 
 /**
@@ -26,12 +27,16 @@ export async function POST(request: Request) {
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Online checkout isn't available yet. Please buy on Etsy." }, { status: 501 });
 
-  const testerKey = (await cookies()).get(TESTER_COOKIE)?.value;
+  const jar = await cookies();
+  const testerKey = jar.get(TESTER_COOKIE)?.value;
+  // A sales partner's link the shopper came through (Bitcoin Cash only; the admin ignores it otherwise).
+  const partnerCode = decodeURIComponent(jar.get(PARTNER_COOKIE)?.value ?? "");
+  const partner = body?.provider === "bch" && partnerCodeOk(partnerCode) ? partnerCode : undefined;
   try {
     const { status, data } = await shopApi("/api/checkout", {
       method: "POST",
       shopperIp: shopperIp(request.headers),
-      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey },
+      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey, partner },
     });
     if (status === 200 && typeof data.url === "string") return NextResponse.json({ url: data.url });
     // PayPal and Venmo: the order is priced; the checkout page now shows PayPal's own buttons.

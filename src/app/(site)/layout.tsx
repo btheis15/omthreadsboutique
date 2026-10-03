@@ -4,11 +4,12 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { RevealObserver } from "@/components/motion/RevealObserver";
-import { catalogSource, getProducts, getSettings } from "@/lib/catalog";
+import { PartnerRef } from "@/components/PartnerRef";
+import { catalogSource, getCheckout, getProducts, getSettings } from "@/lib/catalog";
 import { carriedCrafts } from "@/lib/crafts";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const [settings, products] = await Promise.all([getSettings(), getProducts()]);
+  const [settings, products, checkout] = await Promise.all([getSettings(), getProducts(), getCheckout()]);
   const crafts = carriedCrafts(products).map(({ value, label, hindi }) => ({ value, label, hindi }));
   return (
     <>
@@ -39,9 +40,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <ViewTransition default="none" update="page">
         <main id="main">{children}</main>
       </ViewTransition>
-      <Footer settings={settings} />
+      <Footer settings={settings} partnersOpen={Boolean(checkout?.mode === "live" && checkout.partners)} />
       <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} />
       <RevealObserver />
+      <PartnerRef />
       <Analytics />
     </>
   );
