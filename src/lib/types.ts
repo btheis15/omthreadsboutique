@@ -134,7 +134,8 @@ export type CheckoutInfo = {
   /** stripe: cards, Apple Pay, Google Pay, UPI · paypal: PayPal and Venmo · bch: Bitcoin Cash (Prompt.cash) · exodus: stablecoins · zelle: confirmed by hand */
   providers: ("stripe" | "paypal" | "bch" | "exodus" | "zelle")[];
   /** How long a Bitcoin Cash price is held, and what a test order pays (BCH has no test network). */
-  bch?: { minutes: number; testCents: number };
+  /** receipts: shoppers can get their receipt as an Om Receipt CashToken. */
+  bch?: { minutes: number; testCents: number; receipts?: boolean };
 
   /** PayPal's public client id and its JavaScript SDK (v6) address. */
   paypal?: { clientId: string; sdkUrl: string };
