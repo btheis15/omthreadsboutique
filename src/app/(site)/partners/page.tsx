@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Divider } from "@/components/ornaments";
+import { countryOptions } from "@/components/partners/countries";
 import { PartnerSignup, SignInByEmail } from "@/components/partners/PartnerSignup";
 import { getCheckout } from "@/lib/catalog";
 import { site } from "@/lib/site";
@@ -45,7 +46,7 @@ export default async function PartnersPage() {
             ))}
           </ol>
           <div className="mt-10" data-reveal>
-            <PartnerSignup ratePercent={program.ratePercent} />
+            <PartnerSignup ratePercent={program.ratePercent} business={program.business} countries={countryOptions()} />
           </div>
           <Divider className="my-12" />
           <h2 className="text-2xl">Already selling with us?</h2>

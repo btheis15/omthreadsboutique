@@ -11,7 +11,7 @@ export function partnerRoute(path: string, fields: string[], fallback: string, f
     if (catalogSource !== "shop") return NextResponse.json({ error: "Selling for Om Threads isn't open right now." }, { status: 503 });
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const pass: Record<string, unknown> = {};
-    for (const f of fields) if (typeof body?.[f] === "string") pass[f] = (body[f] as string).slice(0, 200);
+    for (const f of fields) if (typeof body?.[f] === "string") pass[f] = (body[f] as string).slice(0, 300);
     for (const f of flags) if (body?.[f] === true) pass[f] = true;
     try {
       const { status, data } = await shopApi(path, { method: "POST", shopperIp: shopperIp(request.headers), body: pass });

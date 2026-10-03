@@ -57,7 +57,7 @@ export const saveKey = (key: string | null) => {
   }
 };
 
-export type Partner = { code: string; name: string; link: string; address: string; pendingAddress: string | null; email: string | null; emailConfirmed: boolean; ratePercent: number; status: string };
+export type Partner = { code: string; name: string; link: string; address: string; pendingAddress: string | null; email: string | null; emailConfirmed: boolean; ratePercent: number; status: string; country: string | null; usPerson: boolean | null; mailingAddress: string | null; termsVersion: string | null; termsAcceptedAt: string | null };
 export type Commission = { id: string; order: string | null; at: string; test: boolean; ratePercent: number; baseCents: number; cents: number; state: "holding" | "sending" | "sent" | "cancelled" | "test"; how: "split" | "wallet"; waiting: string | null; bch: string | null; txUrl: string | null; note: string | null };
 /** A piece to share (from the catalog): its page, title and first photo. */
 export type SharePiece = { slug: string; title: string; image: { url: string; alt: string } | null; soldOut: boolean };

@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "./CopyButton";
+import { type Business, SellerTerms, TERMS_VERSION } from "./SellerTerms";
 import { field, post, saveCode, saveKey } from "./shared";
 
 type SignedUp = { code: string; name: string; link: string; key: string; pageUrl: string; email: string | null };
 
 /** The sign-up form, then the partner's link and their page's link. */
-export function PartnerSignup({ ratePercent }: { ratePercent: number }) {
+/** `countries` comes from the server (names from one place, so the page hydrates the same). */
+export function PartnerSignup({ ratePercent, business, countries }: { ratePercent: number; business: Business | null; countries: { code: string; name: string }[] }) {
   const [state, setState] = useState<"idle" | "sending">("idle");
   const [error, setError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,7 +60,17 @@ export function PartnerSignup({ ratePercent }: { ratePercent: number }) {
         setError("");
         setErrors({});
         const f = new FormData(e.currentTarget);
-        const r = await post<SignedUp>("/api/partners/signup", { name: f.get("name"), address: f.get("address"), email: f.get("email"), agree: f.get("agree") === "on" });
+        const r = await post<SignedUp>("/api/partners/signup", {
+          name: f.get("name"),
+          address: f.get("address"),
+          email: f.get("email"),
+          country: f.get("country"),
+          mailingAddress: f.get("mailingAddress"),
+          usPerson: f.get("usPerson"),
+          certify: f.get("certify") === "on",
+          agree: f.get("agree") === "on",
+          termsVersion: TERMS_VERSION,
+        });
         setState("idle");
         if (r.ok) {
           saveKey(r.data.key);
@@ -91,20 +103,61 @@ export function PartnerSignup({ ratePercent }: { ratePercent: number }) {
         {err("address")}
       </label>
 
-      <details className="rounded-xl border border-line bg-white p-4 text-sm">
-        <summary className="cursor-pointer font-medium">Seller terms</summary>
-        <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted">
-          <li>You earn {ratePercent}% of the items&apos; price (after any coupon; not tax or shipping) on orders paid with Bitcoin Cash through your link, within 30 days of the visit.</li>
-          <li>It&apos;s paid in Bitcoin Cash to your address at the moment the shopper pays, at the rate they pay at. A commission already paid isn&apos;t taken back if the order is later refunded.</li>
-          <li>If your commissions in a year reach the amount the IRS asks us to report, we&apos;ll ask for a W-9 (US) so we can send you a 1099.</li>
-          <li>Prices, discounts and the commission rate are set by Om Threads. You can&apos;t offer your own discounts or make promises for us.</li>
-          <li>Be honest: say you earn a commission when you share your link, and no spam.</li>
-          <li>You&apos;re an independent seller, not an employee. We may change these terms, pause or end the program, or remove an account.</li>
-        </ul>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Country you live in</span>
+          <select name="country" required defaultValue="" className={field}>
+            <option value="" disabled>
+              Choose…
+            </option>
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          {err("country")}
+        </label>
+        <fieldset className="block">
+          <legend className="mb-1.5 block text-sm font-medium">US citizen or US tax resident?</legend>
+          <div className="flex h-12 items-center gap-5 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="radio" name="usPerson" value="yes" required /> Yes
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="usPerson" value="no" /> No
+            </label>
+          </div>
+          {err("usPerson")}
+        </fieldset>
+      </div>
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Mailing address</span>
+        <span className="mb-1.5 block text-sm text-muted">It goes in our agreement with you (and on a 1099, for US partners).</span>
+        <textarea name="mailingAddress" required rows={2} autoComplete="street-address" className="w-full rounded-xl border border-line bg-white px-4 py-3 text-base outline-none focus:border-ink" />
+        {err("mailingAddress")}
+      </label>
+
+      <details className="rounded-xl border border-line bg-white p-4">
+        <summary className="cursor-pointer text-sm font-medium">Seller terms (our agreement)</summary>
+        <div className="mt-3">
+          <SellerTerms ratePercent={ratePercent} business={business} />
+        </div>
       </details>
       <label className="flex items-start gap-3 text-sm">
+        <input type="checkbox" name="certify" className="mt-1 size-4" required />
+        <span>I don&apos;t live in a country or region under US embargo, and I&apos;m not on a US sanctions list.</span>
+      </label>
+      {err("certify")}
+      <label className="flex items-start gap-3 text-sm">
         <input type="checkbox" name="agree" className="mt-1 size-4" required />
-        <span>I agree to the seller terms.</span>
+        <span>
+          I agree to the{" "}
+          <a href="/partners/terms" target="_blank" className="underline underline-offset-4">
+            seller terms
+          </a>
+          , including that I&apos;m responsible for my own taxes.
+        </span>
       </label>
       {err("agree")}
       {error && (

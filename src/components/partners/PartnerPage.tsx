@@ -174,6 +174,15 @@ export function PartnerPage({ pieces }: { pieces: SharePiece[] }) {
       </section>
 
       <p className="mt-8 text-sm text-muted">
+        {p.termsAcceptedAt && (
+          <>
+            You agreed to the{" "}
+            <Link href="/partners/terms" className="underline underline-offset-4">
+              seller terms
+            </Link>{" "}
+            (version {p.termsVersion}) on {day(p.termsAcceptedAt)}. You&apos;re responsible for your own taxes on what you earn.{" "}
+          </>
+        )}
         <button
           type="button"
           className="underline underline-offset-4"

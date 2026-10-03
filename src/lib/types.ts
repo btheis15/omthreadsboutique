@@ -148,5 +148,5 @@ export type CheckoutInfo = {
   exodusCoins?: string;
   testerHash?: string;
   /** Sales partners: open for sign-ups (their sales are paid with Bitcoin Cash), at this commission. */
-  partners?: { ratePercent: number };
+  partners?: { ratePercent: number; business: { name: string; address: string | null; email: string | null } };
 };
