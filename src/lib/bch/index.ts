@@ -46,6 +46,9 @@ export type BchPayment = {
   rewardOffer?: { label: string; symbol: string | null; decimals: number; perBch: number; tokens: number; maxPerOrder: number | null; endsOn: string | null } | null;
   /** What paying this order earns under that promotion ("1 OMT"), worked out by the admin (null for nothing). */
   rewardEarns?: string | null;
+  /** The receipt as an Om Receipt CashToken, once paid (if the shopper chose one), and how they chose to get it. */
+  receiptToken?: BchReceiptToken | null;
+  receiptPref?: "email" | "token" | "both";
   /** The coupon taken off this order (`bch`: what BCH-valued tokens took off, e.g. "0.03"). */
   applied: { label: string; discountCents: number; bch?: string } | null;
 };
@@ -73,3 +76,35 @@ export type BchQuote = { amountBch: string; tokens: { category: string; amount: 
  * (paid from a wallet the shop can't send tokens to safely: the shopper claims it), or `expired` (not claimed in time).
  */
 export type BchReward = { text: string; label: string; rule: string; state: "sending" | "sent" | "claimable" | "expired"; to: string | null; txUrl: string | null; claimUntil: string | null };
+
+/**
+ * The receipt as a CashToken: `sending` (being minted and sent to the wallet that paid, or the one it was claimed
+ * to), `sent`, `claimable` (paid from a wallet that can't safely be sent tokens), or `expired` (not claimed in time).
+ * `receipt` is what it shows: public on the blockchain, so nothing personal.
+ */
+export type BchReceiptToken = {
+  name: string;
+  state: "sending" | "sent" | "claimable" | "expired";
+  to: string | null;
+  txUrl: string | null;
+  claimUntil: string | null;
+  icon: string | null;
+  receipt: {
+    shop: string;
+    website?: string;
+    contact?: string;
+    order: string;
+    paidAt: string;
+    items: { title: string; option: string | null; qty: number; unitCents: number; cents: number }[];
+    subtotalCents: number;
+    discount: { label: string; cents: number; tokens?: string; bch?: string } | null;
+    shipping: { label: string; cents: number };
+    taxCents: number;
+    totalCents: number;
+    payment: { method: string; paidBch: string; usdPerBch: number | null; paidTo: string | null; tx: string | null };
+    reward?: string;
+    returns?: string;
+    note?: string;
+    test?: boolean;
+  };
+};

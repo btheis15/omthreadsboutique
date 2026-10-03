@@ -43,6 +43,8 @@ export function CheckoutView({
   const [testAsIndia, setTestAsIndia] = useState(false);
   const [customer, setCustomer] = useState<Customer>(EMPTY);
   const [giftNote, setGiftNote] = useState("");
+  // Bitcoin Cash: the receipt as an email, an Om Receipt CashToken, or both (when the shop offers it).
+  const [receipt, setReceipt] = useState<"email" | "token" | "both">("both");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -73,6 +75,7 @@ export function CheckoutView({
           rateId: rate?.id,
           testAs: checkout?.mode === "test" && testAsIndia && place?.code === "IN" ? "IN" : undefined,
           giftNote: asksAddress(provider) ? giftNote : undefined,
+          receipt: provider === "bch" && checkout?.bch?.receipts ? receipt : undefined,
           customer:
             asksAddress(provider)
               ? { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } }
@@ -320,6 +323,31 @@ export function CheckoutView({
                   />
                 </label>
               </fieldset>
+            </section>
+          )}
+
+          {provider === "bch" && checkout.bch?.receipts && (
+            <section>
+              <h2 className="text-xl">Your receipt</h2>
+              <p className="mt-1 text-sm text-muted">
+                Get it as an <span className="font-medium text-ink">Om Receipt</span>: a CashToken in your own wallet, one of a kind and numbered by your order. Shipping updates still come by email.
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Your receipt">
+                {(
+                  [
+                    ["email", "Email", "To your inbox"],
+                    ["token", "CashToken", "To your wallet"],
+                    ["both", "Both", "Inbox and wallet"],
+                  ] as const
+                ).map(([value, label, hint]) => (
+                  <label key={value} className={`receipt-choice ${receipt === value ? "on" : ""}`}>
+                    <input type="radio" name="receipt" className="sr-only" checked={receipt === value} onChange={() => setReceipt(value)} />
+                    <span className={`receipt-choice-mark ${value}`} aria-hidden="true" />
+                    <span className="block font-medium">{label}</span>
+                    <span className="block text-xs text-muted">{hint}</span>
+                  </label>
+                ))}
+              </div>
             </section>
           )}
 

@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/site";
 import { AfterPayment } from "./AfterPayment";
 import { BchPay } from "@/components/bch/BchPay";
 import { BchRewardCard } from "@/components/bch/BchRewardCard";
+import { ReceiptToken } from "@/components/bch/ReceiptToken";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
 
@@ -133,6 +134,11 @@ export default async function SuccessPage({ searchParams }: Props) {
       )}
 
       {/* Rewards: the shop's tokens back, sent or to claim (looked for a moment after paying). */}
+      {/* The receipt as an Om Receipt CashToken, when chosen: folded into a coin and thrown into their wallet. */}
+      {paid && summary.provider === "bch" && order && (
+        <ReceiptToken token={order} initial={summary.bch?.receiptToken ?? null} expected={summary.bch?.receiptPref === "token" || summary.bch?.receiptPref === "both"} />
+      )}
+
       {paid && summary.provider === "bch" && order && <BchRewardCard token={order} initial={summary.bch?.reward ?? null} />}
 
       <ul className="mt-8 divide-y divide-line border-y border-line">

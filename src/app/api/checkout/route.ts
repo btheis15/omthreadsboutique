@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     testAs?: string;
     customer?: unknown;
     giftNote?: string;
+    receipt?: string;
   } | null;
   const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     const { status, data } = await shopApi("/api/checkout", {
       method: "POST",
       shopperIp: shopperIp(request.headers),
-      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, testerKey },
+      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey },
     });
     if (status === 200 && typeof data.url === "string") return NextResponse.json({ url: data.url });
     // PayPal and Venmo: the order is priced; the checkout page now shows PayPal's own buttons.
