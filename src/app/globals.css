@@ -619,6 +619,9 @@
   transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
   animation: pay-up 0.5s cubic-bezier(0.2, 1, 0.3, 1) both;
 }
+.pay-sheet-wrap.closing {
+  pointer-events: none;
+}
 .pay-sheet-wrap.closing .pay-sheet {
   animation: pay-down 0.26s cubic-bezier(0.4, 0, 1, 1) both;
 }

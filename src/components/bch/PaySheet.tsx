@@ -180,10 +180,18 @@ export function PaySheet({
     };
   }, [open, viaWallet, phase, info, amount, offer?.category, token, onPreview, bch.amountBch]);
 
+  // Closing plays the slide-out, then the sheet is gone: nothing stays over the page, even if it stays mounted.
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
   function close() {
+    if (closeTimer.current) return;
     if (phase === "approving") abort.current?.abort();
     setClosing(true);
-    setTimeout(onClose, 260);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = undefined;
+      setClosing(false);
+      onClose();
+    }, 260);
   }
 
   function choose(m: Method) {
@@ -611,21 +619,17 @@ function AnyWalletPane({ bch, phone, showQr, setShowQr }: { bch: BchPayment; pho
       </div>
 
       <div className="mt-5 grid gap-3 rounded-2xl bg-sand/70 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="eyebrow">{bch.state === "partial" ? "Send the rest" : "Send exactly"}</p>
-            <p className="font-display text-2xl">
-              {bch.amountBch} <span className="text-base text-zari">BCH</span>
-            </p>
-          </div>
-          <CopyButton value={bch.amountBch!} label="amount" />
+        <div className="min-w-0">
+          <p className="eyebrow">{bch.state === "partial" ? "Send the rest" : "Send exactly"}</p>
+          <p className="font-display text-2xl">
+            {bch.amountBch} <span className="text-base text-zari">BCH</span>
+          </p>
+          <p className="eyebrow mt-2">To</p>
+          <Address value={bch.address!} />
         </div>
-        <div className="flex items-start justify-between gap-3 border-t border-line pt-3">
-          <div className="min-w-0">
-            <p className="eyebrow">To</p>
-            <Address value={bch.address!} />
-          </div>
-          <CopyButton value={bch.address!} label="address" />
+        <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
+          <p className="text-sm text-muted">One link with the address and amount: paste it in any wallet.</p>
+          <CopyButton value={bch.uri!} label="payment link" />
         </div>
       </div>
     </section>
