@@ -45,7 +45,10 @@ const FLIGHT = [0, 45, 90, 135];
  */
 export function ReceiptToken({ token, initial, expected = false }: { token: string; initial: BchReceiptToken | null; expected?: boolean }) {
   const [rt, setRt] = useState(initial);
-  const [phase, setPhase] = useState<Phase>(initial?.state === "sent" && initial && played(initial.name) ? "inwallet" : "paper");
+  const [phase, setPhase] = useState<Phase>("paper");
+  // Already sent: whether it was seen going into the wallet (in this tab) is read after the page loads, as only the
+  // browser knows; the card stays hidden for that moment so the receipt doesn't fold away on screen.
+  const [settled, setSettled] = useState(initial?.state !== "sent");
   const [open, setOpen] = useState(false);
   const [uri, setUri] = useState<string | null>(null);
   const [paste, setPaste] = useState(false);
@@ -60,6 +63,17 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
   const phone = useSyncExternalStore(subscribeTouch, () => touch().matches, () => false);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  useEffect(() => {
+    if (settled) return;
+    const t = setTimeout(() => {
+      if (initial && played(initial.name)) setPhase("inwallet");
+      setSettled(true);
+    }, 0);
+    return () => clearTimeout(t);
+    // Once, after the page loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Folds the receipt into a coin and throws it into the wallet. */
   const throwIt = useCallback(() => {
@@ -136,10 +150,10 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
 
   // In the wallet and not yet seen being thrown there (in this tab): a moment to see the receipt, then the throw.
   useEffect(() => {
-    if (rt?.state !== "sent" || phase !== "paper" || played(rt.name)) return;
+    if (!settled || rt?.state !== "sent" || phase !== "paper" || played(rt.name)) return;
     const t = setTimeout(throwIt, 1100);
     return () => clearTimeout(t);
-  }, [rt, phase, throwIt]);
+  }, [settled, rt, phase, throwIt]);
 
   async function claim(to: string) {
     setBusy(true);
@@ -182,7 +196,7 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
   const showPaper = phase !== "inwallet" || open;
 
   return (
-    <section className={`receipt-token mt-8 ${flying ? "flying" : ""}`} aria-live="polite">
+    <section className={`receipt-token mt-8 ${flying ? "flying" : ""}`} style={settled ? undefined : { visibility: "hidden" }} aria-live="polite">
       <div className="flex items-baseline justify-between gap-3">
         <p className="eyebrow">Your receipt · a CashToken</p>
         {phase === "inwallet" && (
@@ -309,7 +323,7 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
                 {(r.returns || r.website || r.contact) && (
                   <p className="mt-3 text-center text-xs leading-relaxed text-muted">
                     {r.returns && <span className="block">{r.returns.replace(/:\s*https?:\/\/\S+$/, "")}</span>}
-                    {[r.website?.replace(/^https?:\/\//, ""), r.contact].filter(Boolean).join(" · ")}
+                    {[r.website, r.contact].filter(Boolean).map((x) => x!.replace(/^https?:\/\//, "")).join(" · ")}
                   </p>
                 )}
                 {r.note && <p className="mt-2 text-center font-display text-[0.95rem] italic text-ink/80">{r.note}</p>}
@@ -341,7 +355,7 @@ export function ReceiptToken({ token, initial, expected = false }: { token: stri
             <Image src={logo} alt="" sizes="36px" className="size-9" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xl leading-tight">{rt.name} is in your wallet</p>
+            <p className="font-display text-xl leading-tight">{rt.name.replace(/-/g, "\u2011")} is in your wallet</p>
             <p className="text-sm text-muted">
               {rt.to ? `${shortAddress(rt.to)} · ` : ""}
               {rt.txUrl && (
