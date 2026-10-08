@@ -1235,6 +1235,7 @@
 }
 /* The receipt, printed: ivory paper with a torn edge, rolling down out of the printer. */
 .receipt-paper {
+  overflow-wrap: anywhere;
   position: relative;
   margin: 0.25rem auto 0.9rem;
   max-width: 26rem;
