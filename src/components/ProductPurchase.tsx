@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import { SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
@@ -11,10 +11,21 @@ import { Price } from "./Price";
  * that comes in options (e.g. three colours). Each option has its own stock:
  * a sold-out colour says "Sold out", and the others stay available.
  */
+const noSubscribe = () => () => {};
+
 export function ProductPurchase({ product, onSiteCheckout }: { product: Product; onSiteCheckout: boolean }) {
   const withOptions = hasOptions(product);
-  const [selected, setSelected] = useState<string[]>(() => defaultVariant(product)?.values ?? []);
+  // Opened from a printed tag (/p/<code> → ?option=<id>): that option is chosen, e.g. the colour on the tag.
+  // Read after the page loads (the page itself is the same for everyone), until the shopper picks another.
+  const optionId = useSyncExternalStore(noSubscribe, () => new URLSearchParams(window.location.search).get("option"), () => null);
+  const tagged = optionId ? product.variants?.find((v) => v.id === optionId) : undefined;
+  const [picked, setSelected] = useState<string[] | null>(null);
+  const selected = picked ?? tagged?.values ?? defaultVariant(product)?.values ?? [];
   const variant = withOptions ? product.variants!.find((v) => v.values.every((x, i) => x === selected[i])) : undefined;
+  const taggedImage = tagged?.image?.url;
+  useEffect(() => {
+    if (taggedImage) window.dispatchEvent(new CustomEvent(SHOW_IMAGE_EVENT, { detail: { url: taggedImage } }));
+  }, [taggedImage]);
 
   const choose = (kind: number, value: string) => {
     const next = [...selected];
