@@ -115,6 +115,8 @@ export type SiteSettings = {
   heroTitle?: string;
   heroSubtitle?: string;
   heroImage?: ProductImage;
+  /** The hero slideshow, in order (feed `settings.heroImages`). Empty = use heroImage. */
+  heroImages?: ProductImage[];
   heroVideoUrl?: string;
   etsyRating?: number;
   etsyReviewCount?: number;

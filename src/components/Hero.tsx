@@ -2,12 +2,24 @@ import Link from "next/link";
 import type { ProductImage as Img } from "@/lib/types";
 import { ArrowIcon } from "./icons";
 import { Mandala } from "./ornaments";
+import { HeroSlides } from "./HeroSlides";
 import { ProductImage } from "./ProductImage";
 
-type Props = { title: string; subtitle: string; image?: Img; videoUrl?: string; poster?: string };
+type Props = {
+  title: string;
+  subtitle: string;
+  image?: Img;
+  /** The slideshow (2 or more photos cross-fade; one photo is shown as is). Video still wins when set. */
+  images?: Img[];
+  videoUrl?: string;
+  poster?: string;
+  greeting: string;
+  shopLabel: string;
+  craftsLabel: string;
+};
 
 /** Full-bleed hero: slow Ken Burns photo (or looping video), rising headline, turning mandala. */
-export function Hero({ title, subtitle, image, videoUrl, poster }: Props) {
+export function Hero({ title, subtitle, image, images, videoUrl, poster, greeting, shopLabel, craftsLabel }: Props) {
   const words = title.split(" ");
   return (
     <section className="relative isolate h-[82svh] min-h-[520px] overflow-hidden bg-indigo-deep text-ivory md:h-[88vh]">
@@ -24,9 +36,11 @@ export function Hero({ title, subtitle, image, videoUrl, poster }: Props) {
             preload="metadata"
             aria-hidden="true"
           />
+        ) : images && images.length > 1 ? (
+          <HeroSlides images={images} />
         ) : (
           <div className="animate-kenburns absolute inset-0">
-            <ProductImage image={image} sizes="100vw" preload />
+            <ProductImage image={images?.[0] ?? image} sizes="100vw" preload />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-indigo-deep via-indigo-deep/45 to-indigo-deep/10" />
@@ -37,7 +51,7 @@ export function Hero({ title, subtitle, image, videoUrl, poster }: Props) {
 
       <div className="container-page flex h-full flex-col justify-end pb-14 md:pb-24">
         <p className="animate-rise font-deva text-xl text-zari-light md:text-2xl" style={{ "--i": 0 } as React.CSSProperties}>
-          स्वागत है
+          {greeting}
         </p>
         <h1 className="mt-3 max-w-3xl text-[2.9rem] leading-[1] md:text-7xl lg:text-[5.5rem]">
           {words.map((w, i) => (
@@ -58,10 +72,10 @@ export function Hero({ title, subtitle, image, videoUrl, poster }: Props) {
           style={{ "--i": words.length + 2 } as React.CSSProperties}
         >
           <Link href="/shop" className="btn bg-ivory text-ink hover:bg-zari-light">
-            Shop the collection <ArrowIcon size={18} />
+            {shopLabel} <ArrowIcon size={18} />
           </Link>
           <Link href="/crafts" className="btn border border-ivory/60 text-ivory hover:bg-ivory/10">
-            Discover the crafts
+            {craftsLabel}
           </Link>
         </div>
       </div>

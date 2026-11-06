@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm";
 import { Divider } from "@/components/ornaments";
-import { getSettings } from "@/lib/catalog";
+import { getSettings, getT } from "@/lib/catalog";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: `Get in touch with ${site.name}.`,
-  alternates: { canonical: "/contact" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("seoContactTitle"), description: t("seoContactDescription"), alternates: { canonical: "/contact" } };
+}
 
 export const revalidate = 300;
 

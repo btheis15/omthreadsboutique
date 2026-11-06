@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { makeT } from "@/lib/site-text";
 
 /** Newsletter sign-up. Saved to the admin Inbox via /api/subscribe. */
-export function NewsletterForm({ tone = "light" }: { tone?: "light" | "dark" }) {
+export function NewsletterForm({ tone = "light", text }: { tone?: "light" | "dark"; text?: Record<string, string> }) {
+  const t = makeT(text);
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [error, setError] = useState("");
 
   if (state === "done") {
     return (
       <p className="animate-rise text-[1rem]" role="status">
-        Thank you! 🙏 You&apos;re on the list for new arrivals.
+        {t("newsletterThanks")}
       </p>
     );
   }

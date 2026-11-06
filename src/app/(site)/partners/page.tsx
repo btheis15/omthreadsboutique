@@ -3,14 +3,12 @@ import Link from "next/link";
 import { Divider } from "@/components/ornaments";
 import { countryOptions } from "@/components/partners/countries";
 import { PartnerSignup, SignInByEmail } from "@/components/partners/PartnerSignup";
-import { getCheckout } from "@/lib/catalog";
-import { site } from "@/lib/site";
+import { getCheckout, getT } from "@/lib/catalog";
 
-export const metadata: Metadata = {
-  title: "Sell for Om Threads",
-  description: `Share ${site.name}'s handwoven pieces and earn a commission on every Bitcoin Cash sale your link brings.`,
-  alternates: { canonical: "/partners" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("seoPartnersTitle"), description: t("seoPartnersDescription"), alternates: { canonical: "/partners" } };
+}
 
 export const revalidate = 300;
 

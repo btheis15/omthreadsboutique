@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { filterProducts, getLists, type ProductFilters, type SortKey } from "@/lib/catalog";
+import { filterProducts, getLists, getT, type ProductFilters, type SortKey } from "@/lib/catalog";
 import { typesWithProducts } from "@/lib/lists";
 import type { Product } from "@/lib/types";
 import { ProductGrid } from "./ProductCard";
@@ -40,7 +40,7 @@ export async function ShopView({
   /** The whole catalog, when `products` is already narrowed (category page), so other types still show. */
   allProducts?: Product[];
 }) {
-  const lists = await getLists();
+  const [lists, tx] = await Promise.all([getLists(), getT()]);
   const filtered = filterProducts(products, parseFilters(searchParams), lists);
   // The active type stays in the row even when it has no pieces, so its own page still reads right.
   const categories = lists.types
@@ -110,8 +110,8 @@ export async function ShopView({
               <ProductGrid products={filtered} preloadFirst={4} columns="sidebar" />
             ) : (
               <div className="py-20 text-center">
-                <p className="font-display text-2xl">No pieces match those filters</p>
-                <p className="mt-2 text-muted">Try removing a filter or two.</p>
+                <p className="font-display text-2xl">{tx("shopNoResultsTitle")}</p>
+                <p className="mt-2 text-muted">{tx("shopNoResultsHint")}</p>
               </div>
             )}
           </div>

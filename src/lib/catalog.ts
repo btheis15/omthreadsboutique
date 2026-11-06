@@ -12,6 +12,7 @@ import { client } from "@/sanity/client";
 import { carePresets } from "@/sanity/options";
 import { craftByValue, fallbackLists, normalizeLists, typeByValue } from "./lists";
 import { defaultSettings } from "./site";
+import { makeT, newBadgeDays, normalizeMenus, type Menus, type T } from "./site-text";
 import type {
   CheckoutInfo,
   Collection,
@@ -25,9 +26,8 @@ import type {
 } from "./types";
 
 export const CACHE_TAG = "sanity";
-const NEW_ARRIVAL_DAYS = 21;
 
-const isNewArrival = (publishedAt: string) => Date.now() - new Date(publishedAt).getTime() < NEW_ARRIVAL_DAYS * 86_400_000;
+const isNewArrival = (publishedAt: string, t: T) => Date.now() - new Date(publishedAt).getTime() < newBadgeDays(t) * 86_400_000;
 
 // ---------------------------------------------------------------------------
 // Om Threads admin (Mac mini)
@@ -47,6 +47,10 @@ type ShopCatalog = {
   testimonials: Testimonial[];
   /** The admin's editable lists (types, colours, materials, crafts). Absent until the admin is updated. */
   lists?: unknown;
+  /** The owner's edited website wording (only the keys they changed). See lib/site-text.ts. */
+  text?: unknown;
+  /** The owner's header and footer menus. Absent = the built-in menus. */
+  menus?: unknown;
   /** Present only while the admin has the website checkout on (test or live). */
   checkout?: CheckoutInfo;
 };
@@ -76,6 +80,31 @@ export async function getLists(): Promise<Lists> {
     return normalizeLists((await shopCatalog()).lists);
   } catch {
     return fallbackLists;
+  }
+}
+
+/** The owner's text overrides from the feed (empty when absent or the feed is unreachable). */
+export async function getTextOverrides(): Promise<Record<string, string>> {
+  if (catalogSource !== "shop") return {};
+  try {
+    return (await shopCatalog()).text as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+/** `t(key, vars)` for server components: the owner's wording, else the original. */
+export async function getT(): Promise<T> {
+  return makeT(await getTextOverrides());
+}
+
+/** Header/footer menus from the feed; each is undefined (use the built-in one) when not set. */
+export async function getMenus(): Promise<Menus> {
+  if (catalogSource !== "shop") return {};
+  try {
+    return normalizeMenus((await shopCatalog()).menus);
+  } catch {
+    return {};
   }
 }
 
@@ -131,11 +160,15 @@ export async function isShopCatalogReachable(): Promise<boolean> {
   }
 }
 
-function mapShopProduct({ carePreset, care, ...p }: ShopProduct): Product {
+function carePresetText(preset: keyof typeof carePresets, t: T) {
+  return t(`care.${preset}`);
+}
+
+function mapShopProduct({ carePreset, care, ...p }: ShopProduct, t: T): Product {
   return {
     ...p,
-    care: carePreset === "custom" ? care : carePreset ? carePresets[carePreset] : undefined,
-    isNew: isNewArrival(p.publishedAt),
+    care: carePreset === "custom" ? care : carePreset ? carePresetText(carePreset, t) : undefined,
+    isNew: isNewArrival(p.publishedAt, t),
   };
 }
 
@@ -203,8 +236,8 @@ function mapImage(img: SanityImage, fallbackAlt: string): ProductImage {
 }
 
 function mapProduct(p: SanityProduct): Product {
-  const care =
-    p.carePreset === "custom" ? p.care : p.carePreset ? carePresets[p.carePreset] : undefined;
+  const t = makeT();
+  const care = p.carePreset === "custom" ? p.care : p.carePreset ? carePresetText(p.carePreset, t) : undefined;
   return {
     ...p,
     images: (p.images ?? []).map((i) => mapImage(i, p.title)),
@@ -212,7 +245,7 @@ function mapProduct(p: SanityProduct): Product {
     collections: (p.collections ?? []).filter(Boolean),
     featured: Boolean(p.featured),
     care,
-    isNew: isNewArrival(p.publishedAt),
+    isNew: isNewArrival(p.publishedAt, t),
   };
 }
 
@@ -221,7 +254,11 @@ function mapProduct(p: SanityProduct): Product {
 // ---------------------------------------------------------------------------
 
 export async function getProducts(): Promise<Product[]> {
-  if (catalogSource === "shop") return (await shopCatalog()).products.map(mapShopProduct);
+  if (catalogSource === "shop") {
+    const cat = await shopCatalog();
+    const t = makeT(cat.text);
+    return cat.products.map((p) => mapShopProduct(p, t));
+  }
   if (!client) return sampleProducts;
   const rows = await query<SanityProduct[]>(
     `*[_type == "product" && defined(slug.current)] | order(publishedAt desc) ${productFields}`,
@@ -231,8 +268,9 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function getProduct(slug: string): Promise<Product | undefined> {
   if (catalogSource === "shop") {
-    const p = (await shopCatalog()).products.find((x) => x.slug === slug);
-    return p ? mapShopProduct(p) : undefined;
+    const cat = await shopCatalog();
+    const p = cat.products.find((x) => x.slug === slug);
+    return p ? mapShopProduct(p, makeT(cat.text)) : undefined;
   }
   if (!client) return sampleProducts.find((p) => p.slug === slug);
   const row = await query<SanityProduct | null>(
@@ -285,8 +323,20 @@ export async function getPage(slug: string): Promise<ContentPage | undefined> {
   return { slug, title: row.title, intro: row.intro, body: row.body ?? [] };
 }
 
+/** The hero slideshow photos from the admin (ordered), keeping only usable entries. */
+function cleanHeroImages(raw: unknown): ProductImage[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): ProductImage[] => {
+    const x = r as { url?: unknown; alt?: unknown } | null;
+    return x && typeof x.url === "string" && x.url ? [{ url: x.url, alt: typeof x.alt === "string" && x.alt ? x.alt : "Om Threads Boutique" }] : [];
+  });
+}
+
 export async function getSettings(): Promise<SiteSettings> {
-  if (catalogSource === "shop") return { ...defaultSettings, ...(await shopCatalog()).settings };
+  if (catalogSource === "shop") {
+    const { heroImages, ...rest } = (await shopCatalog()).settings;
+    return { ...defaultSettings, ...rest, heroImages: cleanHeroImages(heroImages) };
+  }
   if (!client) return defaultSettings;
   const row = await query<
     (Partial<Omit<SiteSettings, "heroImage">> & { heroImage?: SanityImage }) | null

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Kalnia, Mukta, Tiro_Devanagari_Hindi } from "next/font/google";
-import { site, siteUrl } from "@/lib/site";
+import { getT } from "@/lib/catalog";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 // Mukta is by Ek Type (Mumbai); Tiro Devanagari carries the Hindi accents.
@@ -19,15 +20,18 @@ const tiro = Tiro_Devanagari_Hindi({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl()),
-  title: { default: `${site.name} | Shawls & Stoles from North India`, template: `%s | ${site.name}` },
-  description: site.description,
-  openGraph: { siteName: site.name, type: "website", locale: "en_US" },
-  twitter: { card: "summary_large_image" },
-  // The name under the icon when it's added to an iPhone home screen.
-  appleWebApp: { title: "Om Threads" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { default: t("seoHomeTitle"), template: `%s | ${t("siteName")}` },
+    description: t("siteDescription"),
+    openGraph: { siteName: t("siteName"), type: "website", locale: "en_US" },
+    twitter: { card: "summary_large_image" },
+    // The name under the icon when it's added to an iPhone home screen.
+    appleWebApp: { title: "Om Threads" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#fdfaf2",
