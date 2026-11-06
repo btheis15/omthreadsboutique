@@ -6,13 +6,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/logo.png";
 import type { Craft } from "@/lib/crafts";
-import { categories, nav, site } from "@/lib/site";
+import { site } from "@/lib/site";
 import { cart, useCart } from "./cart/store";
 import { ArrowIcon, BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
 import { Mandala, Paisley } from "./ornaments";
 
 /** `crafts`: the crafts the shop carries, for "Shop by craft". */
-export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hindi">[] }) {
+export function Header({
+  crafts,
+  categories,
+}: {
+  crafts: Pick<Craft, "value" | "label" | "hindi">[];
+  /** Types that have pieces: URL segment and display name. */
+  categories: { slug: string; title: string }[];
+}) {
+  const nav = [
+    { href: "/shop", label: "Shop all" },
+    ...categories.slice(0, 2).map((c) => ({ href: `/shop/${c.slug}`, label: c.title })),
+    { href: "/crafts", label: "The crafts" },
+    { href: "/about", label: "Our story" },
+  ];
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { count } = useCart();
@@ -106,7 +119,7 @@ export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hi
                               className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 text-[0.95rem] hover:text-accent"
                             >
                               {c.label}
-                              <span className="font-deva text-sm text-zari">{c.hindi}</span>
+                              {c.hindi && <span className="font-deva text-sm text-zari">{c.hindi}</span>}
                             </Link>
                           </li>
                         ))}

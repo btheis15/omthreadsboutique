@@ -6,7 +6,7 @@ export function Marquee({ crafts }: { crafts: Pick<Craft, "value" | "label" | "h
   const items = ribbon.map((c, i) => (
     <span key={`${c.value}-${i}`} className="flex shrink-0 items-center gap-3 pr-8">
       <span className="font-display text-xl md:text-2xl">{c.label}</span>
-      <span className="font-deva text-lg text-zari-light md:text-xl">{c.hindi}</span>
+      {c.hindi && <span className="font-deva text-lg text-zari-light md:text-xl">{c.hindi}</span>}
       <span className="pl-5 text-zari-light" aria-hidden="true">
         ✦
       </span>

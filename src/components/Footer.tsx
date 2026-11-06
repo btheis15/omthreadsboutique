@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/assets/logo.png";
-import { categories, site } from "@/lib/site";
+import { site } from "@/lib/site";
 import type { SiteSettings } from "@/lib/types";
 import { NewsletterForm } from "./NewsletterForm";
 import { BorderBand, JaaliPattern, Mandala } from "./ornaments";
 
-const groups = [
+const groups = (categories: { slug: string; title: string }[]) => [
   {
     title: "Shop",
     links: [{ href: "/shop", label: "Shop all" }, ...categories.map((c) => ({ href: `/shop/${c.slug}`, label: c.title }))],
@@ -32,7 +32,16 @@ const groups = [
   },
 ];
 
-export function Footer({ settings, partnersOpen = false }: { settings: SiteSettings; partnersOpen?: boolean }) {
+export function Footer({
+  settings,
+  categories,
+  partnersOpen = false,
+}: {
+  settings: SiteSettings;
+  categories: { slug: string; title: string }[];
+  partnersOpen?: boolean;
+}) {
+  const allGroups = groups(categories);
   return (
     <footer className="relative mt-24 overflow-hidden bg-indigo-deep text-ivory">
       <BorderBand id="footer-band" className="text-zari" />
@@ -76,7 +85,7 @@ export function Footer({ settings, partnersOpen = false }: { settings: SiteSetti
               )}
             </div>
           </div>
-          {(partnersOpen ? groups.map((g) => (g.title === "About" ? { ...g, links: [...g.links, { href: "/partners", label: "Sell for Om Threads" }] } : g)) : groups).map((g) => (
+          {(partnersOpen ? allGroups.map((g) => (g.title === "About" ? { ...g, links: [...g.links, { href: "/partners", label: "Sell for Om Threads" }] } : g)) : allGroups).map((g) => (
             <div key={g.title}>
               <h3 className="mb-3 font-sans text-xs font-semibold tracking-[0.2em] text-zari-light uppercase">{g.title}</h3>
               <ul className="space-y-1">

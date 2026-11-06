@@ -7,10 +7,10 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
-import { craftByValue } from "@/lib/crafts";
+import { getLists, getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { liveCheckout } from "@/lib/payments";
-import { categories, colorLabel, materialLabel, site, siteUrl } from "@/lib/site";
+import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
+import { site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
@@ -37,19 +37,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout()]);
+  const [product, all, settings, onSiteCheckout, lists] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), getLists()]);
   if (!product) notFound();
 
-  const category = categories.find((c) => c.type === product.type);
+  const category = typeByValue(lists, product.type);
   const related = relatedProducts(all, product);
-  const craft = craftByValue(product.craft);
+  const craft = craftByValue(lists, product.craft);
 
   const details = [
     craft && { label: "Craft", value: craft.label },
     product.origin && { label: "Made in", value: product.origin },
-    product.material && { label: "Material", value: materialLabel(product.material) },
+    product.material && { label: "Material", value: materialLabel(lists, product.material) },
     product.dimensions && { label: "Size", value: product.dimensions },
-    product.colors.length && { label: "Color", value: product.colors.map(colorLabel).join(", ") },
+    product.colors.length && { label: "Color", value: product.colors.map((c) => colorLabel(lists, c)).join(", ") },
   ].filter(Boolean) as { label: string; value: string }[];
 
   const jsonLd = {
@@ -58,8 +58,8 @@ export default async function ProductPage({ params }: Props) {
     name: product.title,
     description: product.shortDescription,
     image: product.images.flatMap((i) => (i.url ? [new URL(i.url, siteUrl()).toString()] : [])),
-    material: materialLabel(product.material),
-    color: product.colors.map(colorLabel).join(", ") || undefined,
+    material: materialLabel(lists, product.material),
+    color: product.colors.map((c) => colorLabel(lists, c)).join(", ") || undefined,
     brand: { "@type": "Brand", name: site.name },
     offers: offersFor(product),
   };
@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: Props) {
             <>
               {" / "}
               <Link href={`/shop/${category.slug}`} className="hover:text-ink">
-                {category.title}
+                {category.plural}
               </Link>
             </>
           )}
@@ -96,7 +96,7 @@ export default async function ProductPage({ params }: Props) {
           <div className="container-page pt-6 md:px-0 md:pt-0">
             <div className="md:sticky md:top-28">
               <p className="eyebrow mb-2">
-                {[craft?.label, category?.singular].filter(Boolean).join(" · ")}
+                {[craft?.label, category?.label].filter(Boolean).join(" · ")}
                 {product.origin && <span className="text-zari"> · {product.origin}</span>}
               </p>
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>

@@ -5,12 +5,14 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { RevealObserver } from "@/components/motion/RevealObserver";
 import { PartnerRef } from "@/components/PartnerRef";
-import { catalogSource, getCheckout, getProducts, getSettings } from "@/lib/catalog";
-import { carriedCrafts } from "@/lib/crafts";
+import { catalogSource, getCheckout, getLists, getProducts, getSettings } from "@/lib/catalog";
+import { carriedCrafts, typesWithProducts } from "@/lib/lists";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const [settings, products, checkout] = await Promise.all([getSettings(), getProducts(), getCheckout()]);
-  const crafts = carriedCrafts(products).map(({ value, label, hindi }) => ({ value, label, hindi }));
+  const [settings, products, checkout, lists] = await Promise.all([getSettings(), getProducts(), getCheckout(), getLists()]);
+  const crafts = carriedCrafts(lists, products).map(({ value, label, hindi }) => ({ value, label, hindi }));
+  // Only types that have pieces appear in the nav and footer.
+  const categories = typesWithProducts(lists, products).map(({ slug, plural }) => ({ slug, title: plural }));
   return (
     <>
       {/* Shared shapes referenced from CSS (e.g. the `arch` utility). */}
@@ -36,11 +38,11 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           {settings.announcement}
         </div>
       )}
-      <Header crafts={crafts} />
+      <Header crafts={crafts} categories={categories} />
       <ViewTransition default="none" update="page">
         <main id="main">{children}</main>
       </ViewTransition>
-      <Footer settings={settings} partnersOpen={Boolean(checkout?.mode === "live" && checkout.partners)} />
+      <Footer settings={settings} categories={categories} partnersOpen={Boolean(checkout?.mode === "live" && checkout.partners)} />
       <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} />
       <RevealObserver />
       <PartnerRef />

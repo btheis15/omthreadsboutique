@@ -5,33 +5,34 @@ import { Marquee } from "@/components/Marquee";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
-import { getCollections, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
-import { carriedCrafts } from "@/lib/crafts";
-import { categories, site } from "@/lib/site";
+import { getCollections, getLists, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
+import { carriedCrafts } from "@/lib/lists";
+import { site } from "@/lib/site";
 
 export const revalidate = 300;
 
 const delay = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
 export default async function HomePage() {
-  const [products, collections, settings, testimonials] = await Promise.all([
+  const [products, collections, settings, testimonials, lists] = await Promise.all([
     getProducts(),
     getCollections(),
     getSettings(),
     getTestimonials(),
+    getLists(),
   ]);
   const available = products.filter((p) => !isSoldOut(p));
   const newest = [...available].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, 8);
   const featured = available.filter((p) => p.featured).slice(0, 4);
   const heroProduct = featured[0] ?? newest[0];
   const storyProduct = featured[1] ?? newest[1];
-  const categoryTiles = categories
-    .map((c) => ({ ...c, product: available.find((p) => p.type === c.type) }))
+  const categoryTiles = lists.types
+    .map((c) => ({ ...c, title: c.plural, product: available.find((p) => p.type === c.value) }))
     .filter((c) => c.product)
     .slice(0, 2);
 
   // Only the crafts of pieces the shop has.
-  const shownCrafts = carriedCrafts(products);
+  const shownCrafts = carriedCrafts(lists, products);
   const craftCards = shownCrafts.slice(0, 6);
 
   return (
@@ -82,7 +83,7 @@ export default async function HomePage() {
                   </div>
                 </div>
                 <h2 className="mt-6 text-4xl md:text-5xl">{c.title}</h2>
-                <p className="mx-auto mt-2 max-w-sm text-muted">{c.blurb}</p>
+                {c.blurb && <p className="mx-auto mt-2 max-w-sm text-muted">{c.blurb}</p>}
                 <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-accent">
                   Shop {c.title.toLowerCase()}
                   <ArrowIcon size={16} className="transition-transform group-hover:translate-x-1" />
@@ -137,7 +138,7 @@ export default async function HomePage() {
                   href={`/crafts#${c.value}`}
                   className="group flex h-full flex-col rounded-2xl border border-ivory/15 bg-indigo-deep/40 p-6 backdrop-blur-sm transition duration-500 hover:-translate-y-1 hover:border-zari/60 hover:bg-indigo-deep/70"
                 >
-                  <span className="font-deva text-3xl text-zari-light">{c.hindi}</span>
+                  {c.hindi && <span className="font-deva text-3xl text-zari-light">{c.hindi}</span>}
                   <span className="mt-3 font-display text-2xl">{c.label}</span>
                   <span className="mt-1 text-xs font-semibold tracking-[0.16em] text-ivory/60 uppercase">{c.region}</span>
                   <span className="mt-3 text-[0.95rem] text-ivory/80">{c.summary}</span>

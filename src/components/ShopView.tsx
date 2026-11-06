@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { filterProducts, type ProductFilters, type SortKey } from "@/lib/catalog";
-import { categories } from "@/lib/site";
+import { filterProducts, getLists, type ProductFilters, type SortKey } from "@/lib/catalog";
+import { typesWithProducts } from "@/lib/lists";
 import type { Product } from "@/lib/types";
 import { ProductGrid } from "./ProductCard";
 import { ShopFilters } from "./ShopFilters";
@@ -24,22 +24,31 @@ export function parseFilters(sp: SearchParams): ProductFilters {
   };
 }
 
-export function ShopView({
+export async function ShopView({
   title,
   description,
   products,
   searchParams,
   activeCategory,
+  allProducts,
 }: {
   title: string;
   description?: string;
   products: Product[];
   searchParams: SearchParams;
   activeCategory?: string;
+  /** The whole catalog, when `products` is already narrowed (category page), so other types still show. */
+  allProducts?: Product[];
 }) {
-  const filtered = filterProducts(products, parseFilters(searchParams));
+  const lists = await getLists();
+  const filtered = filterProducts(products, parseFilters(searchParams), lists);
+  // The active type stays in the row even when it has no pieces, so its own page still reads right.
+  const categories = lists.types
+    .filter((t) => t.slug === activeCategory || typesWithProducts(lists, allProducts ?? products).includes(t))
+    .map((t) => ({ slug: t.slug, title: t.plural }));
   const availableColors = [...new Set(products.flatMap((p) => p.colors))];
   const availableMaterials = [...new Set(products.map((p) => p.material).filter(Boolean) as string[])];
+  const filterLists = { colors: lists.colors, materials: lists.materials, crafts: lists.crafts.map(({ value, label, hindi }) => ({ value, label, hindi })) };
   const availableCrafts = [...new Set(products.map((p) => p.craft).filter(Boolean) as string[])];
 
   return (
@@ -81,6 +90,7 @@ export function ShopView({
             availableColors={availableColors}
             availableMaterials={availableMaterials}
             availableCrafts={availableCrafts}
+            lists={filterLists}
             resultCount={filtered.length}
           />
         </Suspense>
@@ -90,6 +100,7 @@ export function ShopView({
               availableColors={availableColors}
               availableMaterials={availableMaterials}
               availableCrafts={availableCrafts}
+            lists={filterLists}
               resultCount={filtered.length}
             />
           </Suspense>

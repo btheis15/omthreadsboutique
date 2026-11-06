@@ -1,8 +1,7 @@
 /**
- * Textile crafts of North India. Used for the product "Craft" field, the
- * craft filter and the /crafts guide page. Add or edit entries here. The site
- * only shows the crafts of pieces it has (see carriedCrafts); the rest wait
- * here for the day a piece of that craft is added.
+ * FALLBACK ONLY. The crafts are edited in the admin ("Product lists") and arrive in the
+ * feed as `lists.crafts` (see lib/lists.ts). These are used only when the feed is
+ * unreachable or has no `lists` yet.
  */
 export type Craft = {
   value: string;
@@ -124,17 +123,3 @@ export const crafts: Craft[] = [
       "Printers carve motifs into blocks of sheesham wood and stamp them onto cloth by hand, one colour at a time. Small shifts in alignment are the signature of a human hand.",
   },
 ];
-
-export function craftByValue(value?: string) {
-  return value ? crafts.find((c) => c.value === value) : undefined;
-}
-
-/**
- * The crafts of the pieces on the site, in the order above. Until any piece
- * has a craft set, all of them, so the guide is never empty.
- */
-export function carriedCrafts(products: { craft?: string }[]): Craft[] {
-  const carried = new Set(products.map((p) => p.craft).filter(Boolean));
-  const list = crafts.filter((c) => carried.has(c.value));
-  return list.length ? list : crafts;
-}

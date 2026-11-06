@@ -10,12 +10,13 @@ import type { PortableTextBlock } from "next-sanity";
 import { sampleCollections, samplePages, samplePlaceholderReviews, sampleProducts } from "@/data/sample";
 import { client } from "@/sanity/client";
 import { carePresets } from "@/sanity/options";
-import { craftByValue } from "./crafts";
+import { craftByValue, fallbackLists, normalizeLists, typeByValue } from "./lists";
 import { defaultSettings } from "./site";
 import type {
   CheckoutInfo,
   Collection,
   ContentPage,
+  Lists,
   Product,
   ProductImage,
   ProductType,
@@ -44,6 +45,8 @@ type ShopCatalog = {
   pages: ContentPage[];
   settings: Partial<SiteSettings>;
   testimonials: Testimonial[];
+  /** The admin's editable lists (types, colours, materials, crafts). Absent until the admin is updated. */
+  lists?: unknown;
   /** Present only while the admin has the website checkout on (test or live). */
   checkout?: CheckoutInfo;
 };
@@ -61,6 +64,19 @@ async function shopCatalog(): Promise<ShopCatalog> {
   });
   if (!res.ok) throw new Error(`Shop catalog request failed: ${res.status} ${res.statusText}`);
   return res.json();
+}
+
+/**
+ * Types, colours, materials and crafts. From the admin's feed when it has `lists`; otherwise (admin not
+ * updated yet, feed unreachable, Sanity/sample source) the built-in values, so nothing is ever hidden.
+ */
+export async function getLists(): Promise<Lists> {
+  if (catalogSource !== "shop") return fallbackLists;
+  try {
+    return normalizeLists((await shopCatalog()).lists);
+  } catch {
+    return fallbackLists;
+  }
 }
 
 /** The website checkout's settings, or null when it's off (or the catalog isn't the admin's). */
@@ -319,7 +335,7 @@ export function isSoldOut(p: Product) {
   return p.stock === 0;
 }
 
-export function filterProducts(products: Product[], f: ProductFilters): Product[] {
+export function filterProducts(products: Product[], f: ProductFilters, lists: Lists = fallbackLists): Product[] {
   const q = f.q?.trim().toLowerCase();
   const out = products.filter((p) => {
     if (f.type && p.type !== f.type) return false;
@@ -335,8 +351,9 @@ export function filterProducts(products: Product[], f: ProductFilters): Product[
         p.shortDescription,
         p.material,
         p.type,
+        typeByValue(lists, p.type)?.label,
         p.origin,
-        craftByValue(p.craft)?.label,
+        craftByValue(lists, p.craft)?.label,
         ...p.colors,
       ]
         .join(" ")
