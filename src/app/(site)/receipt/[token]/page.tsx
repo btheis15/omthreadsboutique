@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import logo from "@/assets/logo.png";
 import { getT, shopApi, shopperIp } from "@/lib/catalog";
-import { site } from "@/lib/site";
 import { EmailReceipt } from "./EmailReceipt";
 
 export const metadata: Metadata = { title: "Your receipt", robots: { index: false } };

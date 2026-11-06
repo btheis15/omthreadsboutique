@@ -10,7 +10,7 @@ import { RichText } from "@/components/RichText";
 import { getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { liveCheckout } from "@/lib/payments";
 import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
-import { site, siteUrl } from "@/lib/site";
+import { siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
