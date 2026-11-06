@@ -6,13 +6,30 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/logo.png";
 import type { Craft } from "@/lib/crafts";
-import { categories, nav, site } from "@/lib/site";
+import type { MenuLink } from "@/lib/site-text";
+import { site } from "@/lib/site";
 import { cart, useCart } from "./cart/store";
 import { ArrowIcon, BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
 import { Mandala, Paisley } from "./ornaments";
 
 /** `crafts`: the crafts the shop carries, for "Shop by craft". */
-export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hindi">[] }) {
+export function Header({
+  crafts,
+  categories,
+  menu,
+}: {
+  crafts: Pick<Craft, "value" | "label" | "hindi">[];
+  /** Types that have pieces: URL segment and display name. */
+  categories: { slug: string; title: string }[];
+  /** The owner's header menu; absent = the built-in links. */
+  menu?: MenuLink[];
+}) {
+  const nav = menu ?? [
+    { href: "/shop", label: "Shop all" },
+    ...categories.slice(0, 2).map((c) => ({ href: `/shop/${c.slug}`, label: c.title })),
+    { href: "/crafts", label: "The crafts" },
+    { href: "/about", label: "Our story" },
+  ];
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { count } = useCart();
@@ -106,7 +123,7 @@ export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hi
                               className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 text-[0.95rem] hover:text-accent"
                             >
                               {c.label}
-                              <span className="font-deva text-sm text-zari">{c.hindi}</span>
+                              {c.hindi && <span className="font-deva text-sm text-zari">{c.hindi}</span>}
                             </Link>
                           </li>
                         ))}
@@ -222,10 +239,13 @@ export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hi
             </button>
           </div>
           <ul className="flex-1 overflow-y-auto px-4 py-2">
-            {[{ href: "/shop", label: "Shop all" }, ...categories.map((c) => ({ href: `/shop/${c.slug}`, label: c.title }))].map(
+            {(menu
+              ? menu.map((l) => ({ ...l }))
+              : [{ href: "/shop", label: "Shop all" }, ...categories.map((c) => ({ href: `/shop/${c.slug}`, label: c.title }))]
+            ).map(
               (item, i) => (
                 <li
-                  key={item.href}
+                  key={`${item.href}-${item.label}`}
                   style={{ transitionDelay: menuOpen ? `${120 + i * 50}ms` : "0ms" }}
                   className={`transition duration-500 ease-soft ${menuOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
                 >
@@ -239,13 +259,16 @@ export function Header({ crafts }: { crafts: Pick<Craft, "value" | "label" | "hi
                 </li>
               ),
             )}
-            {[
-              { href: "/crafts", label: "The crafts of North India" },
-              { href: "/care-guide", label: "Care & styling guide" },
-              { href: "/about", label: "Our story" },
-              { href: "/faq", label: "FAQ" },
-              { href: "/contact", label: "Contact" },
-            ].map((item) => (
+            {(menu
+              ? []
+              : [
+                  { href: "/crafts", label: "The crafts of North India" },
+                  { href: "/care-guide", label: "Care & styling guide" },
+                  { href: "/about", label: "Our story" },
+                  { href: "/faq", label: "FAQ" },
+                  { href: "/contact", label: "Contact" },
+                ]
+            ).map((item) => (
               <li key={item.href}>
                 <Link href={item.href} tabIndex={menuOpen ? 0 : -1} className="flex h-12 items-center text-[0.95rem]">
                   {item.label}

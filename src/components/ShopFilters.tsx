@@ -2,8 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { crafts as allCrafts } from "@/lib/crafts";
-import { colors as allColors, materials as allMaterials } from "@/lib/site";
+import type { ColorItem, MaterialItem } from "@/lib/types";
 import { CloseIcon, FilterIcon } from "./icons";
 
 const sorts = [
@@ -21,6 +20,8 @@ type Props = {
   availableMaterials: string[];
   availableCrafts: string[];
   resultCount: number;
+  /** Option lists from the admin (colours, materials, crafts), in display order. */
+  lists: { colors: ColorItem[]; materials: MaterialItem[]; crafts: { value: string; label: string; hindi?: string }[] };
   /** "bar": top bar + drawer (phones, tablets). "sidebar": always-open panel on laptops. */
   mode?: "bar" | "sidebar";
 };
@@ -30,8 +31,10 @@ export function ShopFilters({
   availableMaterials,
   availableCrafts,
   resultCount,
+  lists,
   mode = "bar",
 }: Props) {
+  const { colors: allColors, materials: allMaterials, crafts: allCrafts } = lists;
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -153,7 +156,7 @@ export function ShopFilters({
                     className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors ${on ? "border-ink bg-ink text-ivory" : "border-line bg-white"}`}
                   >
                     {c.label}
-                    <span className={`font-deva text-xs ${on ? "text-zari-light" : "text-zari"}`}>{c.hindi}</span>
+                    {c.hindi && <span className={`font-deva text-xs ${on ? "text-zari-light" : "text-zari"}`}>{c.hindi}</span>}
                   </button>
                 );
               })}

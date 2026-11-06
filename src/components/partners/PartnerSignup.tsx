@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "./CopyButton";
-import { type Business, SellerTerms, TERMS_VERSION } from "./SellerTerms";
+import type { TermsContent } from "@/lib/page-content";
+import { type Business, SellerTerms } from "./SellerTerms";
 import { field, post, saveCode, saveKey } from "./shared";
 
 type SignedUp = { code: string; name: string; link: string; key: string; pageUrl: string; email: string | null };
 
 /** The sign-up form, then the partner's link and their page's link. */
 /** `countries` comes from the server (names from one place, so the page hydrates the same). */
-export function PartnerSignup({ ratePercent, business, countries }: { ratePercent: number; business: Business | null; countries: { code: string; name: string }[] }) {
+export function PartnerSignup({ ratePercent, business, countries, terms }: { ratePercent: number; business: Business | null; countries: { code: string; name: string }[]; terms: TermsContent }) {
   const [state, setState] = useState<"idle" | "sending">("idle");
   const [error, setError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,7 +70,7 @@ export function PartnerSignup({ ratePercent, business, countries }: { ratePercen
           usPerson: f.get("usPerson"),
           certify: f.get("certify") === "on",
           agree: f.get("agree") === "on",
-          termsVersion: TERMS_VERSION,
+          termsVersion: terms.version,
         });
         setState("idle");
         if (r.ok) {
@@ -141,7 +142,7 @@ export function PartnerSignup({ ratePercent, business, countries }: { ratePercen
       <details className="rounded-xl border border-line bg-white p-4">
         <summary className="cursor-pointer text-sm font-medium">Seller terms (our agreement)</summary>
         <div className="mt-3">
-          <SellerTerms ratePercent={ratePercent} business={business} />
+          <SellerTerms ratePercent={ratePercent} business={business} terms={terms} />
         </div>
       </details>
       <label className="flex items-start gap-3 text-sm">

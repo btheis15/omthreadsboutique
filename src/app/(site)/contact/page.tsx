@@ -2,29 +2,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm";
 import { Divider } from "@/components/ornaments";
-import { getSettings } from "@/lib/catalog";
+import { getFeedPage, getSettings, getT } from "@/lib/catalog";
+import { contactContent } from "@/lib/page-content";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: `Get in touch with ${site.name}.`,
-  alternates: { canonical: "/contact" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("seoContactTitle"), description: t("seoContactDescription"), alternates: { canonical: "/contact" } };
+}
 
 export const revalidate = 300;
 
 export default async function ContactPage() {
-  const settings = await getSettings();
+  const [settings, page] = await Promise.all([getSettings(), getFeedPage("contact")]);
+  const c = contactContent(page);
   const channels = [
-    settings.email && { href: `mailto:${settings.email}`, label: "Email", value: settings.email, external: false },
+    settings.email && { href: `mailto:${settings.email}`, label: c.channels.email, value: settings.email, external: false },
     settings.whatsapp && {
       href: `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`,
-      label: "WhatsApp",
-      value: "Chat with us",
+      label: c.channels.whatsapp[0],
+      value: c.channels.whatsapp[1],
       external: true,
     },
-    { href: site.etsyUrl, label: "Message us on Etsy", value: "omthreadsboutique.etsy.com", external: true },
-    settings.instagramUrl && { href: settings.instagramUrl, label: "Instagram", value: "Follow along", external: true },
+    { href: site.etsyUrl, label: c.channels.etsy[0], value: c.channels.etsy[1], external: true },
+    settings.instagramUrl && { href: settings.instagramUrl, label: c.channels.instagram[0], value: c.channels.instagram[1], external: true },
   ].filter(Boolean) as { href: string; label: string; value: string; external: boolean }[];
 
   return (
@@ -33,11 +34,10 @@ export default async function ContactPage() {
         नमस्ते
       </p>
       <h1 className="mt-2 text-4xl md:text-6xl" data-reveal style={{ "--i": 1 } as React.CSSProperties}>
-        We&apos;d love to hear from you
+        {c.title}
       </h1>
       <p className="mt-4 text-lg text-muted" data-reveal style={{ "--i": 2 } as React.CSSProperties}>
-        Questions about a piece, a custom order, gifting or styling? Write to us and we&apos;ll reply within one business
-        day.
+        {c.intro}
       </p>
 
       <div className="mt-10" data-reveal>

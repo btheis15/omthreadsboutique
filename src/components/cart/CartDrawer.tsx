@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { Bold } from "@/components/Bold";
 import { formatPrice } from "@/lib/site";
+import { makeT } from "@/lib/site-text";
 import { CloseIcon, MinusIcon, PlusIcon } from "../icons";
 import { ProductImage } from "../ProductImage";
 import { cart, useCart } from "./store";
 
-export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: number }) {
+export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThreshold: number; text?: Record<string, string> }) {
+  const t = makeT(text);
   const { items, open, subtotal, count } = useCart();
 
   useEffect(() => {
@@ -53,10 +56,10 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
 
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-            <p className="font-display text-2xl">Your cart is empty</p>
-            <p className="text-muted">Find something soft to wrap yourself in.</p>
+            <p className="font-display text-2xl">{t("cartEmptyTitle")}</p>
+            <p className="text-muted">{t("cartEmptyBody")}</p>
             <Link href="/shop" className="btn btn-primary" onClick={() => cart.close()} tabIndex={open ? 0 : -1}>
-              Shop the collection
+              {t("cartEmptyButton")}
             </Link>
           </div>
         ) : (
@@ -64,11 +67,9 @@ export function CartDrawer({ freeShippingThreshold }: { freeShippingThreshold: n
             {freeShippingThreshold > 0 && (
               <div className="border-b border-line bg-sand px-4 py-3 text-center text-sm md:px-6">
                 {remaining > 0 ? (
-                  <>
-                    You&apos;re <strong>{formatPrice(remaining)}</strong> away from free shipping
-                  </>
+                  <Bold text={t("cartAwayFree", { amount: formatPrice(remaining) })} />
                 ) : (
-                  <>You&apos;ve unlocked free shipping ✨</>
+                  <>{t("cartUnlockedFree")}</>
                 )}
                 <div className="mx-auto mt-2 h-1 max-w-xs overflow-hidden rounded-full bg-line">
                   <div

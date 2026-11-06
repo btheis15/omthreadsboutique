@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
 import { ProductCard } from "@/components/ProductCard";
-import { getProducts } from "@/lib/catalog";
-import { carriedCrafts } from "@/lib/crafts";
+import { getLists, getProducts } from "@/lib/catalog";
+import { carriedCrafts } from "@/lib/lists";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const names = carriedCrafts(await getProducts()).map((c) => c.label);
+  const names = carriedCrafts(await getLists(), await getProducts()).map((c) => c.label);
   const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
   return {
     title: "The crafts of North India",
@@ -18,9 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 300;
 
 export default async function CraftsPage() {
-  const products = await getProducts();
+  const [products, lists] = await Promise.all([getProducts(), getLists()]);
   // Only the crafts of pieces the shop has.
-  const crafts = carriedCrafts(products);
+  const crafts = carriedCrafts(lists, products);
   return (
     <>
       <section className="relative isolate overflow-hidden bg-indigo-deep text-ivory">
@@ -68,10 +68,10 @@ export default async function CraftsPage() {
                   </div>
                 </div>
                 <div data-reveal>
-                  <p className="font-deva text-4xl text-accent md:text-5xl">{c.hindi}</p>
+                  {c.hindi && <p className="font-deva text-4xl text-accent md:text-5xl">{c.hindi}</p>}
                   <h2 className="mt-3 text-4xl md:text-5xl">{c.label}</h2>
-                  <p className="mt-2 text-xs font-semibold tracking-[0.18em] text-zari uppercase">{c.region}</p>
-                  <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink/85">{c.story}</p>
+                  {c.region && <p className="mt-2 text-xs font-semibold tracking-[0.18em] text-zari uppercase">{c.region}</p>}
+                  {c.story && <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink/85">{c.story}</p>}
                   {pieces.length > 0 && (
                     <Link
                       href={`/shop?craft=${c.value}`}

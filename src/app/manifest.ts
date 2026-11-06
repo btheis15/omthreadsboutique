@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next";
-import { site } from "@/lib/site";
+import { getT } from "@/lib/catalog";
 
 /**
  * Added to a home screen, the shop is "Om Threads" with the logo on cream. It still opens as the
  * website in the browser (shoppers keep its back button and share sheet).
  */
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const t = await getT();
   return {
-    name: site.name,
+    name: t("siteName"),
     short_name: "Om Threads",
-    description: site.description,
+    description: t("siteDescription"),
     start_url: "/",
     display: "browser",
     background_color: "#fdfaf2",

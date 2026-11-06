@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/assets/logo.png";
-import { categories, site } from "@/lib/site";
+import { site } from "@/lib/site";
+import type { Menus, T } from "@/lib/site-text";
 import type { SiteSettings } from "@/lib/types";
 import { NewsletterForm } from "./NewsletterForm";
 import { BorderBand, JaaliPattern, Mandala } from "./ornaments";
 
-const groups = [
+const groups = (categories: { slug: string; title: string }[]) => [
   {
     title: "Shop",
     links: [{ href: "/shop", label: "Shop all" }, ...categories.map((c) => ({ href: `/shop/${c.slug}`, label: c.title }))],
@@ -32,7 +33,24 @@ const groups = [
   },
 ];
 
-export function Footer({ settings, partnersOpen = false }: { settings: SiteSettings; partnersOpen?: boolean }) {
+export function Footer({
+  settings,
+  categories,
+  partnersOpen = false,
+  t,
+  text,
+  menu,
+}: {
+  settings: SiteSettings;
+  categories: { slug: string; title: string }[];
+  partnersOpen?: boolean;
+  t: T;
+  /** The owner's text overrides, for the sign-up form (a client component). */
+  text: Record<string, string>;
+  /** The owner's footer menu; absent = the built-in columns. */
+  menu?: Menus["footer"];
+}) {
+  const allGroups = menu ? [{ title: "Links", links: menu }] : groups(categories);
   return (
     <footer className="relative mt-24 overflow-hidden bg-indigo-deep text-ivory">
       <BorderBand id="footer-band" className="text-zari" />
@@ -42,19 +60,19 @@ export function Footer({ settings, partnersOpen = false }: { settings: SiteSetti
       <div className="container-page relative py-14">
         <div className="mb-12 flex flex-col gap-5 md:flex-row md:items-end md:justify-between" data-reveal>
           <div>
-            <p className="font-deva text-lg text-zari-light">नए आगमन</p>
-            <h2 className="mt-1 text-3xl md:text-4xl">Be first to see new arrivals</h2>
-            <p className="mt-2 text-ivory/70">Fresh from the looms, with styling ideas and the occasional offer. No spam.</p>
+            <p className="font-deva text-lg text-zari-light">{t("footerNewsletterHindi")}</p>
+            <h2 className="mt-1 text-3xl md:text-4xl">{t("footerNewsletterHeading")}</h2>
+            <p className="mt-2 text-ivory/70">{t("footerNewsletterBody")}</p>
           </div>
-          <NewsletterForm tone="dark" />
+          <NewsletterForm tone="dark" text={text} />
         </div>
 
         <div className="grid grid-cols-2 gap-8 border-t border-ivory/15 pt-10 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <p className="flex items-center gap-3 font-display text-2xl">
-              <Image src={logo} alt="" sizes="56px" className="size-14 shrink-0" /> {site.name}
+              <Image src={logo} alt="" sizes="56px" className="size-14 shrink-0" /> {t("siteName")}
             </p>
-            <p className="mt-2 max-w-xs text-sm text-ivory/70">{site.tagline}.</p>
+            <p className="mt-2 max-w-xs text-sm text-ivory/70">{t("siteTagline")}.</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <a
                 href={site.etsyUrl}
@@ -62,7 +80,7 @@ export function Footer({ settings, partnersOpen = false }: { settings: SiteSetti
                 rel="noopener noreferrer"
                 className="inline-flex h-10 items-center gap-2 rounded-full border border-zari/60 px-4 text-sm hover:bg-zari hover:text-indigo-deep"
               >
-                Shop us on Etsy
+                {t("footerEtsyButton")}
               </a>
               {settings.instagramUrl && (
                 <a
@@ -76,7 +94,7 @@ export function Footer({ settings, partnersOpen = false }: { settings: SiteSetti
               )}
             </div>
           </div>
-          {(partnersOpen ? groups.map((g) => (g.title === "About" ? { ...g, links: [...g.links, { href: "/partners", label: "Sell for Om Threads" }] } : g)) : groups).map((g) => (
+          {(partnersOpen && !menu ? allGroups.map((g) => (g.title === "About" ? { ...g, links: [...g.links, { href: "/partners", label: "Sell for Om Threads" }] } : g)) : allGroups).map((g) => (
             <div key={g.title}>
               <h3 className="mb-3 font-sans text-xs font-semibold tracking-[0.2em] text-zari-light uppercase">{g.title}</h3>
               <ul className="space-y-1">
@@ -93,7 +111,7 @@ export function Footer({ settings, partnersOpen = false }: { settings: SiteSetti
         </div>
 
         <p className="mt-12 text-xs text-ivory/55">
-          © {new Date().getFullYear()} {site.name}. Sourced from North India, with love. धन्यवाद.
+          {t("footerCopyright", { year: new Date().getFullYear(), name: t("siteName") })}
         </p>
       </div>
     </footer>

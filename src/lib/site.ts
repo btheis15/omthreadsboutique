@@ -32,7 +32,7 @@ export function siteUrl(): string {
   return "http://localhost:3000";
 }
 
-/** URL segment ⇄ product type. */
+/** FALLBACKS for the admin's editable lists (Types, Colours, Materials): used only when the feed has no `lists`. See lib/lists.ts. */
 export const categories: { slug: string; type: ProductType; title: string; singular: string; blurb: string }[] = [
   {
     slug: "shawls",
@@ -93,26 +93,10 @@ export const materials: { value: string; label: string }[] = [
   { value: "cotton", label: "Cotton" },
 ];
 
-export const nav = [
-  { href: "/shop", label: "Shop all" },
-  ...categories.slice(0, 2).map((c) => ({ href: `/shop/${c.slug}`, label: c.title })),
-  { href: "/crafts", label: "The crafts" },
-  { href: "/about", label: "Our story" },
-];
-
 export function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
-}
-
-export function colorLabel(value: string) {
-  return colors.find((c) => c.value === value)?.label ?? value;
-}
-
-export function materialLabel(value?: string) {
-  if (!value) return undefined;
-  return materials.find((m) => m.value === value)?.label ?? value;
 }

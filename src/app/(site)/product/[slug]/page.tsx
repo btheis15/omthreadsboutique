@@ -7,10 +7,10 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { getProduct, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
-import { craftByValue } from "@/lib/crafts";
+import { getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { liveCheckout } from "@/lib/payments";
-import { categories, colorLabel, materialLabel, site, siteUrl } from "@/lib/site";
+import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
+import { siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
@@ -37,19 +37,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout()]);
+  const [product, all, settings, onSiteCheckout, lists, t] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), getLists(), getT()]);
   if (!product) notFound();
 
-  const category = categories.find((c) => c.type === product.type);
+  const category = typeByValue(lists, product.type);
   const related = relatedProducts(all, product);
-  const craft = craftByValue(product.craft);
+  const craft = craftByValue(lists, product.craft);
 
   const details = [
     craft && { label: "Craft", value: craft.label },
     product.origin && { label: "Made in", value: product.origin },
-    product.material && { label: "Material", value: materialLabel(product.material) },
+    product.material && { label: "Material", value: materialLabel(lists, product.material) },
     product.dimensions && { label: "Size", value: product.dimensions },
-    product.colors.length && { label: "Color", value: product.colors.map(colorLabel).join(", ") },
+    product.colors.length && { label: "Color", value: product.colors.map((c) => colorLabel(lists, c)).join(", ") },
   ].filter(Boolean) as { label: string; value: string }[];
 
   const jsonLd = {
@@ -58,9 +58,9 @@ export default async function ProductPage({ params }: Props) {
     name: product.title,
     description: product.shortDescription,
     image: product.images.flatMap((i) => (i.url ? [new URL(i.url, siteUrl()).toString()] : [])),
-    material: materialLabel(product.material),
-    color: product.colors.map(colorLabel).join(", ") || undefined,
-    brand: { "@type": "Brand", name: site.name },
+    material: materialLabel(lists, product.material),
+    color: product.colors.map((c) => colorLabel(lists, c)).join(", ") || undefined,
+    brand: { "@type": "Brand", name: t("siteName") },
     offers: offersFor(product),
   };
 
@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: Props) {
             <>
               {" / "}
               <Link href={`/shop/${category.slug}`} className="hover:text-ink">
-                {category.title}
+                {category.plural}
               </Link>
             </>
           )}
@@ -96,7 +96,7 @@ export default async function ProductPage({ params }: Props) {
           <div className="container-page pt-6 md:px-0 md:pt-0">
             <div className="md:sticky md:top-28">
               <p className="eyebrow mb-2">
-                {[craft?.label, category?.singular].filter(Boolean).join(" · ")}
+                {[craft?.label, category?.label].filter(Boolean).join(" · ")}
                 {product.origin && <span className="text-zari"> · {product.origin}</span>}
               </p>
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
@@ -107,16 +107,16 @@ export default async function ProductPage({ params }: Props) {
 
               <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-muted">
                 <li className="flex items-center gap-2">
-                  <LeafIcon size={18} /> Handpicked quality
+                  <LeafIcon size={18} /> {t("productPromiseQuality")}
                 </li>
                 <li className="flex items-center gap-2">
-                  <TruckIcon size={18} /> Ships in {settings.shipsWithin}
+                  <TruckIcon size={18} /> {t("productPromiseShips", { shipsWithin: settings.shipsWithin })}
                 </li>
                 <li className="flex items-center gap-2">
-                  <ReturnIcon size={18} /> {settings.returnDays}-day US returns
+                  <ReturnIcon size={18} /> {t("promiseReturns", { days: settings.returnDays })}
                 </li>
                 <li className="flex items-center gap-2">
-                  <ShieldIcon size={18} /> Secure checkout
+                  <ShieldIcon size={18} /> {t("productPromiseSecure")}
                 </li>
               </ul>
 
@@ -127,7 +127,7 @@ export default async function ProductPage({ params }: Props) {
                 >
                   <span className="font-deva text-3xl text-accent">{craft.hindi}</span>
                   <span>
-                    <span className="block font-medium">The craft: {craft.label}</span>
+                    <span className="block font-medium">{t("productCraftPrefix", { craft: craft.label })}</span>
                     <span className="block text-sm text-muted">{craft.summary}</span>
                   </span>
                 </Link>
@@ -135,12 +135,12 @@ export default async function ProductPage({ params }: Props) {
 
               <div className="mt-8 divide-y divide-line border-y border-line">
                 {product.description && product.description.length > 0 && (
-                  <Accordion title="Description" defaultOpen>
+                  <Accordion title={t("productAccDescription")} defaultOpen>
                     <RichText value={product.description} />
                   </Accordion>
                 )}
                 {details.length > 0 && (
-                  <Accordion title="Details" defaultOpen={!product.description?.length}>
+                  <Accordion title={t("productAccDetails")} defaultOpen={!product.description?.length}>
                     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[0.95rem]">
                       {details.map((d) => (
                         <div key={d.label} className="contents">
@@ -152,17 +152,16 @@ export default async function ProductPage({ params }: Props) {
                   </Accordion>
                 )}
                 {product.care && (
-                  <Accordion title="Care">
+                  <Accordion title={t("productAccCare")}>
                     <p className="leading-relaxed">{product.care}</p>
                     <Link href="/care-guide" className="mt-2 inline-block text-sm underline underline-offset-4">
-                      Read the full care guide
+                      {t("productCareLink")}
                     </Link>
                   </Accordion>
                 )}
-                <Accordion title="Shipping & returns">
+                <Accordion title={t("productAccShipping")}>
                   <p className="leading-relaxed">
-                    Packed with care and shipped within {settings.shipsWithin}. Unworn items shipped within the US can be returned within{" "}
-                    {settings.returnDays} days. International orders are final sale.{" "}
+                    {t("productShippingBody", { shipsWithin: settings.shipsWithin, days: settings.returnDays, finalSale: t("finalSaleNote") })}{" "}
                     <Link href="/policies/shipping" className="underline underline-offset-4">
                       Shipping
                     </Link>{" "}
@@ -179,7 +178,7 @@ export default async function ProductPage({ params }: Props) {
 
         {related.length > 0 && (
           <section className="container-page mt-20 md:px-0">
-            <h2 className="mb-6 text-3xl">You may also love</h2>
+            <h2 className="mb-6 text-3xl">{t("productRelatedHeading")}</h2>
             <ProductGrid products={related} />
           </section>
         )}

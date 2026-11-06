@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { Bold } from "@/components/Bold";
 import { cart, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
 import { wcProjectId } from "@/lib/bch/walletConnect";
 import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
+import { makeT } from "@/lib/site-text";
 import type { CheckoutInfo } from "@/lib/types";
 import { PayPalButtons } from "./PayPalButtons";
 
@@ -29,12 +31,16 @@ export function CheckoutView({
   cancelled,
   testerLink,
   returnDays,
+  text,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
   testerLink: "on" | "invalid" | null;
   returnDays: number;
+  /** The owner's text overrides (feed `text`). */
+  text?: Record<string, string>;
 }) {
+  const t = makeT(text);
   const { items, subtotal } = useCart();
   const onSite = Boolean(checkout);
   const [country, setCountry] = useState(checkout?.countries[0]?.code ?? "US");
@@ -149,9 +155,9 @@ export function CheckoutView({
 
       {!onSite && (
         <div className="mt-6 rounded-xl border border-line bg-sand p-5">
-          <p className="font-medium">Online checkout is coming soon</p>
+          <p className="font-medium">{t("checkoutComingSoonTitle")}</p>
           <p className="mt-1 text-[0.95rem] text-ink/80">
-            For now, please complete your purchase securely on Etsy. Tap <strong>Buy on Etsy</strong> next to each piece below.
+            <Bold text={t("checkoutComingSoonBody")} />
           </p>
         </div>
       )}
@@ -240,7 +246,7 @@ export function CheckoutView({
             </p>
             {place.code === "IN" && (
               <p className="mt-3 rounded-lg bg-sand p-3 text-sm leading-relaxed">
-                Shipping to India: any import duty is paid on delivery, and Indian customs asks the recipient for ID (Aadhaar, PAN or passport) before releasing the parcel.
+                {t("checkoutIndiaNote")}
               </p>
             )}
           </section>
@@ -279,17 +285,17 @@ export function CheckoutView({
                       <span className="block text-sm text-muted">
                         {p === "stripe"
                           ? place.code === "IN"
-                            ? "Secure checkout by Stripe. Shoppers in India see rupees and can pay by UPI."
-                            : "Secure checkout by Stripe."
+                            ? t("payStripeDescIndia")
+                            : t("payStripeDesc")
                           : p === "paypal"
-                            ? "Pay with your PayPal or Venmo account, in PayPal's own window."
+                            ? t("payPaypalDesc")
                             : p === "exodus"
-                              ? `Pay in ${checkout.exodusCoins || "USDC or USDT"} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.`
+                              ? t("payExodusDesc", { coins: checkout.exodusCoins || "USDC or USDT" })
                               : p === "bch"
                                 ? wcProjectId
-                                  ? "Pay from your wallet in one tap, or scan a QR code. Confirmed in seconds."
-                                  : "Pay from your wallet by scanning a QR code. Confirmed in seconds."
-                                : `Place the order, then send the payment from your bank's Zelle. We hold it for you for ${checkout.zelle?.holdHours ?? 48} hours and ship once it arrives.`}
+                                  ? t("payBchDescWallet")
+                                  : t("payBchDescQr")
+                                : t("payZelleDesc", { hours: checkout.zelle?.holdHours ?? 48 })}
                       </span>
                     </span>
                   </label>
@@ -313,12 +319,12 @@ export function CheckoutView({
                 {field("state", place.code === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: place.code === "US" ? "IL" : undefined })}
                 {field("postal_code", place.code === "US" ? "ZIP code" : place.code === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: place.code === "US" || place.code === "IN" ? "numeric" : undefined })}
                 <label className="block sm:col-span-2">
-                  <span className="mb-1 block text-sm">Gift note (optional)</span>
+                  <span className="mb-1 block text-sm">{t("giftNoteLabel")}</span>
                   <textarea
                     value={giftNote}
                     onChange={(e) => setGiftNote(e.target.value.slice(0, 255))}
                     rows={2}
-                    placeholder="We'll write it on a card and wrap your piece."
+                    placeholder={t("giftNotePlaceholder")}
                     className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5"
                   />
                 </label>
@@ -361,7 +367,7 @@ export function CheckoutView({
               <dd className="text-right text-lg font-medium">{dollars(subtotalCents + shipping)}</dd>
             </dl>
             {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
-            {provider === "stripe" && <p className="mt-1 text-sm text-muted">A gift? Add a gift note on the payment page and we&apos;ll write it on a card.</p>}
+            {provider === "stripe" && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
             {checkout.mode === "test" && provider === "stripe" && place.code === "IN" && (
               <label className="mt-4 flex items-center gap-2 text-sm">
@@ -403,18 +409,18 @@ export function CheckoutView({
             <p className="mt-3 flex items-center justify-center gap-2 text-center text-sm text-muted">
               <ShieldIcon size={16} />{" "}
               {provider === "exodus"
-                ? "You pay on Exodus's page, from your own wallet."
+                ? t("checkoutNoteExodus")
                 : provider === "bch"
-                  ? "You pay from your own wallet, straight to ours. We never see your wallet or its keys."
+                  ? t("checkoutNoteBch")
                 : provider === "paypal"
-                  ? "You pay in PayPal's own window. We never see your PayPal or card details."
+                  ? t("checkoutNotePaypal")
                   : provider === "zelle"
-                    ? "You send it from your own bank's app. Zelle payments can't be reversed, so check the details before sending."
-                    : "Payments are processed by Stripe. We never see your card details."}
+                    ? t("checkoutNoteZelle")
+                    : t("checkoutNoteStripe")}
             </p>
             <p className="mt-1 text-center text-sm text-muted">
               <Link href="/policies/returns" className="underline underline-offset-4">
-                {country === "US" ? `${returnDays}-day returns` : "International orders are final sale (no returns)"}
+                {country === "US" ? t("checkoutReturnsUS", { days: returnDays }) : `${t("finalSaleNote")} (no returns)`}
               </Link>{" "}
               ·{" "}
               <Link href="/policies/shipping" className="underline underline-offset-4">

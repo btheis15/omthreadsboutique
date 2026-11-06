@@ -1,6 +1,14 @@
 import type { PortableTextBlock } from "next-sanity";
 
-export type ProductType = "shawl" | "stole" | "scarf" | "wrap";
+/** A type's stable `value` from the admin's Types list (e.g. "stole"); the list is editable, so any string. */
+export type ProductType = string;
+
+/** The admin's editable product lists (feed `lists`), see src/lib/lists.ts. */
+export type TypeItem = { value: string; label: string; plural: string; slug: string; blurb: string };
+export type ColorItem = { value: string; label: string; hex: string };
+export type MaterialItem = { value: string; label: string };
+export type CraftItem = { value: string; label: string; hindi: string; region: string; summary: string; story: string };
+export type Lists = { types: TypeItem[]; colors: ColorItem[]; materials: MaterialItem[]; crafts: CraftItem[] };
 
 export type SwatchPattern = "weave" | "stripe" | "paisley" | "plain" | "jaali" | "bandhani" | "block";
 
@@ -44,7 +52,7 @@ export type Product = {
   description?: PortableTextBlock[] | string[];
   colors: string[];
   material?: string;
-  /** Craft technique, see src/lib/crafts.ts */
+  /** Craft value, see the crafts list in src/lib/lists.ts */
   craft?: string;
   /** Where it was made, e.g. "Srinagar, Kashmir" */
   origin?: string;
@@ -107,6 +115,8 @@ export type SiteSettings = {
   heroTitle?: string;
   heroSubtitle?: string;
   heroImage?: ProductImage;
+  /** The hero slideshow, in order (feed `settings.heroImages`). Empty = use heroImage. */
+  heroImages?: ProductImage[];
   heroVideoUrl?: string;
   etsyRating?: number;
   etsyReviewCount?: number;

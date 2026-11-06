@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
-import { getProduct, getProducts, isSoldOut } from "@/lib/catalog";
-import { categories, formatPrice, site, siteUrl } from "@/lib/site";
+import { getLists, getProduct, getProducts, isSoldOut } from "@/lib/catalog";
+import { formatPrice, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { priceRange } from "@/lib/variants";
 
@@ -63,7 +63,7 @@ export default async function Image({ params }: Props) {
   const price = range.min === range.max ? formatPrice(range.min) : `From ${formatPrice(range.min)}`;
   // As on the shop's product cards: the lowest price, struck beside the original when marked down.
   const wasPrice = product.compareAtPrice && product.compareAtPrice > range.min ? formatPrice(product.compareAtPrice) : undefined;
-  const kind = categories.find((c) => c.type === product.type)?.singular;
+  const kind = (await getLists()).types.find((t) => t.value === product.type)?.label;
   const title = clip(product.title, 80);
 
   return asJpeg(new ImageResponse(

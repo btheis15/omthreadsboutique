@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ViewTransition } from "react";
-import { isSoldOut } from "@/lib/catalog";
-import { craftByValue } from "@/lib/crafts";
+import { getLists, isSoldOut } from "@/lib/catalog";
+import { craftByValue } from "@/lib/lists";
 import { formatPrice } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { priceRange } from "@/lib/variants";
@@ -31,7 +31,7 @@ export function Badge({ product }: { product: Product }) {
 /** Shared-element name so the card image morphs into the product page gallery. */
 export const productVtName = (slug: string) => `product-${slug}`;
 
-export function ProductCard({
+export async function ProductCard({
   product,
   preload,
   morph = false,
@@ -44,7 +44,7 @@ export function ProductCard({
   index?: number;
 }) {
   const [first, second] = product.images;
-  const craft = craftByValue(product.craft);
+  const craft = craftByValue(await getLists(), product.craft);
   const image = (
     <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-sand shadow-[0_1px_0_rgba(35,49,66,0.04)] transition-shadow duration-500 group-hover:shadow-[0_18px_40px_-18px_rgba(35,49,66,0.45)]">
       <Badge product={product} />

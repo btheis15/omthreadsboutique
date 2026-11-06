@@ -1,0 +1,612 @@
+[
+  {
+    "key": "siteName",
+    "group": "Whole site",
+    "label": "Shop name",
+    "default": "Om Threads Boutique"
+  },
+  {
+    "key": "siteTagline",
+    "group": "Whole site",
+    "label": "Tagline (no full stop)",
+    "default": "Heirloom shawls & stoles from North India"
+  },
+  {
+    "key": "siteDescription",
+    "group": "Whole site",
+    "label": "Short description of the shop (also the default for search results)",
+    "default": "Kullu shawls from Himachal Pradesh, lohis from Punjab, pashmina and more: shawls and stoles from North India.",
+    "multiline": true
+  },
+  {
+    "key": "footerNewsletterHindi",
+    "group": "Whole site",
+    "label": "Footer sign-up: Hindi eyebrow",
+    "default": "नए आगमन"
+  },
+  {
+    "key": "footerNewsletterHeading",
+    "group": "Whole site",
+    "label": "Footer sign-up: heading",
+    "default": "Be first to see new arrivals"
+  },
+  {
+    "key": "footerNewsletterBody",
+    "group": "Whole site",
+    "label": "Footer sign-up: sentence under the heading",
+    "default": "Fresh from the looms, with styling ideas and the occasional offer. No spam."
+  },
+  {
+    "key": "newsletterThanks",
+    "group": "Whole site",
+    "label": "Newsletter: thank-you message",
+    "default": "Thank you! 🙏 You're on the list for new arrivals."
+  },
+  {
+    "key": "footerEtsyButton",
+    "group": "Whole site",
+    "label": "Footer: Etsy button",
+    "default": "Shop us on Etsy"
+  },
+  {
+    "key": "footerCopyright",
+    "group": "Whole site",
+    "label": "Footer: copyright line",
+    "hint": "Placeholders: {year} and {name} (the shop name).",
+    "default": "© {year} {name}. Sourced from North India, with love. धन्यवाद."
+  },
+  {
+    "key": "notFoundTitle",
+    "group": "Whole site",
+    "label": "Page not found: heading",
+    "default": "We couldn't find that page"
+  },
+  {
+    "key": "notFoundBody",
+    "group": "Whole site",
+    "label": "Page not found: sentence",
+    "default": "It may have sold out or moved. Let's find you something lovely instead."
+  },
+  {
+    "key": "notFoundButton",
+    "group": "Whole site",
+    "label": "Page not found: button",
+    "default": "Browse the collection"
+  },
+  {
+    "key": "newBadgeDays",
+    "group": "Whole site",
+    "label": "Days a piece shows the \"New\" badge",
+    "hint": "A whole number from 1 to 365.",
+    "default": "21"
+  },
+  {
+    "key": "cartEmptyTitle",
+    "group": "Checkout & cart",
+    "label": "Cart (empty): heading",
+    "default": "Your cart is empty"
+  },
+  {
+    "key": "cartEmptyBody",
+    "group": "Checkout & cart",
+    "label": "Cart (empty): sentence",
+    "default": "Find something soft to wrap yourself in."
+  },
+  {
+    "key": "cartEmptyButton",
+    "group": "Checkout & cart",
+    "label": "Cart (empty): button",
+    "default": "Shop the collection"
+  },
+  {
+    "key": "cartAwayFree",
+    "group": "Checkout & cart",
+    "label": "Cart: free-shipping nudge",
+    "hint": "{amount} is the dollars still needed. Put **double asterisks** around words to make them bold.",
+    "default": "You're **{amount}** away from free shipping"
+  },
+  {
+    "key": "cartUnlockedFree",
+    "group": "Checkout & cart",
+    "label": "Cart: free shipping unlocked",
+    "default": "You've unlocked free shipping ✨"
+  },
+  {
+    "key": "checkoutComingSoonTitle",
+    "group": "Checkout & cart",
+    "label": "Checkout (not yet open): heading",
+    "default": "Online checkout is coming soon"
+  },
+  {
+    "key": "checkoutComingSoonBody",
+    "group": "Checkout & cart",
+    "label": "Checkout (not yet open): sentence",
+    "hint": "Put **double asterisks** around words to make them bold.",
+    "default": "For now, please complete your purchase securely on Etsy. Tap **Buy on Etsy** next to each piece below.",
+    "multiline": true
+  },
+  {
+    "key": "checkoutIndiaNote",
+    "group": "Checkout & cart",
+    "label": "Checkout: note for shipping to India",
+    "default": "Shipping to India: any import duty is paid on delivery, and Indian customs asks the recipient for ID (Aadhaar, PAN or passport) before releasing the parcel.",
+    "multiline": true
+  },
+  {
+    "key": "payStripeDesc",
+    "group": "Checkout & cart",
+    "label": "Pay with card: description",
+    "default": "Secure checkout by Stripe."
+  },
+  {
+    "key": "payStripeDescIndia",
+    "group": "Checkout & cart",
+    "label": "Pay with card (India): description",
+    "default": "Secure checkout by Stripe. Shoppers in India see rupees and can pay by UPI."
+  },
+  {
+    "key": "payPaypalDesc",
+    "group": "Checkout & cart",
+    "label": "PayPal: description",
+    "default": "Pay with your PayPal or Venmo account, in PayPal's own window."
+  },
+  {
+    "key": "payExodusDesc",
+    "group": "Checkout & cart",
+    "label": "Exodus / crypto: description",
+    "hint": "{coins} is the coin list set up in the admin (for example USDC or USDT).",
+    "default": "Pay in {coins} from Exodus Pay, MetaMask, Phantom or any wallet, on Exodus's secure page.",
+    "multiline": true
+  },
+  {
+    "key": "payBchDescWallet",
+    "group": "Checkout & cart",
+    "label": "Bitcoin Cash: description (wallet connect)",
+    "default": "Pay from your wallet in one tap, or scan a QR code. Confirmed in seconds."
+  },
+  {
+    "key": "payBchDescQr",
+    "group": "Checkout & cart",
+    "label": "Bitcoin Cash: description (QR only)",
+    "default": "Pay from your wallet by scanning a QR code. Confirmed in seconds."
+  },
+  {
+    "key": "payZelleDesc",
+    "group": "Checkout & cart",
+    "label": "Zelle: description",
+    "hint": "{hours} is the hold time set up in the admin.",
+    "default": "Place the order, then send the payment from your bank's Zelle. We hold it for you for {hours} hours and ship once it arrives.",
+    "multiline": true
+  },
+  {
+    "key": "giftNoteLabel",
+    "group": "Checkout & cart",
+    "label": "Gift note: label",
+    "default": "Gift note (optional)"
+  },
+  {
+    "key": "giftNotePlaceholder",
+    "group": "Checkout & cart",
+    "label": "Gift note: placeholder",
+    "default": "We'll write it on a card and wrap your piece."
+  },
+  {
+    "key": "giftStripeNote",
+    "group": "Checkout & cart",
+    "label": "Gift note (card payments): line under the total",
+    "default": "A gift? Add a gift note on the payment page and we'll write it on a card."
+  },
+  {
+    "key": "checkoutNoteExodus",
+    "group": "Checkout & cart",
+    "label": "Reassurance under pay button: Exodus",
+    "default": "You pay on Exodus's page, from your own wallet."
+  },
+  {
+    "key": "checkoutNoteBch",
+    "group": "Checkout & cart",
+    "label": "Reassurance under pay button: Bitcoin Cash",
+    "default": "You pay from your own wallet, straight to ours. We never see your wallet or its keys."
+  },
+  {
+    "key": "checkoutNotePaypal",
+    "group": "Checkout & cart",
+    "label": "Reassurance under pay button: PayPal",
+    "default": "You pay in PayPal's own window. We never see your PayPal or card details."
+  },
+  {
+    "key": "checkoutNoteZelle",
+    "group": "Checkout & cart",
+    "label": "Reassurance under pay button: Zelle",
+    "default": "You send it from your own bank's app. Zelle payments can't be reversed, so check the details before sending.",
+    "multiline": true
+  },
+  {
+    "key": "checkoutNoteStripe",
+    "group": "Checkout & cart",
+    "label": "Reassurance under pay button: card",
+    "default": "Payments are processed by Stripe. We never see your card details."
+  },
+  {
+    "key": "finalSaleNote",
+    "group": "Checkout & cart",
+    "label": "International final-sale note (shared by product page and checkout)",
+    "hint": "No full stop. The product page adds one; checkout adds \"(no returns)\".",
+    "default": "International orders are final sale"
+  },
+  {
+    "key": "checkoutReturnsUS",
+    "group": "Checkout & cart",
+    "label": "Checkout: returns link for US orders",
+    "hint": "{days} is the return window from Settings.",
+    "default": "{days}-day returns"
+  },
+  {
+    "key": "homeGreeting",
+    "group": "Home page",
+    "label": "Hero: Hindi greeting",
+    "default": "स्वागत है"
+  },
+  {
+    "key": "heroTitleFallback",
+    "group": "Home page",
+    "label": "Hero: headline when none is set in Settings",
+    "default": "Handwoven treasures of North India"
+  },
+  {
+    "key": "heroButtonShop",
+    "group": "Home page",
+    "label": "Hero: first button",
+    "default": "Shop the collection"
+  },
+  {
+    "key": "heroButtonCrafts",
+    "group": "Home page",
+    "label": "Hero: second button",
+    "default": "Discover the crafts"
+  },
+  {
+    "key": "promiseHandpicked",
+    "group": "Home page",
+    "label": "Promise strip: first promise",
+    "default": "Handpicked in India"
+  },
+  {
+    "key": "promiseFreeShipping",
+    "group": "Home page",
+    "label": "Promise strip: free shipping",
+    "hint": "{amount} is the free-shipping amount from Settings.",
+    "default": "Free shipping ${amount}+"
+  },
+  {
+    "key": "promiseReturns",
+    "group": "Home page",
+    "label": "Promise: returns (home and product page)",
+    "hint": "{days} is the return window from Settings.",
+    "default": "{days}-day US returns"
+  },
+  {
+    "key": "homeShopType",
+    "group": "Home page",
+    "label": "Category tile link",
+    "hint": "{type} is the category name in lower case.",
+    "default": "Shop {type}"
+  },
+  {
+    "key": "homeNewEyebrow",
+    "group": "Home page",
+    "label": "New arrivals: Hindi eyebrow",
+    "default": "नए आगमन"
+  },
+  {
+    "key": "homeNewHeading",
+    "group": "Home page",
+    "label": "New arrivals: heading",
+    "default": "New arrivals"
+  },
+  {
+    "key": "homeNewViewAll",
+    "group": "Home page",
+    "label": "New arrivals: link",
+    "default": "View all"
+  },
+  {
+    "key": "homeCraftsEyebrow",
+    "group": "Home page",
+    "label": "Crafts section: Hindi eyebrow",
+    "default": "करघे से"
+  },
+  {
+    "key": "homeCraftsHeading",
+    "group": "Home page",
+    "label": "Crafts section: heading",
+    "default": "The crafts behind our shawls"
+  },
+  {
+    "key": "homeCraftsIntro",
+    "group": "Home page",
+    "label": "Crafts section: sentence",
+    "default": "Where each tradition comes from, and what makes it its own."
+  },
+  {
+    "key": "homeCraftReadStory",
+    "group": "Home page",
+    "label": "Craft card link",
+    "default": "Read the story"
+  },
+  {
+    "key": "homeCraftsButton",
+    "group": "Home page",
+    "label": "Crafts section: button",
+    "default": "Explore the crafts"
+  },
+  {
+    "key": "homeStoryEyebrow",
+    "group": "Home page",
+    "label": "Brand story: Hindi eyebrow",
+    "default": "हमारी कहानी"
+  },
+  {
+    "key": "homeStoryHeading",
+    "group": "Home page",
+    "label": "Brand story: heading",
+    "default": "Chosen by hand, made to be treasured"
+  },
+  {
+    "key": "homeStoryBody",
+    "group": "Home page",
+    "label": "Brand story: paragraph",
+    "default": "Every shawl and stole is sourced from northern India and handpicked for how it feels, how it drapes and how long it will last. Natural fibres, honest craftsmanship, and colours you'll reach for again and again.",
+    "multiline": true
+  },
+  {
+    "key": "homeStoryButton",
+    "group": "Home page",
+    "label": "Brand story: button",
+    "default": "Read our story"
+  },
+  {
+    "key": "homeFeaturedEyebrow",
+    "group": "Home page",
+    "label": "Featured: Hindi eyebrow",
+    "default": "विशेष"
+  },
+  {
+    "key": "homeFeaturedHeading",
+    "group": "Home page",
+    "label": "Featured: heading",
+    "default": "Featured pieces"
+  },
+  {
+    "key": "homeReviewsEyebrow",
+    "group": "Home page",
+    "label": "Reviews: Hindi eyebrow",
+    "default": "आपके शब्द"
+  },
+  {
+    "key": "homeReviewsHeading",
+    "group": "Home page",
+    "label": "Reviews: heading",
+    "default": "Kind words from our customers"
+  },
+  {
+    "key": "homeOccasionHeading",
+    "group": "Home page",
+    "label": "Collections: heading",
+    "default": "Shop by occasion"
+  },
+  {
+    "key": "homeEtsyEyebrow",
+    "group": "Home page",
+    "label": "Etsy block: eyebrow",
+    "default": "Also on Etsy"
+  },
+  {
+    "key": "homeEtsyHeading",
+    "group": "Home page",
+    "label": "Etsy block: heading",
+    "default": "Prefer to shop on Etsy?"
+  },
+  {
+    "key": "homeEtsyBody",
+    "group": "Home page",
+    "label": "Etsy block: paragraph",
+    "default": "Our full collection is on Etsy too, with the same pieces and the same care. Read customer reviews there, or check out with your Etsy account.",
+    "multiline": true
+  },
+  {
+    "key": "homeEtsyButton",
+    "group": "Home page",
+    "label": "Etsy block: button",
+    "default": "Visit our Etsy shop"
+  },
+  {
+    "key": "shopTitle",
+    "group": "Shop page",
+    "label": "Shop page: heading",
+    "default": "Shop all"
+  },
+  {
+    "key": "shopIntro",
+    "group": "Shop page",
+    "label": "Shop page: sentence under the heading",
+    "default": "Every piece is handpicked for softness, drape and lasting quality."
+  },
+  {
+    "key": "shopSearchTitle",
+    "group": "Shop page",
+    "label": "Search results: heading",
+    "hint": "{query} is what the shopper searched for.",
+    "default": "Results for “{query}”"
+  },
+  {
+    "key": "shopNoResultsTitle",
+    "group": "Shop page",
+    "label": "No matching pieces: heading",
+    "default": "No pieces match those filters"
+  },
+  {
+    "key": "shopNoResultsHint",
+    "group": "Shop page",
+    "label": "No matching pieces: sentence",
+    "default": "Try removing a filter or two."
+  },
+  {
+    "key": "productPromiseQuality",
+    "group": "Product page",
+    "label": "Product promise 1",
+    "default": "Handpicked quality"
+  },
+  {
+    "key": "productPromiseShips",
+    "group": "Product page",
+    "label": "Product promise 2",
+    "hint": "{shipsWithin} is the shipping time from Settings.",
+    "default": "Ships in {shipsWithin}"
+  },
+  {
+    "key": "productPromiseSecure",
+    "group": "Product page",
+    "label": "Product promise 4",
+    "default": "Secure checkout"
+  },
+  {
+    "key": "productCraftPrefix",
+    "group": "Product page",
+    "label": "Craft box title",
+    "hint": "{craft} is the craft name.",
+    "default": "The craft: {craft}"
+  },
+  {
+    "key": "productAccDescription",
+    "group": "Product page",
+    "label": "Section heading: Description",
+    "default": "Description"
+  },
+  {
+    "key": "productAccDetails",
+    "group": "Product page",
+    "label": "Section heading: Details",
+    "default": "Details"
+  },
+  {
+    "key": "productAccCare",
+    "group": "Product page",
+    "label": "Section heading: Care",
+    "default": "Care"
+  },
+  {
+    "key": "productCareLink",
+    "group": "Product page",
+    "label": "Care link",
+    "default": "Read the full care guide"
+  },
+  {
+    "key": "productAccShipping",
+    "group": "Product page",
+    "label": "Section heading: Shipping & returns",
+    "default": "Shipping & returns"
+  },
+  {
+    "key": "productShippingBody",
+    "group": "Product page",
+    "label": "Shipping & returns text",
+    "hint": "Placeholders: {shipsWithin}, {days}, and {finalSale} (the international final-sale sentence, edited under Checkout & cart).",
+    "default": "Packed with care and shipped within {shipsWithin}. Unworn items shipped within the US can be returned within {days} days. {finalSale}.",
+    "multiline": true
+  },
+  {
+    "key": "productRelatedHeading",
+    "group": "Product page",
+    "label": "\"You may also love\" heading",
+    "default": "You may also love"
+  },
+  {
+    "key": "care.delicate",
+    "group": "Product page",
+    "label": "Care wording: Delicate",
+    "default": "Dry clean or hand wash gently in cold water with a wool or silk shampoo. Do not wring. Dry flat, away from direct sun.",
+    "multiline": true
+  },
+  {
+    "key": "care.washable",
+    "group": "Product page",
+    "label": "Care wording: Washable",
+    "default": "Hand wash cold with a mild detergent. Dry flat in the shade and press on low heat.",
+    "multiline": true
+  },
+  {
+    "key": "care.dryClean",
+    "group": "Product page",
+    "label": "Care wording: Dry clean",
+    "default": "Dry clean only. Store folded with a cedar block or lavender sachet.",
+    "multiline": true
+  },
+  {
+    "key": "seoHomeTitle",
+    "group": "Search & sharing (SEO)",
+    "label": "Home page title in search results",
+    "default": "Om Threads Boutique | Shawls & Stoles from North India"
+  },
+  {
+    "key": "seoShopTitle",
+    "group": "Search & sharing (SEO)",
+    "label": "Shop page title in search results",
+    "default": "Shop all shawls & stoles"
+  },
+  {
+    "key": "seoShopDescription",
+    "group": "Search & sharing (SEO)",
+    "label": "Shop page description in search results",
+    "default": "Browse every shawl, stole, scarf and wrap in pashmina, cashmere, silk, wool and more.",
+    "multiline": true
+  },
+  {
+    "key": "seoContactTitle",
+    "group": "Search & sharing (SEO)",
+    "label": "Contact page title in search results",
+    "default": "Contact"
+  },
+  {
+    "key": "seoContactDescription",
+    "group": "Search & sharing (SEO)",
+    "label": "Contact page description in search results",
+    "default": "Get in touch with Om Threads Boutique.",
+    "multiline": true
+  },
+  {
+    "key": "seoPartnersTitle",
+    "group": "Search & sharing (SEO)",
+    "label": "Sell-for-us page title in search results",
+    "default": "Sell for Om Threads"
+  },
+  {
+    "key": "seoPartnersDescription",
+    "group": "Search & sharing (SEO)",
+    "label": "Sell-for-us page description in search results",
+    "default": "Share Om Threads Boutique's handwoven pieces and earn a commission on every Bitcoin Cash sale your link brings.",
+    "multiline": true
+  },
+  {
+    "key": "sellerTermsVersion",
+    "group": "Sell for us page",
+    "label": "Seller terms: version",
+    "hint": "Shown at the top of the seller terms (the {version} placeholder). Any text, for example 2026-10e. Change it when you change the terms.",
+    "default": "2026-10e"
+  },
+  {
+    "key": "partnersTaxLimit",
+    "group": "Sell for us page",
+    "label": "Seller terms: yearly commission limit (US dollars)",
+    "hint": "Digits only, for example 1999. The website adds the $ sign.",
+    "default": "1999"
+  },
+  {
+    "key": "emailFooter",
+    "group": "Emails",
+    "label": "Order emails: closing line",
+    "hint": "The small line at the bottom of customer order emails. {contact} becomes \" or write to your contact email\" when you have set a contact email in Settings, and nothing otherwise.",
+    "default": "Questions? Just reply to this email{contact}. Om Threads Boutique · ships from Lake Villa, Illinois.",
+    "multiline": true
+  }
+]
