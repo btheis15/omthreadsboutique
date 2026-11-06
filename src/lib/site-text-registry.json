@@ -586,5 +586,27 @@
     "label": "Sell-for-us page description in search results",
     "default": "Share Om Threads Boutique's handwoven pieces and earn a commission on every Bitcoin Cash sale your link brings.",
     "multiline": true
+  },
+  {
+    "key": "sellerTermsVersion",
+    "group": "Sell for us page",
+    "label": "Seller terms: version",
+    "hint": "Shown at the top of the seller terms (the {version} placeholder). Any text, for example 2026-10e. Change it when you change the terms.",
+    "default": "2026-10e"
+  },
+  {
+    "key": "partnersTaxLimit",
+    "group": "Sell for us page",
+    "label": "Seller terms: yearly commission limit (US dollars)",
+    "hint": "Digits only, for example 1999. The website adds the $ sign.",
+    "default": "1999"
+  },
+  {
+    "key": "emailFooter",
+    "group": "Emails",
+    "label": "Order emails: closing line",
+    "hint": "The small line at the bottom of customer order emails. {contact} becomes \" or write to your contact email\" when you have set a contact email in Settings, and nothing otherwise.",
+    "default": "Questions? Just reply to this email{contact}. Om Threads Boutique · ships from Lake Villa, Illinois.",
+    "multiline": true
   }
 ]

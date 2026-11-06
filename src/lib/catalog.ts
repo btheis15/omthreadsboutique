@@ -332,6 +332,22 @@ function cleanHeroImages(raw: unknown): ProductImage[] {
   });
 }
 
+/** A page from the admin's feed only (no built-in fallback); undefined when absent or the feed is unreachable. */
+export async function getFeedPage(slug: string): Promise<ContentPage | undefined> {
+  if (catalogSource !== "shop") return undefined;
+  try {
+    return (await shopCatalog()).pages.find((p) => p.slug === slug);
+  } catch {
+    return undefined;
+  }
+}
+
+/** An owner text override from the feed's `text` map, or undefined (use the built-in default). */
+export async function getFeedText(key: string): Promise<string | undefined> {
+  const v = (await getTextOverrides())[key];
+  return typeof v === "string" && v.trim() ? v : undefined;
+}
+
 export async function getSettings(): Promise<SiteSettings> {
   if (catalogSource === "shop") {
     const { heroImages, ...rest } = (await shopCatalog()).settings;

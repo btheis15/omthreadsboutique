@@ -60,7 +60,7 @@ export default async function ProductPage({ params }: Props) {
     image: product.images.flatMap((i) => (i.url ? [new URL(i.url, siteUrl()).toString()] : [])),
     material: materialLabel(lists, product.material),
     color: product.colors.map((c) => colorLabel(lists, c)).join(", ") || undefined,
-    brand: { "@type": "Brand", name: site.name },
+    brand: { "@type": "Brand", name: t("siteName") },
     offers: offersFor(product),
   };
 

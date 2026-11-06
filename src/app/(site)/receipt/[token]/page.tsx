@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/assets/logo.png";
-import { shopApi, shopperIp } from "@/lib/catalog";
+import { getT, shopApi, shopperIp } from "@/lib/catalog";
 import { site } from "@/lib/site";
 import { EmailReceipt } from "./EmailReceipt";
 
@@ -38,6 +38,7 @@ const dollars = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { m
  */
 export default async function ReceiptPage({ params }: Props) {
   const { token } = await params;
+  const t = await getT();
   let r: Receipt | null = null;
   if (/^[\w-]{10,64}$/.test(token)) {
     try {
@@ -65,7 +66,7 @@ export default async function ReceiptPage({ params }: Props) {
         <div className="flex items-center gap-4">
           <Image src={logo} alt="" width={64} height={64} className="h-16 w-16" />
           <div>
-            <p className="font-display text-xl">{site.name}</p>
+            <p className="font-display text-xl">{t("siteName")}</p>
             <p className="text-sm text-muted">Receipt {r.number}</p>
           </div>
         </div>
