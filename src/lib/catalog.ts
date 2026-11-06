@@ -47,6 +47,8 @@ type ShopCatalog = {
   testimonials: Testimonial[];
   /** The admin's editable lists (types, colours, materials, crafts). Absent until the admin is updated. */
   lists?: unknown;
+  /** The owner's text overrides (only keys they changed). Absent until the admin is updated. */
+  text?: Record<string, string>;
   /** Present only while the admin has the website checkout on (test or live). */
   checkout?: CheckoutInfo;
 };
@@ -283,6 +285,27 @@ export async function getPage(slug: string): Promise<ContentPage | undefined> {
   );
   if (!row) return fallback;
   return { slug, title: row.title, intro: row.intro, body: row.body ?? [] };
+}
+
+/** A page from the admin's feed only (no built-in fallback); undefined when absent or the feed is unreachable. */
+export async function getFeedPage(slug: string): Promise<ContentPage | undefined> {
+  if (catalogSource !== "shop") return undefined;
+  try {
+    return (await shopCatalog()).pages.find((p) => p.slug === slug);
+  } catch {
+    return undefined;
+  }
+}
+
+/** An owner text override from the feed's `text` map, or undefined (use the built-in default). */
+export async function getFeedText(key: string): Promise<string | undefined> {
+  if (catalogSource !== "shop") return undefined;
+  try {
+    const v = (await shopCatalog()).text?.[key];
+    return typeof v === "string" && v.trim() ? v : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getSettings(): Promise<SiteSettings> {
