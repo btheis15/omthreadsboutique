@@ -5,7 +5,6 @@ import { countryOptions } from "@/components/partners/countries";
 import { PartnerSignup, SignInByEmail } from "@/components/partners/PartnerSignup";
 import { getCheckout, getFeedPage, getFeedText, getT } from "@/lib/catalog";
 import { fill, partnersContent, termsContent } from "@/lib/page-content";
-import { site } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
