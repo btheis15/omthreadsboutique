@@ -14,7 +14,7 @@ import type { CheckoutInfo } from "@/lib/types";
 import { PayPalButtons } from "./PayPalButtons";
 
 type Provider = CheckoutInfo["providers"][number];
-// PayPal, crypto and Zelle need the address on this page (Stripe asks on its own page).
+// PayPal, crypto, Zelle and Venmo need the address on this page (Stripe asks on its own page).
 const asksAddress = (p: Provider) => p !== "stripe";
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
@@ -24,7 +24,7 @@ const dollars = (cents: number) => formatPrice(cents / 100);
  * The cart and, when the shop's own checkout is on, the way to pay: Stripe
  * (cards, Apple Pay, Google Pay, and UPI for shoppers in India), PayPal and
  * Venmo, Bitcoin Cash (paid on the shop's own payment screen), Exodus
- * (USDC/USDT stablecoins) or Zelle. Without it, each piece links to Etsy.
+ * (USDC/USDT stablecoins), Zelle or Venmo. Without it, each piece links to Etsy.
  */
 export function CheckoutView({
   checkout,
@@ -280,7 +280,9 @@ export function CheckoutView({
                               ? "Exodus Pay or another crypto wallet"
                               : p === "bch"
                                 ? "Bitcoin Cash"
-                                : "Zelle"}
+                                : p === "venmo"
+                                  ? "Venmo"
+                                  : "Zelle"}
                       </span>
                       <span className="block text-sm text-muted">
                         {p === "stripe"
@@ -295,7 +297,9 @@ export function CheckoutView({
                                 ? wcProjectId
                                   ? t("payBchDescWallet")
                                   : t("payBchDescQr")
-                                : t("payZelleDesc", { hours: checkout.zelle?.holdHours ?? 48 })}
+                                : p === "venmo"
+                                  ? t("payVenmoDesc", { hours: checkout.venmo?.holdHours ?? 48 })
+                                  : t("payZelleDesc", { hours: checkout.zelle?.holdHours ?? 48 })}
                       </span>
                     </span>
                   </label>
@@ -403,7 +407,9 @@ export function CheckoutView({
                         : "Continue to PayPal"
                       : provider === "zelle"
                         ? "Place order and get the Zelle details"
-                        : "Continue to secure payment"}
+                        : provider === "venmo"
+                          ? "Place order and get the Venmo details"
+                          : "Continue to secure payment"}
               </button>
             )}
             <p className="mt-3 flex items-center justify-center gap-2 text-center text-sm text-muted">
@@ -416,7 +422,9 @@ export function CheckoutView({
                   ? t("checkoutNotePaypal")
                   : provider === "zelle"
                     ? t("checkoutNoteZelle")
-                    : t("checkoutNoteStripe")}
+                    : provider === "venmo"
+                      ? t("checkoutNoteVenmo")
+                      : t("checkoutNoteStripe")}
             </p>
             <p className="mt-1 text-center text-sm text-muted">
               <Link href="/policies/returns" className="underline underline-offset-4">

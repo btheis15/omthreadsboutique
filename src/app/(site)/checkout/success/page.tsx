@@ -15,9 +15,10 @@ type Props = { searchParams: Promise<{ order?: string }> };
 
 type Summary = {
   number: string;
-  status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "awaiting_bch" | "failed" | "expired" | "refunded";
-  provider: "stripe" | "exodus" | "paypal" | "zelle" | "bch";
+  status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "awaiting_venmo" | "awaiting_bch" | "failed" | "expired" | "refunded";
+  provider: "stripe" | "exodus" | "paypal" | "zelle" | "venmo" | "bch";
   zelle?: { name: string; handle: string; amountCents: number; memo: string; holdUntil: string };
+  venmo?: { name: string; link: string; qrSvg: string; amountCents: number; memo: string; holdUntil: string };
   bch?: BchPayment;
   test: boolean;
   email: string | null;
@@ -61,13 +62,14 @@ export default async function SuccessPage({ searchParams }: Props) {
 
   const paid = summary.status === "paid";
   const zelle = summary.status === "awaiting_zelle" ? summary.zelle : undefined;
+  const venmo = summary.status === "awaiting_venmo" ? summary.venmo : undefined;
   // The Bitcoin Cash payment screen (it checks for the payment itself).
   const bch = summary.status === "awaiting_bch" ? summary.bch : undefined;
   const bchStuck = summary.provider === "bch" && !paid && summary.bch?.state === "expired_partial";
   const waiting = summary.status === "processing" || summary.status === "awaiting";
   return (
     <div className="container-page max-w-2xl pt-10 pb-20 md:pt-16">
-      <AfterPayment clearCart={paid || summary.status === "processing" || Boolean(zelle)} keepChecking={waiting} />
+      <AfterPayment clearCart={paid || summary.status === "processing" || Boolean(zelle) || Boolean(venmo)} keepChecking={waiting} />
       {summary.test && !bch && (
         <p className="mb-6 rounded-lg bg-sand p-3 text-sm">
           {summary.provider === "bch" ? "Test order: only the small test amount of real Bitcoin Cash was asked for." : "Test order: no real payment was taken."}
@@ -79,7 +81,9 @@ export default async function SuccessPage({ searchParams }: Props) {
           ? "Thank you for your order"
           : zelle
             ? "Almost done: pay by Zelle"
-            : bch
+            : venmo
+              ? "Almost done: pay with Venmo"
+              : bch
               ? "Pay with Bitcoin Cash"
               : waiting
                 ? "Confirming your payment…"
@@ -106,7 +110,30 @@ export default async function SuccessPage({ searchParams }: Props) {
           </p>
         </div>
       )}
-      <p className={`mt-4 leading-relaxed text-ink/85 ${zelle || bch ? "hidden" : ""}`}>
+      {venmo && (
+        <div className="mt-6 rounded-xl border border-ink p-5">
+          <p className="text-lg">
+            Send <strong>{dollars(venmo.amountCents)}</strong> on Venmo to <strong>{venmo.name}</strong>
+          </p>
+          <a href={venmo.link} target="_blank" rel="noopener noreferrer" className="btn btn-primary mt-4">
+            Open Venmo to pay
+          </a>
+          <div className="mt-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={"data:image/svg+xml;utf8," + encodeURIComponent(venmo.qrSvg)} alt="Venmo QR code" width={200} height={200} />
+            <p className="mt-1 text-sm text-ink/80">On a computer? Scan this with your phone&apos;s camera.</p>
+          </div>
+          <p className="mt-3 text-[0.95rem]">
+            Put <strong>{venmo.memo}</strong> in the Venmo note so we can match it to your order.
+          </p>
+          <p className="mt-3 text-sm text-ink/80">
+            We&apos;re holding your order until{" "}
+            {new Date(venmo.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. It ships as soon
+            as the payment arrives. Venmo payments can&apos;t be cancelled once sent, so please check the name and amount first.
+          </p>
+        </div>
+      )}
+      <p className={`mt-4 leading-relaxed text-ink/85 ${zelle || venmo || bch ? "hidden" : ""}`}>
         {paid
           ? summary.emailing && summary.email
             ? `We've received your payment. Your receipt is on its way to ${summary.email}, and we'll email you again with tracking as soon as it ships.`
@@ -184,7 +211,7 @@ export default async function SuccessPage({ searchParams }: Props) {
         <Link href="/shop" className={`btn ${bch ? "btn-outline" : "btn-primary"}`}>
           Continue shopping
         </Link>
-        {!paid && !waiting && !zelle && !bch && !bchStuck && (
+        {!paid && !waiting && !zelle && !venmo && !bch && !bchStuck && (
           <Link href="/checkout" className="btn btn-outline">
             Back to checkout
           </Link>

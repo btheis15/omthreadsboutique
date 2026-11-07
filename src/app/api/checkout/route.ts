@@ -8,7 +8,7 @@ import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
  * Starts a payment for the cart. The Om Threads admin re-reads every price
  * and stock count (nothing about money from the browser is trusted), saves
  * the order and returns the payment page to send the shopper to (Stripe,
- * Exodus, the thank-you page with Zelle's details, or the Bitcoin Cash
+ * Exodus, the thank-you page with Zelle's or Venmo's details, or the Bitcoin Cash
  * payment screen), or, for PayPal and Venmo, what the page needs to show
  * PayPal's buttons.
  */
