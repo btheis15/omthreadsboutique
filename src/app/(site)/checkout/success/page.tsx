@@ -111,18 +111,38 @@ export default async function SuccessPage({ searchParams }: Props) {
         </div>
       )}
       {venmo && (
-        <div className="mt-6 rounded-xl border border-ink p-5">
+        <div className="bch-card mt-6 rounded-xl border border-ink p-5">
           <p className="text-lg">
             Send <strong>{dollars(venmo.amountCents)}</strong> on Venmo to <strong>{venmo.name}</strong>
           </p>
           <a href={venmo.link} target="_blank" rel="noopener noreferrer" className="btn btn-primary mt-4">
             Open Venmo to pay
           </a>
-          <div className="mt-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={"data:image/svg+xml;utf8," + encodeURIComponent(venmo.qrSvg)} alt="Venmo QR code" width={200} height={200} />
-            <p className="mt-1 text-sm text-ink/80">On a computer? Scan this with your phone&apos;s camera.</p>
+          {/* The code, like the Bitcoin Cash one: it ripples out from the logo, a sheen passes over it and soft rings pulse behind it. */}
+          <div className="venmo-stage mx-auto mt-6 w-[min(100%,17rem)]">
+            <div className="bch-qr listening">
+              <i className="bch-sonar" aria-hidden="true" />
+              <i className="bch-sonar" aria-hidden="true" />
+              <div className="bch-qr-box">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="bch-qr-code" src={"data:image/svg+xml;utf8," + encodeURIComponent(venmo.qrSvg)} alt="Venmo QR code" width={272} height={272} />
+              </div>
+            </div>
           </div>
+          <p className="mt-3 text-center text-sm text-ink/80">On a computer? Scan this with your phone&apos;s camera.</p>
+          <ol className="bch-rise mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+            {[
+              ["Scan", "with your camera"],
+              ["Check", `${dollars(venmo.amountCents)} shows`],
+              ["Pay", "in Venmo"],
+            ].map(([a, b], i) => (
+              <li key={a} className="venmo-step rounded-xl px-1 py-2">
+                <b className="venmo-step-n">{i + 1}</b>
+                <span className="block">{a}</span>
+                <span className="block text-xs text-ink/70">{b}</span>
+              </li>
+            ))}
+          </ol>
           <p className="mt-3 text-[0.95rem]">
             {venmo.prefilled ? (
               <>
