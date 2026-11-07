@@ -18,7 +18,7 @@ type Summary = {
   status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "awaiting_venmo" | "awaiting_bch" | "failed" | "expired" | "refunded";
   provider: "stripe" | "exodus" | "paypal" | "zelle" | "venmo" | "bch";
   zelle?: { name: string; handle: string; amountCents: number; memo: string; holdUntil: string };
-  venmo?: { name: string; link: string; qrSvg: string; amountCents: number; memo: string; holdUntil: string };
+  venmo?: { name: string; link: string; prefilled?: boolean; qrSvg: string; amountCents: number; memo: string; holdUntil: string };
   bch?: BchPayment;
   test: boolean;
   email: string | null;
@@ -124,7 +124,15 @@ export default async function SuccessPage({ searchParams }: Props) {
             <p className="mt-1 text-sm text-ink/80">On a computer? Scan this with your phone&apos;s camera.</p>
           </div>
           <p className="mt-3 text-[0.95rem]">
-            Put <strong>{venmo.memo}</strong> in the Venmo note so we can match it to your order.
+            {venmo.prefilled ? (
+              <>
+                The amount and your order number <strong>{venmo.memo}</strong> are filled in for you. Please leave the number in the Venmo note so we can match it to your order.
+              </>
+            ) : (
+              <>
+                Put <strong>{venmo.memo}</strong> in the Venmo note so we can match it to your order.
+              </>
+            )}
           </p>
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
