@@ -1681,3 +1681,27 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Venmo's code on the thank-you page uses the Bitcoin Cash code's motion (ripple, sheen, pulsing rings) in Venmo blue. */
+.venmo-stage .bch-qr-box {
+  box-shadow:
+    0 0 0 3px rgb(0 140 255 / 0.55),
+    0 14px 36px rgb(0 140 255 / 0.22);
+}
+.venmo-stage .bch-sonar {
+  border-color: #008cff;
+}
+.venmo-step {
+  background: #eaf5ff;
+}
+.venmo-step-n {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0 auto 0.25rem;
+  border-radius: 9999px;
+  background: #008cff;
+  color: #fff;
+  font-size: 0.85rem;
+}
