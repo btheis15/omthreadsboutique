@@ -141,8 +141,8 @@ export type ShippingRate = {
  */
 export type CheckoutInfo = {
   mode: "test" | "live";
-  /** stripe: cards, Apple Pay, Google Pay, UPI · paypal: PayPal and Venmo · bch: Bitcoin Cash (Prompt.cash) · exodus: stablecoins · zelle: confirmed by hand */
-  providers: ("stripe" | "paypal" | "bch" | "exodus" | "zelle")[];
+  /** stripe: cards, Apple Pay, Google Pay, UPI · paypal: PayPal and Venmo · bch: Bitcoin Cash (Prompt.cash) · exodus: stablecoins · zelle, venmo: confirmed by hand */
+  providers: ("stripe" | "paypal" | "bch" | "exodus" | "zelle" | "venmo")[];
   /** How long a Bitcoin Cash price is held, and what a test order pays (BCH has no test network). */
   /** receipts: shoppers can get their receipt as an Om Receipt CashToken. */
   bch?: { minutes: number; testCents: number; receipts?: boolean };
@@ -151,6 +151,8 @@ export type CheckoutInfo = {
   paypal?: { clientId: string; sdkUrl: string };
   /** How long a Zelle order holds the pieces. */
   zelle?: { holdHours: number };
+  /** How long a Venmo order holds the pieces. */
+  venmo?: { holdHours: number };
   countries: { code: string; name: string; rates: ShippingRate[] }[];
   /** Sales tax is added on the payment page (Stripe Tax). */
   taxAdded: boolean;

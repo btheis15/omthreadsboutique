@@ -179,6 +179,14 @@
     "multiline": true
   },
   {
+    "key": "payVenmoDesc",
+    "group": "Checkout & cart",
+    "label": "Venmo: description",
+    "hint": "{hours} is the hold time set up in the admin.",
+    "default": "Place the order, then pay from your Venmo app. We hold it for you for {hours} hours.",
+    "multiline": true
+  },
+  {
     "key": "giftNoteLabel",
     "group": "Checkout & cart",
     "label": "Gift note: label",
@@ -219,6 +227,13 @@
     "group": "Checkout & cart",
     "label": "Reassurance under pay button: Zelle",
     "default": "You send it from your own bank's app. Zelle payments can't be reversed, so check the details before sending.",
+    "multiline": true
+  },
+  {
+    "key": "checkoutNoteVenmo",
+    "group": "Checkout & cart",
+    "label": "Reassurance under pay button: Venmo",
+    "default": "You pay from your own Venmo app. Put the order number in the note so we can match it.",
     "multiline": true
   },
   {
