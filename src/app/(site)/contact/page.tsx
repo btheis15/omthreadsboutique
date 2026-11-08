@@ -17,7 +17,7 @@ export default async function ContactPage() {
   const [settings, page] = await Promise.all([getSettings(), getFeedPage("contact")]);
   const c = contactContent(page);
   const channels = [
-    settings.email && { href: `mailto:${settings.email}`, label: c.channels.email, value: settings.email, external: false },
+    { href: site.contactMailto, label: c.channels.email, value: site.contactEmail, external: false },
     settings.whatsapp && {
       href: `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`,
       label: c.channels.whatsapp[0],

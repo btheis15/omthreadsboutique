@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import logo from "@/assets/logo.png";
-import { site } from "@/lib/site";
+import { contactHref, site } from "@/lib/site";
 import type { Menus, T } from "@/lib/site-text";
 import type { SiteSettings } from "@/lib/types";
 import { NewsletterForm } from "./NewsletterForm";
@@ -100,7 +100,7 @@ export function Footer({
               <ul className="space-y-1">
                 {g.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="inline-block py-1.5 text-[0.95rem] text-ivory/85 hover:text-zari-light">
+                    <Link href={contactHref(l.href)} className="inline-block py-1.5 text-[0.95rem] text-ivory/85 hover:text-zari-light">
                       {l.label}
                     </Link>
                   </li>

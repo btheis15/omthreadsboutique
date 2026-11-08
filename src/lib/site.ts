@@ -5,7 +5,14 @@ export const site = {
   tagline: "Heirloom shawls & stoles from North India",
   description: "Kullu shawls from Himachal Pradesh, lohis from Punjab, pashmina and more: shawls and stoles from North India.",
   etsyUrl: "https://omthreadsboutique.etsy.com",
+  contactEmail: "omthreadsboutique@icloud.com",
+  contactMailto: "mailto:omthreadsboutique@icloud.com?subject=Om%20Threads%20Boutique%20Inquiry",
 };
+
+/** Any link to the /contact page (including ones from admin-edited menus) opens an email instead. */
+export function contactHref(href: string): string {
+  return href === "/contact" ? site.contactMailto : href;
+}
 
 /**
  * Defaults for everything editable in the admin under "Site settings".

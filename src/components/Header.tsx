@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/logo.png";
 import type { Craft } from "@/lib/crafts";
 import type { MenuLink } from "@/lib/site-text";
-import { site } from "@/lib/site";
+import { contactHref, site } from "@/lib/site";
 import { cart, useCart } from "./cart/store";
 import { ArrowIcon, BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
 import { Mandala, Paisley } from "./ornaments";
@@ -147,7 +147,7 @@ export function Header({
             ) : (
               <Link
                 key={item.href}
-                href={item.href}
+                href={contactHref(item.href)}
                 className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
                   pathname === item.href ? "text-accent" : ""
                 } group/link`}
@@ -250,7 +250,7 @@ export function Header({
                   className={`transition duration-500 ease-soft ${menuOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
                 >
                   <Link
-                    href={item.href}
+                    href={contactHref(item.href)}
                     tabIndex={menuOpen ? 0 : -1}
                     className="flex h-14 items-center border-b border-line font-display text-2xl"
                   >
@@ -270,7 +270,7 @@ export function Header({
                 ]
             ).map((item) => (
               <li key={item.href}>
-                <Link href={item.href} tabIndex={menuOpen ? 0 : -1} className="flex h-12 items-center text-[0.95rem]">
+                <Link href={contactHref(item.href)} tabIndex={menuOpen ? 0 : -1} className="flex h-12 items-center text-[0.95rem]">
                   {item.label}
                 </Link>
               </li>

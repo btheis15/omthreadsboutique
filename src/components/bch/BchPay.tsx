@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.png";
+import { site } from "@/lib/site";
 import { BCH_WALLETS, type BchPayment, type BchQuote } from "@/lib/bch";
 import { wcProjectId } from "@/lib/bch/walletConnect";
 import { BchIcon, BchReceipt, dollars, RewardGlyph, RollingAmount } from "./parts";
@@ -289,9 +290,9 @@ export function BchPay({ token, initial, test, orderNo }: { token: string; initi
           <p className="text-lg font-medium">Part of your payment arrived</p>
           <p className="mt-1 leading-relaxed text-ink/80">
             We received {bch.paidBch} of {bch.totalBch} BCH before the price hold ended. Please don&apos;t send any more: we&apos;ll email you to either complete your order or send it back.{" "}
-            <Link href="/contact" className="underline underline-offset-4">
+            <a href={site.contactMailto} className="underline underline-offset-4">
               Contact us
-            </Link>{" "}
+            </a>{" "}
             if you have any questions.
           </p>
         </div>
@@ -372,9 +373,9 @@ export function BchPay({ token, initial, test, orderNo }: { token: string; initi
           </summary>
           <p className="mt-2 leading-relaxed text-ink/85">
             Your payment goes straight into our own wallet: there&apos;s no payment company in between, and we never see your wallet or its keys. Bitcoin Cash payments can&apos;t be reversed, so check the amount before you send. Questions?{" "}
-            <Link href="/contact" className="underline underline-offset-4">
+            <a href={site.contactMailto} className="underline underline-offset-4">
               Contact us
-            </Link>
+            </a>
             .
           </p>
         </details>

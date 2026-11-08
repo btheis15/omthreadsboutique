@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Divider } from "@/components/ornaments";
 import { countryOptions } from "@/components/partners/countries";
 import { PartnerSignup, SignInByEmail } from "@/components/partners/PartnerSignup";
 import { getCheckout, getFeedPage, getFeedText, getT } from "@/lib/catalog";
 import { fill, partnersContent, termsContent } from "@/lib/page-content";
+import { site } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -65,9 +65,9 @@ export default async function PartnersPage() {
             {closedBefore}
             {closedAfter !== undefined && (
               <>
-                <Link href="/contact" className="underline underline-offset-4">
+                <a href={site.contactMailto} className="underline underline-offset-4">
                   get in touch
-                </Link>
+                </a>
                 {closedAfter}
               </>
             )}
