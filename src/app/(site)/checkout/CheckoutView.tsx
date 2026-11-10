@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bold } from "@/components/Bold";
-import { cart, useCart } from "@/components/cart/store";
+import { type CartItem, cart, cartKey, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
 import { wcProjectId } from "@/lib/bch/walletConnect";
@@ -32,6 +32,7 @@ export function CheckoutView({
   testerLink,
   returnDays,
   text,
+  linkCart,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -39,9 +40,28 @@ export function CheckoutView({
   returnDays: number;
   /** The owner's text overrides (feed `text`). */
   text?: Record<string, string>;
+  /** A Meta Shops checkout link's products: they replace the cart (null when the link has none). */
+  linkCart?: Omit<CartItem, "key">[] | null;
 }) {
   const t = makeT(text);
-  const { items, subtotal } = useCart();
+  const saved = useCart();
+  // Until the link's products are in the cart, show them (not what the cart held before).
+  const [linkPending, setLinkPending] = useState(Boolean(linkCart));
+  useEffect(() => {
+    if (!linkCart) return;
+    cart.replace(linkCart);
+    // Drop Meta's parameters, so reloading keeps the shopper's own changes to the cart.
+    const url = new URL(window.location.href);
+    for (const k of ["products", "coupon", "cart_origin"]) url.searchParams.delete(k);
+    window.history.replaceState(window.history.state, "", url);
+    // The cart store now holds the link's products; read from it from here on.
+    queueMicrotask(() => setLinkPending(false));
+  }, [linkCart]);
+  const items: CartItem[] =
+    linkPending && linkCart
+      ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
+      : saved.items;
+  const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   const onSite = Boolean(checkout);
   const [country, setCountry] = useState(checkout?.countries[0]?.code ?? "US");
   const [rateId, setRateId] = useState<string | undefined>(undefined);
