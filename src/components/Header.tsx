@@ -337,7 +337,6 @@ export function Header({
                   { href: "/care-guide", label: "Care & styling guide" },
                   { href: "/about", label: "Our story" },
                   { href: "/faq", label: "FAQ" },
-                  { href: "/contact", label: "Contact" },
                 ]
             ).map((item, i) => (
               <li key={item.href} className={i === 0 ? "mt-4" : ""}>
@@ -351,15 +350,20 @@ export function Header({
               </li>
             ))}
           </ul>
-          <a
-            href={site.etsyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            tabIndex={menuOpen ? 0 : -1}
-            className="btn btn-primary m-4 mb-[max(1rem,env(safe-area-inset-bottom))]"
-          >
-            Visit our Etsy shop
-          </a>
+          <div className="grid gap-2 border-t border-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <Link href={contactHref("/contact")} tabIndex={menuOpen ? 0 : -1} className="btn btn-outline bg-white">
+              Contact us
+            </Link>
+            <a
+              href={site.etsyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              tabIndex={menuOpen ? 0 : -1}
+              className="btn btn-primary"
+            >
+              Visit our Etsy shop
+            </a>
+          </div>
         </nav>
       </div>
     </>
