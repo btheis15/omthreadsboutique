@@ -154,6 +154,10 @@ export type CheckoutInfo = {
   /** How long a Venmo order holds the pieces. */
   venmo?: { holdHours: number };
   countries: { code: string; name: string; rates: ShippingRate[] }[];
+  /** Local pickup, when the shop offers it (the charge replaces shipping). */
+  pickup?: { label: string; cents: number; details: string } | null;
+  /** Personal delivery within `miles` of the shop, when offered. */
+  delivery?: { label: string; cents: number; miles: number; note: string } | null;
   /** Sales tax is added on the payment page (Stripe Tax). */
   taxAdded: boolean;
   /** What shoppers can pay with through Exodus Pay, e.g. "USDC or USDT" (set in the admin). */

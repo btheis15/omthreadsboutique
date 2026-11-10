@@ -14,8 +14,9 @@ import type { CheckoutInfo } from "@/lib/types";
 import { PayPalButtons } from "./PayPalButtons";
 
 type Provider = CheckoutInfo["providers"][number];
-// PayPal, crypto, Zelle and Venmo need the address on this page (Stripe asks on its own page).
-const asksAddress = (p: Provider) => p !== "stripe";
+type Fulfil = "ship" | "pickup" | "delivery";
+// PayPal, crypto, Zelle and Venmo need the details on this page (Stripe asks on its own page when shipping; pickup and delivery are always asked here).
+const asksAddress = (p: Provider, f: Fulfil) => f !== "ship" || p !== "stripe";
 type Coupon = { code: string; label: string; discountCents: number; text: string };
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
@@ -68,6 +69,7 @@ export function CheckoutView({
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   const onSite = Boolean(checkout);
   const [country, setCountry] = useState(checkout?.countries[0]?.code ?? "US");
+  const [how, setHow] = useState<Fulfil>("ship");
   const [rateId, setRateId] = useState<string | undefined>(undefined);
   const [provider, setProvider] = useState<Provider>(checkout?.providers[0] ?? "stripe");
   const [testAsIndia, setTestAsIndia] = useState(false);
@@ -86,9 +88,15 @@ export function CheckoutView({
   const subtotalCents = items.reduce((n, i) => n + Math.round(i.price * 100) * i.qty, 0);
   const place = checkout?.countries.find((c) => c.code === country) ?? checkout?.countries[0];
   const rate = place?.rates.find((r) => r.id === rateId) ?? place?.rates[0];
+  const pickup = checkout?.pickup ?? null;
+  const delivery = checkout?.delivery ?? null;
+  const fulfil: Fulfil = how === "pickup" && pickup ? "pickup" : how === "delivery" && delivery ? "delivery" : "ship";
+  // Pickup and delivery are US-only, so the country and shipping rate don't apply.
+  const placeCode = fulfil === "ship" ? (place?.code ?? "US") : "US";
+  const needsForm = asksAddress(provider, fulfil);
   const itemCount = items.reduce((n, i) => n + i.qty, 0);
-  const shipping = rate ? shippingCents(rate, subtotalCents, itemCount) : 0;
-  const nextFree = rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
+  const shipping = fulfil === "pickup" ? (pickup?.cents ?? 0) : fulfil === "delivery" ? (delivery?.cents ?? 0) : rate ? shippingCents(rate, subtotalCents, itemCount) : 0;
+  const nextFree = fulfil === "ship" && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
   // Typed coupon code: shown here for the shopper; the admin checks it again when the order is priced.
   const [coupon, setCoupon] = useState<Coupon | null>(null);
@@ -160,6 +168,27 @@ export function CheckoutView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkCoupon, couponsOn, linkPending, items.length]);
 
+  // Personal delivery: is this ZIP close enough? (Result is kept with the ZIP it answered.)
+  const zip5 = /^\d{5}/.test(customer.postal_code.trim()) ? customer.postal_code.trim().slice(0, 5) : "";
+  const [zipCheck, setZipCheck] = useState<{ zip: string; ok: boolean | null } | null>(null);
+  useEffect(() => {
+    if (fulfil !== "delivery" || !zip5) return;
+    let stale = false;
+    fetch("/api/delivery-check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ zip: zip5 }) })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d: { ok?: boolean }) => {
+        if (!stale) setZipCheck({ zip: zip5, ok: typeof d.ok === "boolean" ? d.ok : null });
+      })
+      .catch(() => {
+        if (!stale) setZipCheck({ zip: zip5, ok: null });
+      });
+    return () => {
+      stale = true;
+    };
+  }, [fulfil, zip5]);
+  const zipAnswer = zipCheck && zipCheck.zip === zip5 ? zipCheck : null;
+  const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
+
   async function startCheckout() {
     setLoading(true);
     setError(null);
@@ -172,14 +201,17 @@ export function CheckoutView({
           lines,
           coupon: coupon?.code,
           provider,
-          country: place?.code,
-          rateId: rate?.id,
-          testAs: checkout?.mode === "test" && testAsIndia && place?.code === "IN" ? "IN" : undefined,
-          giftNote: asksAddress(provider) ? giftNote : undefined,
+          country: placeCode,
+          fulfillment: fulfil,
+          rateId: fulfil === "ship" ? rate?.id : undefined,
+          testAs: checkout?.mode === "test" && testAsIndia && placeCode === "IN" ? "IN" : undefined,
+          giftNote: needsForm && fulfil !== "pickup" ? giftNote : undefined,
           receipt: provider === "bch" && checkout?.bch?.receipts ? receipt : undefined,
           customer:
-            asksAddress(provider)
-              ? { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } }
+            needsForm
+              ? fulfil === "pickup"
+                ? { name: customer.name, email: customer.email, phone: customer.phone }
+                : { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } }
               : undefined,
         }),
       });
@@ -304,13 +336,52 @@ export function CheckoutView({
 
       {checkout && place && rate && (
         <div className="mt-8 space-y-8">
+          {(pickup || delivery) && (
+            <section>
+              <h2 className="text-xl">How would you like to get it?</h2>
+              <div className="mt-3 grid gap-2" role="radiogroup" aria-label="How would you like to get it?">
+                {(
+                  [
+                    ["ship", "Ship it", "To your door, anywhere we ship."],
+                    ...(pickup ? [["pickup", pickup.label, pickup.cents ? dollars(pickup.cents) : "Free"]] : []),
+                    ...(delivery ? [["delivery", delivery.label, `${dollars(delivery.cents)} · within ${delivery.miles} miles of our shop`]] : []),
+                  ] as [Fulfil, string, string][]
+                ).map(([value, label, hint]) => (
+                  <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${fulfil === value ? "border-ink" : "border-line"}`}>
+                    <input
+                      type="radio"
+                      name="fulfillment"
+                      checked={fulfil === value}
+                      onChange={() => {
+                        setHow(value);
+                        setPaypalOrder(null);
+                        setPaypalMessage(null);
+                        setFieldErrors({});
+                      }}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="block font-medium">{label}</span>
+                      <span className="block text-sm text-muted">{hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {fulfil === "pickup" && pickup && (
+                <p className="mt-3 text-sm text-ink/80">{pickup.details?.trim() || "We'll email you when it's ready, with where and when."}</p>
+              )}
+              {fulfil === "delivery" && delivery?.note?.trim() && <p className="mt-3 text-sm text-ink/80">{delivery.note}</p>}
+            </section>
+          )}
+
+          {fulfil === "ship" && (
           <section>
             <h2 className="text-xl">Shipping</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1 block text-sm">Ship to</span>
                 <select
-                  value={place.code}
+                  value={placeCode}
                   onChange={(e) => {
                     setCountry(e.target.value);
                     setRateId(undefined);
@@ -346,12 +417,13 @@ export function CheckoutView({
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
               {nextFree !== null && nextFree > 0 && ` Add ${dollars(nextFree)} more for free shipping.`}
             </p>
-            {place.code === "IN" && (
+            {placeCode === "IN" && (
               <p className="mt-3 rounded-lg bg-sand p-3 text-sm leading-relaxed">
                 {t("checkoutIndiaNote")}
               </p>
             )}
           </section>
+          )}
 
           {checkout.providers.length > 1 && (
             <section>
@@ -373,9 +445,9 @@ export function CheckoutView({
                     <span>
                       <span className="block font-medium">
                         {p === "stripe"
-                          ? `Card, Apple Pay or Google Pay${place.code === "IN" ? ", or UPI" : ""}`
+                          ? `Card, Apple Pay or Google Pay${placeCode === "IN" ? ", or UPI" : ""}`
                           : p === "paypal"
-                            ? place.code === "US"
+                            ? placeCode === "US"
                               ? "PayPal or Venmo"
                               : "PayPal"
                             : p === "exodus"
@@ -388,7 +460,7 @@ export function CheckoutView({
                       </span>
                       <span className="block text-sm text-muted">
                         {p === "stripe"
-                          ? place.code === "IN"
+                          ? placeCode === "IN"
                             ? t("payStripeDescIndia")
                             : t("payStripeDesc")
                           : p === "paypal"
@@ -410,20 +482,38 @@ export function CheckoutView({
             </section>
           )}
 
-          {asksAddress(provider) && (
+          {needsForm && (
             <section>
               <h2 className="text-xl">Your details</h2>
-              <p className="mt-1 text-sm text-muted">Where we ship it, and how to send your receipt.</p>
+              <p className="mt-1 text-sm text-muted">
+                {fulfil === "pickup" ? "So we can tell you when it's ready, and send your receipt." : fulfil === "delivery" ? "Where we bring it, and how to send your receipt." : "Where we ship it, and how to send your receipt."}
+              </p>
               <fieldset disabled={Boolean(paypalOrder)} className="mt-3 grid gap-3 disabled:opacity-60 sm:grid-cols-2">
                 {field("name", "Full name", { autoComplete: "name" })}
                 {field("email", "Email", { type: "email", autoComplete: "email" })}
                 {field("phone", "Phone", { type: "tel", autoComplete: "tel" })}
-                <div className="hidden sm:block" />
-                {field("line1", "Address", { autoComplete: "address-line1" })}
-                {field("line2", "Apartment, suite (optional)", { autoComplete: "address-line2" })}
-                {field("city", "City", { autoComplete: "address-level2" })}
-                {field("state", place.code === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: place.code === "US" ? "IL" : undefined })}
-                {field("postal_code", place.code === "US" ? "ZIP code" : place.code === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: place.code === "US" || place.code === "IN" ? "numeric" : undefined })}
+                {fulfil !== "pickup" && (
+                  <>
+                    <div className="hidden sm:block" />
+                    {field("line1", "Address", { autoComplete: "address-line1" })}
+                    {field("line2", "Apartment, suite (optional)", { autoComplete: "address-line2" })}
+                    {field("city", "City", { autoComplete: "address-level2" })}
+                    {field("state", placeCode === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: placeCode === "US" ? "IL" : undefined })}
+                    {field("postal_code", placeCode === "US" ? "ZIP code" : placeCode === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: placeCode === "US" || placeCode === "IN" ? "numeric" : undefined })}
+                    {fulfil === "delivery" && zip5 && (
+                      <p className={`text-sm sm:col-span-2 ${zipAnswer?.ok === true ? "text-ink" : zipAnswer ? "text-sale" : "text-muted"}`} role="status">
+                        {!zipAnswer
+                          ? "Checking your ZIP…"
+                          : zipAnswer.ok === true
+                            ? `✓ We deliver to ${zip5}`
+                            : zipAnswer.ok === false
+                              ? `Sorry, we only deliver within ${delivery?.miles ?? ""} miles of our shop.`
+                              : "Couldn't check your ZIP right now. Please try again."}
+                      </p>
+                    )}
+                  </>
+                )}
+                {fulfil !== "pickup" && (
                 <label className="block sm:col-span-2">
                   <span className="mb-1 block text-sm">{t("giftNoteLabel")}</span>
                   <textarea
@@ -434,6 +524,7 @@ export function CheckoutView({
                     className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5"
                   />
                 </label>
+                )}
               </fieldset>
             </section>
           )}
@@ -481,7 +572,7 @@ export function CheckoutView({
                   <dd className="text-right">−{dollars(discount)}</dd>
                 </>
               )}
-              <dt className="text-muted">Shipping</dt>
+              <dt className="text-muted">{fulfil === "pickup" ? "Pickup" : fulfil === "delivery" ? "Delivery" : "Shipping"}</dt>
               <dd className="text-right">{shipping ? dollars(shipping) : "Free"}</dd>
               <dt className="text-lg font-medium">Total</dt>
               <dd className="text-right text-lg font-medium">{dollars(subtotalCents - discount + shipping)}</dd>
@@ -517,10 +608,10 @@ export function CheckoutView({
                 {couponError && <p className="mt-1 text-sale">{couponError}</p>}
               </div>
             )}
-            {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
-            {provider === "stripe" && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
+            {checkout.taxAdded && fulfil === "ship" && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
+            {provider === "stripe" && fulfil === "ship" && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
-            {checkout.mode === "test" && provider === "stripe" && place.code === "IN" && (
+            {checkout.mode === "test" && provider === "stripe" && placeCode === "IN" && (
               <label className="mt-4 flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={testAsIndia} onChange={(e) => setTestAsIndia(e.target.checked)} />
                 Test as a shopper in India (shows rupees and UPI on Stripe&apos;s page)
@@ -537,11 +628,11 @@ export function CheckoutView({
                 <PayPalButtons token={paypalOrder} clientId={checkout.paypal.clientId} sdkUrl={checkout.paypal.sdkUrl} onMessage={onPayPalMessage} />
                 {paypalMessage && <p className="mt-3 text-center text-sm">{paypalMessage}</p>}
                 <button type="button" onClick={() => setPaypalOrder(null)} className="mt-3 w-full text-sm text-muted underline underline-offset-4">
-                  Change the address or cart
+                  {fulfil === "pickup" ? "Change your details or cart" : "Change the address or cart"}
                 </button>
               </>
             ) : (
-              <button type="button" onClick={startCheckout} disabled={loading} className="btn btn-primary mt-6 w-full">
+              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked} className="btn btn-primary mt-6 w-full">
                 {loading
                   ? "Starting secure checkout…"
                   : provider === "exodus"
@@ -549,7 +640,7 @@ export function CheckoutView({
                     : provider === "bch"
                       ? "Pay with Bitcoin Cash"
                     : provider === "paypal"
-                      ? place.code === "US"
+                      ? placeCode === "US"
                         ? "Continue to PayPal or Venmo"
                         : "Continue to PayPal"
                       : provider === "zelle"
@@ -575,7 +666,7 @@ export function CheckoutView({
             </p>
             <p className="mt-1 text-center text-sm text-muted">
               <Link href="/policies/returns" className="underline underline-offset-4">
-                {country === "US" ? t("checkoutReturnsUS", { days: returnDays }) : `${t("finalSaleNote")} (no returns)`}
+                {placeCode === "US" ? t("checkoutReturnsUS", { days: returnDays }) : `${t("finalSaleNote")} (no returns)`}
               </Link>{" "}
               ·{" "}
               <Link href="/policies/shipping" className="underline underline-offset-4">
