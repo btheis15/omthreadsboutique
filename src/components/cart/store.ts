@@ -92,6 +92,15 @@ export const cart = {
   clear() {
     set({ items: [] });
   },
+  /** Empties the cart and puts exactly these lines in it (a Meta Shops checkout link). */
+  replace(items: Omit<CartItem, "key">[]) {
+    load();
+    set({
+      items: items
+        .map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: clamp(i.qty, i.maxQty) }))
+        .filter((i) => i.qty > 0),
+    });
+  },
   open() {
     set({ open: true });
   },
