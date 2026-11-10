@@ -120,8 +120,8 @@ export default async function SuccessPage({ searchParams }: Props) {
           </p>
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
-            {new Date(zelle.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. It ships as soon
-            as the payment arrives. Zelle payments can&apos;t be cancelled once sent, so please check the name and amount in your bank app first.
+            {new Date(zelle.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. {pickupOrder || deliveryOrder ? "We'll get it ready as soon" : "It ships as soon"}
+            {" "}as the payment arrives. Zelle payments can&apos;t be cancelled once sent, so please check the name and amount in your bank app first.
           </p>
         </div>
       )}
@@ -171,16 +171,16 @@ export default async function SuccessPage({ searchParams }: Props) {
           </p>
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
-            {new Date(venmo.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. It ships as soon
-            as the payment arrives. Venmo payments can&apos;t be cancelled once sent, so please check the name and amount first.
+            {new Date(venmo.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. {pickupOrder || deliveryOrder ? "We'll get it ready as soon" : "It ships as soon"}
+            {" "}as the payment arrives. Venmo payments can&apos;t be cancelled once sent, so please check the name and amount first.
           </p>
         </div>
       )}
       <p className={`mt-4 leading-relaxed text-ink/85 ${zelle || venmo || bch ? "hidden" : ""}`}>
         {paid
           ? summary.emailing && summary.email
-            ? `We've received your payment. Your receipt is on its way to ${summary.email}, and we'll email you again ${pickupOrder ? "when it's ready" : deliveryOrder ? "when it's on its way" : "with tracking as soon as it ships"}.`
-            : `We've received your payment. We'll be in touch ${pickupOrder ? "when it's ready" : deliveryOrder ? "when it's on its way" : "with tracking as soon as it ships"}.`
+            ? `We've received your payment. Your receipt is on its way to ${summary.email}, and ${deliveryOrder ? "we'll be in touch to arrange the drop-off" : `we'll email you again ${pickupOrder ? "when it's ready" : "with tracking as soon as it ships"}`}.`
+            : `We've received your payment. We'll be in touch ${pickupOrder ? "when it's ready" : deliveryOrder ? "to arrange the drop-off" : "with tracking as soon as it ships"}.`
           : waiting
             ? summary.provider === "exodus"
               ? "Your stablecoin payment is being confirmed on the blockchain. This page updates by itself; you can also close it: we'll email you once it's confirmed."

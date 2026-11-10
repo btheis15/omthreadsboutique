@@ -171,6 +171,7 @@ export function CheckoutView({
   // Personal delivery: is this ZIP close enough? (Result is kept with the ZIP it answered.)
   const zip5 = /^\d{5}/.test(customer.postal_code.trim()) ? customer.postal_code.trim().slice(0, 5) : "";
   const [zipCheck, setZipCheck] = useState<{ zip: string; ok: boolean | null } | null>(null);
+  const [zipRetry, setZipRetry] = useState(0);
   useEffect(() => {
     if (fulfil !== "delivery" || !zip5) return;
     let stale = false;
@@ -185,7 +186,7 @@ export function CheckoutView({
     return () => {
       stale = true;
     };
-  }, [fulfil, zip5]);
+  }, [fulfil, zip5, zipRetry]);
   const zipAnswer = zipCheck && zipCheck.zip === zip5 ? zipCheck : null;
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
@@ -344,7 +345,7 @@ export function CheckoutView({
                   [
                     ["ship", "Ship it", "To your door, anywhere we ship."],
                     ...(pickup ? [["pickup", pickup.label, pickup.cents ? dollars(pickup.cents) : "Free"]] : []),
-                    ...(delivery ? [["delivery", delivery.label, `${dollars(delivery.cents)} · within ${delivery.miles} miles of our shop`]] : []),
+                    ...(delivery ? [["delivery", delivery.label, `${dollars(delivery.cents)} · within ${delivery.miles} miles of ${delivery.from || "our shop"}`]] : []),
                   ] as [Fulfil, string, string][]
                 ).map(([value, label, hint]) => (
                   <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${fulfil === value ? "border-ink" : "border-line"}`}>
@@ -507,8 +508,13 @@ export function CheckoutView({
                           : zipAnswer.ok === true
                             ? `✓ We deliver to ${zip5}`
                             : zipAnswer.ok === false
-                              ? `Sorry, we only deliver within ${delivery?.miles ?? ""} miles of our shop.`
-                              : "Couldn't check your ZIP right now. Please try again."}
+                              ? `Sorry, we only deliver within ${delivery?.miles ?? ""} miles of ${delivery?.from || "our shop"}.`
+                              : (
+                                <>
+                                  Couldn&apos;t check your ZIP right now.{" "}
+                                  <button type="button" className="underline" onClick={() => { setZipCheck(null); setZipRetry((n) => n + 1); }}>Try again</button>
+                                </>
+                              )}
                       </p>
                     )}
                   </>
@@ -608,7 +614,7 @@ export function CheckoutView({
                 {couponError && <p className="mt-1 text-sale">{couponError}</p>}
               </div>
             )}
-            {checkout.taxAdded && fulfil === "ship" && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
+            {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
             {provider === "stripe" && fulfil === "ship" && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
             {checkout.mode === "test" && provider === "stripe" && placeCode === "IN" && (
