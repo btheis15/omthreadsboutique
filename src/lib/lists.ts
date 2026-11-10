@@ -30,12 +30,20 @@ export const fallbackLists: Lists = {
   crafts: defaultCrafts,
 };
 
+/** English plural: Pouch → Pouches, Body → Bodies, Shawl → Shawls. Matches the admin's rule. */
+export function pluralize(word: string): string {
+  if (/s$/i.test(word)) return word;
+  if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}ies`;
+  if (/(ch|sh|x|z)$/i.test(word)) return `${word}es`;
+  return `${word}s`;
+}
+
 export function normalizeLists(raw: unknown): Lists {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   return {
     types: list<TypeItem>(r.types, fallbackLists.types, (x, value) => {
       const label = str(x.label, value);
-      return { value, label, plural: str(x.plural, `${label}s`), slug: str(x.slug, `${value}s`), blurb: str(x.blurb) };
+      return { value, label, plural: str(x.plural, pluralize(label)), slug: str(x.slug, pluralize(value)), blurb: str(x.blurb) };
     }),
     colors: list(r.colors, fallbackLists.colors, (x, value) => ({ value, label: str(x.label, value), hex: str(x.hex, "#d8c3a5") })),
     materials: list(r.materials, fallbackLists.materials, (x, value) => ({ value, label: str(x.label, value) })),

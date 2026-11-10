@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   },
   // What wallets show for the shop's token (its name, symbol and icon) is published on this site's address, and
   // served by the Mac mini too (omthreads-admin: Checkout setup → Rewards).
+  async redirects() {
+    // The Pouch category's address before plurals learned "-es".
+    return [{ source: "/shop/pouchs", destination: "/shop/pouches", permanent: true }];
+  },
   async rewrites() {
     return shopApiUrl
       ? [
