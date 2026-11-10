@@ -105,12 +105,12 @@ export function CheckoutView({
   const linesKey = JSON.stringify(lines);
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
 
-  async function checkCoupon(code: string): Promise<Coupon | string> {
+  async function checkCoupon(code: string): Promise<Coupon | string | { error: string; gone: boolean }> {
     try {
       const res = await fetch("/api/coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, lines: JSON.parse(linesKey) }) });
       const data = (await res.json().catch(() => ({}))) as Partial<Coupon> & { error?: string };
       if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "" };
-      return data.error ?? "That coupon code isn't valid.";
+      return { error: data.error ?? "That coupon code isn't valid.", gone: res.status === 404 || res.status === 409 };
     } catch {
       return "Couldn't check that code. Check your connection and try again.";
     }
@@ -123,6 +123,7 @@ export function CheckoutView({
     setCouponError(null);
     const result = await checkCoupon(code);
     if (typeof result === "string") setCouponError(result);
+    else if ("error" in result) setCouponError(result.error);
     else {
       setCoupon(result);
       setCouponOpen(false);
@@ -138,7 +139,9 @@ export function CheckoutView({
     let stale = false;
     checkCoupon(applied.code).then((result) => {
       if (stale) return;
-      setCoupon(typeof result === "string" ? null : result);
+      // Drop the code only when the server says it's gone (404/409); a 429, network or 5xx hiccup keeps it (re-checked at payment).
+      if (typeof result === "string") return;
+      setCoupon("error" in result ? (result.gone ? null : couponRef.current) : result);
     });
     return () => {
       stale = true;
@@ -152,7 +155,7 @@ export function CheckoutView({
     if (!linkCoupon || !couponsOn || linkPending || linkCouponTried.current || items.length === 0) return;
     linkCouponTried.current = true;
     checkCoupon(linkCoupon).then((result) => {
-      if (typeof result !== "string") setCoupon(result);
+      if (typeof result !== "string" && !("error" in result)) setCoupon(result);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkCoupon, couponsOn, linkPending, items.length]);
@@ -196,7 +199,8 @@ export function CheckoutView({
         setCouponError(data.errors.coupon);
         setCouponOpen(true);
       }
-      setError(data.error ?? "Something went wrong. Please try again.");
+      // A coupon-only problem is shown once, under the coupon box.
+      if (!(data.errors?.coupon && Object.keys(data.errors).length === 1)) setError(data.error ?? "Something went wrong. Please try again.");
       setFieldErrors(data.errors ?? {});
     } catch {
       setError("Couldn't reach checkout. Check your connection and try again.");
@@ -468,9 +472,11 @@ export function CheckoutView({
                   <dt className="text-muted">
                     Coupon {coupon.code}
                     {coupon.text && ` (${coupon.text})`}{" "}
-                    <button type="button" onClick={() => setCoupon(null)} className="underline underline-offset-4">
-                      Remove
-                    </button>
+                    {!paypalOrder && (
+                      <button type="button" onClick={() => setCoupon(null)} className="underline underline-offset-4">
+                        Remove
+                      </button>
+                    )}
                   </dt>
                   <dd className="text-right">−{dollars(discount)}</dd>
                 </>
@@ -480,7 +486,7 @@ export function CheckoutView({
               <dt className="text-lg font-medium">Total</dt>
               <dd className="text-right text-lg font-medium">{dollars(subtotalCents - discount + shipping)}</dd>
             </dl>
-            {couponsOn && !coupon && (
+            {couponsOn && !coupon && !paypalOrder && (
               <div className="mt-2 text-sm">
                 {couponOpen ? (
                   <form
