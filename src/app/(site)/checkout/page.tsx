@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import type { CartItem } from "@/components/cart/store";
+import type { ProductVariant } from "@/lib/types";
 import { getProduct, getSettings, getTextOverrides } from "@/lib/catalog";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
-import { defaultVariant, variantLabel, variantPrice } from "@/lib/variants";
+import { defaultVariant, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
@@ -13,9 +14,10 @@ type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; prod
 /**
  * A Meta Shops (Facebook / Instagram) checkout link:
  * /checkout?products=<slug>:<qty>,<slug>:<qty>&coupon=&cart_origin=meta_shops.
- * Meta sends no option, so each product gets its default one (as on its page), at the
- * catalog's price. Unknown or sold-out products are left out. The shop has no typed
- * coupon codes, so `coupon` is ignored.
+ * Meta sends no option, so each product starts with its default one (as on its page), at
+ * the catalog's price; more than that option has in stock goes to the product's next
+ * in-stock options in order (most pieces are one of each colour). Unknown or sold-out
+ * products are left out. The shop has no typed coupon codes, so `coupon` is ignored.
  */
 async function metaShopsCart(param: string | string[] | undefined): Promise<Omit<CartItem, "key">[] | null> {
   const raw = Array.isArray(param) ? param.join(",") : param;
@@ -29,9 +31,8 @@ async function metaShopsCart(param: string | string[] | undefined): Promise<Omit
   const lines = await Promise.all(
     [...wanted].map(async ([slug, qty]) => {
       const product = await getProduct(slug);
-      if (!product) return null;
-      const variant = defaultVariant(product);
-      return {
+      if (!product) return [];
+      const line = (variant: ProductVariant | undefined, n: number) => ({
         productId: product.id,
         variantId: variant?.id,
         option: variant ? variantLabel(variant) : undefined,
@@ -41,11 +42,23 @@ async function metaShopsCart(param: string | string[] | undefined): Promise<Omit
         image: variant?.image ?? product.images[0],
         etsyUrl: product.etsyUrl,
         maxQty: variant ? variant.stock : product.stock,
-        qty,
-      };
+        qty: n,
+      });
+      const first = defaultVariant(product);
+      if (!first) return [line(undefined, qty)];
+      const options = [first, ...product.variants!.filter((v) => v !== first && variantAvailable(v))];
+      let left = qty;
+      const out = [];
+      for (const v of options) {
+        if (left <= 0) break;
+        const n = v.stock === undefined ? left : Math.min(left, v.stock);
+        if (n > 0) out.push(line(v, n));
+        left -= n;
+      }
+      return out.length ? out : [line(first, qty)];
     }),
   );
-  return lines.filter((l) => l !== null);
+  return lines.flat();
 }
 
 export default async function CheckoutPage({ searchParams }: Props) {
