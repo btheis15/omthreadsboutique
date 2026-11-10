@@ -37,6 +37,8 @@ type Summary = {
   pickupDetails?: string | null;
   /** The delivery address: lines of text, or a ready-made string. */
   shipTo?: string | { name?: string; line1?: string; line2?: string; city?: string; state?: string; postal_code?: string } | null;
+  /** Personal delivery: where it's going (the shop sends it as deliveryTo). */
+  deliveryTo?: { name?: string; line1?: string; line2?: string; city?: string; state?: string; postal_code?: string } | null;
 };
 
 function addressText(a: Summary["shipTo"]): string {
@@ -196,7 +198,7 @@ export default async function SuccessPage({ searchParams }: Props) {
             </>
           ) : (
             <>
-              <p className="font-medium">Personal delivery{addressText(summary.shipTo) ? ` to ${addressText(summary.shipTo)}` : ""}</p>
+              <p className="font-medium">Personal delivery{addressText(summary.deliveryTo ?? summary.shipTo) ? ` to ${addressText(summary.deliveryTo ?? summary.shipTo)}` : ""}</p>
               <p className="mt-1 text-ink/85">We&apos;ll bring it to you ourselves.</p>
             </>
           )}
