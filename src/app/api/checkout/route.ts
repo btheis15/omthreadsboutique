@@ -22,10 +22,14 @@ export async function POST(request: Request) {
     customer?: unknown;
     giftNote?: string;
     receipt?: string;
+    coupon?: unknown;
   } | null;
   const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Online checkout isn't available yet. Please buy on Etsy." }, { status: 501 });
+
+  // A typed coupon code (the admin checks it again and prices the order).
+  const coupon = typeof body?.coupon === "string" ? body.coupon.trim().slice(0, 30) : "";
 
   const jar = await cookies();
   const testerKey = jar.get(TESTER_COOKIE)?.value;
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
     const { status, data } = await shopApi("/api/checkout", {
       method: "POST",
       shopperIp: shopperIp(request.headers),
-      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey, partner },
+      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey, partner, coupon: coupon || undefined },
     });
     if (status === 200 && typeof data.url === "string") return NextResponse.json({ url: data.url });
     // PayPal and Venmo: the order is priced; the checkout page now shows PayPal's own buttons.
