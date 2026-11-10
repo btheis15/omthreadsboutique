@@ -32,7 +32,20 @@ type Summary = {
   couponLabel?: string | null;
   totalCents: number;
   shippingLabel: string | null;
+  /** "ship" (or missing, for older orders), "pickup" or "delivery". */
+  fulfillment?: "ship" | "pickup" | "delivery";
+  pickupDetails?: string | null;
+  /** The delivery address: lines of text, or a ready-made string. */
+  shipTo?: string | { name?: string; line1?: string; line2?: string; city?: string; state?: string; postal_code?: string } | null;
+  /** Personal delivery: where it's going (the shop sends it as deliveryTo). */
+  deliveryTo?: { name?: string; line1?: string; line2?: string; city?: string; state?: string; postal_code?: string } | null;
 };
+
+function addressText(a: Summary["shipTo"]): string {
+  if (!a) return "";
+  if (typeof a === "string") return a;
+  return [a.line1, a.line2, [a.city, a.state].filter(Boolean).join(", "), a.postal_code].filter(Boolean).join(", ");
+}
 
 const dollars = (cents: number) => formatPrice(cents / 100);
 
@@ -66,6 +79,8 @@ export default async function SuccessPage({ searchParams }: Props) {
   // The Bitcoin Cash payment screen (it checks for the payment itself).
   const bch = summary.status === "awaiting_bch" ? summary.bch : undefined;
   const bchStuck = summary.provider === "bch" && !paid && summary.bch?.state === "expired_partial";
+  const pickupOrder = summary.fulfillment === "pickup";
+  const deliveryOrder = summary.fulfillment === "delivery";
   const waiting = summary.status === "processing" || summary.status === "awaiting";
   return (
     <div className="container-page max-w-2xl pt-10 pb-20 md:pt-16">
@@ -105,8 +120,8 @@ export default async function SuccessPage({ searchParams }: Props) {
           </p>
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
-            {new Date(zelle.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. It ships as soon
-            as the payment arrives. Zelle payments can&apos;t be cancelled once sent, so please check the name and amount in your bank app first.
+            {new Date(zelle.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. {pickupOrder || deliveryOrder ? "We'll get it ready as soon" : "It ships as soon"}
+            {" "}as the payment arrives. Zelle payments can&apos;t be cancelled once sent, so please check the name and amount in your bank app first.
           </p>
         </div>
       )}
@@ -156,16 +171,16 @@ export default async function SuccessPage({ searchParams }: Props) {
           </p>
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
-            {new Date(venmo.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. It ships as soon
-            as the payment arrives. Venmo payments can&apos;t be cancelled once sent, so please check the name and amount first.
+            {new Date(venmo.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. {pickupOrder || deliveryOrder ? "We'll get it ready as soon" : "It ships as soon"}
+            {" "}as the payment arrives. Venmo payments can&apos;t be cancelled once sent, so please check the name and amount first.
           </p>
         </div>
       )}
       <p className={`mt-4 leading-relaxed text-ink/85 ${zelle || venmo || bch ? "hidden" : ""}`}>
         {paid
           ? summary.emailing && summary.email
-            ? `We've received your payment. Your receipt is on its way to ${summary.email}, and we'll email you again with tracking as soon as it ships.`
-            : "We've received your payment. We'll be in touch with tracking as soon as it ships."
+            ? `We've received your payment. Your receipt is on its way to ${summary.email}, and ${deliveryOrder ? "we'll be in touch to arrange the drop-off" : `we'll email you again ${pickupOrder ? "when it's ready" : "with tracking as soon as it ships"}`}.`
+            : `We've received your payment. We'll be in touch ${pickupOrder ? "when it's ready" : deliveryOrder ? "to arrange the drop-off" : "with tracking as soon as it ships"}.`
           : waiting
             ? summary.provider === "exodus"
               ? "Your stablecoin payment is being confirmed on the blockchain. This page updates by itself; you can also close it: we'll email you once it's confirmed."
@@ -174,6 +189,21 @@ export default async function SuccessPage({ searchParams }: Props) {
               ? `Part of your payment (${summary.bch?.paidBch} BCH) arrived before the price hold ended. Please don't send any more: we'll email you to complete your order or send it back.`
               : "Nothing was charged. Your cart is still saved, so you can try again."}
       </p>
+      {(pickupOrder || deliveryOrder) && (
+        <div className="mt-6 rounded-xl border border-line bg-sand p-4 text-[0.95rem]">
+          {pickupOrder ? (
+            <>
+              <p className="font-medium">Pick up</p>
+              <p className="mt-1 whitespace-pre-line text-ink/85">{summary.pickupDetails?.trim() || "We'll email you when it's ready, with where and when."}</p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium">Personal delivery{addressText(summary.deliveryTo ?? summary.shipTo) ? ` to ${addressText(summary.deliveryTo ?? summary.shipTo)}` : ""}</p>
+              <p className="mt-1 text-ink/85">We&apos;ll bring it to you ourselves.</p>
+            </>
+          )}
+        </div>
+      )}
       {paid && summary.provider === "bch" && summary.bch?.paidBch && (
         <p className="mt-2 text-sm text-muted">
           Paid {summary.bch.paidBch} BCH
@@ -217,7 +247,7 @@ export default async function SuccessPage({ searchParams }: Props) {
             <dd className="text-right">−{dollars(summary.discountCents)}</dd>
           </>
         ) : null}
-        <dt className="text-muted">Shipping{summary.shippingLabel ? ` · ${summary.shippingLabel}` : ""}</dt>
+        <dt className="text-muted">{pickupOrder ? "Pickup" : deliveryOrder ? "Delivery" : "Shipping"}{summary.shippingLabel ? ` · ${summary.shippingLabel}` : ""}</dt>
         <dd className="text-right">{summary.shippingCents ? dollars(summary.shippingCents) : "Free"}</dd>
         {summary.taxCents > 0 && (
           <>
