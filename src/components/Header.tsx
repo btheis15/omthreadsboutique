@@ -26,7 +26,9 @@ export function Header({
 }) {
   const nav = menu ?? [
     { href: "/shop", label: "Shop all" },
-    ...categories.slice(0, 2).map((c) => ({ href: `/shop/${c.slug}`, label: c.title })),
+    ...categories
+      .slice(0, 2)
+      .map((c) => ({ href: `/shop/${c.slug}`, label: c.title })),
     { href: "/crafts", label: "The crafts" },
     { href: "/about", label: "Our story" },
   ];
@@ -57,161 +59,201 @@ export function Header({
   }, [searchOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-ivory/95 backdrop-blur supports-[backdrop-filter]:bg-ivory/80">
-      <div className="container-page flex h-16 items-center justify-between gap-2 md:h-20">
-        <div className="flex flex-1 items-center gap-1 md:hidden">
-          <button
-            type="button"
-            className="-ml-2 grid size-11 place-items-center"
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(true)}
+    <>
+      <header className="sticky top-0 z-40 border-b border-line bg-ivory/95 backdrop-blur supports-[backdrop-filter]:bg-ivory/80">
+        <div className="container-page flex h-16 items-center justify-between gap-2 md:h-20">
+          <div className="flex flex-1 items-center gap-1 md:hidden">
+            <button
+              type="button"
+              className="-ml-2 grid size-11 place-items-center"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen(true)}
+            >
+              <MenuIcon />
+            </button>
+          </div>
+
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 leading-none"
+            aria-label="Om Threads Boutique, home"
           >
-            <MenuIcon />
-          </button>
-        </div>
+            <Image
+              src={logo}
+              alt=""
+              priority
+              sizes="(min-width: 768px) 52px, 44px"
+              className="size-11 transition-transform duration-700 ease-soft group-hover:scale-105 md:size-[3.25rem]"
+            />
+            <span className="flex flex-col">
+              <span className="font-display text-[1.45rem] tracking-wide md:text-[1.7rem]">
+                Om Threads
+              </span>
+              <span className="mt-1 text-[0.58rem] tracking-[0.42em] text-muted uppercase">
+                Boutique
+              </span>
+            </span>
+          </Link>
 
-        <Link href="/" className="group flex items-center gap-2.5 leading-none" aria-label="Om Threads Boutique, home">
-          <Image src={logo} alt="" priority sizes="(min-width: 768px) 52px, 44px" className="size-11 transition-transform duration-700 ease-soft group-hover:scale-105 md:size-[3.25rem]" />
-          <span className="flex flex-col">
-            <span className="font-display text-[1.45rem] tracking-wide md:text-[1.7rem]">Om Threads</span>
-            <span className="mt-1 text-[0.58rem] tracking-[0.42em] text-muted uppercase">Boutique</span>
-          </span>
-        </Link>
-
-        <nav aria-label="Main" className="hidden flex-1 justify-center gap-8 md:flex">
-          {nav.map((item) =>
-            item.href === "/shop" ? (
-              // Desktop mega menu: opens on hover or keyboard focus.
-              <div key={item.href} className="group/mega flex items-center">
-                <Link
-                  href={item.href}
-                  aria-haspopup="true"
-                  className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
-                    pathname.startsWith("/shop") ? "text-accent" : ""
-                  }`}
-                >
-                  {item.label}
-                  <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/mega:scale-x-100" />
-                </Link>
-                <div className="invisible absolute inset-x-0 top-full -translate-y-2 border-b border-line bg-ivory opacity-0 shadow-[0_24px_48px_-24px_rgba(35,49,66,0.35)] transition duration-300 ease-soft group-focus-within/mega:visible group-focus-within/mega:translate-y-0 group-focus-within/mega:opacity-100 group-hover/mega:visible group-hover/mega:translate-y-0 group-hover/mega:opacity-100">
-                  <div className="container-page grid grid-cols-[1fr_1.6fr_1.1fr] gap-10 py-10">
-                    <div>
-                      <p className="eyebrow mb-4">Shop by type</p>
-                      <ul className="space-y-1">
-                        <li>
-                          <Link href="/shop" className="block py-1.5 font-display text-2xl hover:text-accent">
-                            Everything
-                          </Link>
-                        </li>
-                        {categories.map((c) => (
-                          <li key={c.slug}>
-                            <Link href={`/shop/${c.slug}`} className="block py-1.5 font-display text-2xl hover:text-accent">
-                              {c.title}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="eyebrow mb-4">Shop by craft</p>
-                      <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
-                        {crafts.map((c) => (
-                          <li key={c.value}>
+          <nav
+            aria-label="Main"
+            className="hidden flex-1 justify-center gap-8 md:flex"
+          >
+            {nav.map((item) =>
+              item.href === "/shop" ? (
+                // Desktop mega menu: opens on hover or keyboard focus.
+                <div key={item.href} className="group/mega flex items-center">
+                  <Link
+                    href={item.href}
+                    aria-haspopup="true"
+                    className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
+                      pathname.startsWith("/shop") ? "text-accent" : ""
+                    }`}
+                  >
+                    {item.label}
+                    <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/mega:scale-x-100" />
+                  </Link>
+                  <div className="invisible absolute inset-x-0 top-full -translate-y-2 border-b border-line bg-ivory opacity-0 shadow-[0_24px_48px_-24px_rgba(35,49,66,0.35)] transition duration-300 ease-soft group-focus-within/mega:visible group-focus-within/mega:translate-y-0 group-focus-within/mega:opacity-100 group-hover/mega:visible group-hover/mega:translate-y-0 group-hover/mega:opacity-100">
+                    <div className="container-page grid grid-cols-[1fr_1.6fr_1.1fr] gap-10 py-10">
+                      <div>
+                        <p className="eyebrow mb-4">Shop by type</p>
+                        <ul className="space-y-1">
+                          <li>
                             <Link
-                              href={`/shop?craft=${c.value}`}
-                              className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 text-[0.95rem] hover:text-accent"
+                              href="/shop"
+                              className="block py-1.5 font-display text-2xl hover:text-accent"
                             >
-                              {c.label}
-                              {c.hindi && <span className="font-deva text-sm text-zari">{c.hindi}</span>}
+                              Everything
                             </Link>
                           </li>
-                        ))}
-                      </ul>
+                          {categories.map((c) => (
+                            <li key={c.slug}>
+                              <Link
+                                href={`/shop/${c.slug}`}
+                                className="block py-1.5 font-display text-2xl hover:text-accent"
+                              >
+                                {c.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="eyebrow mb-4">Shop by craft</p>
+                        <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                          {crafts.map((c) => (
+                            <li key={c.value}>
+                              <Link
+                                href={`/shop?craft=${c.value}`}
+                                className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 text-[0.95rem] hover:text-accent"
+                              >
+                                {c.label}
+                                {c.hindi && (
+                                  <span className="font-deva text-sm text-zari">
+                                    {c.hindi}
+                                  </span>
+                                )}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <Link
+                        href="/shop?sort=newest"
+                        className="group/card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-indigo p-7 text-ivory"
+                      >
+                        <Mandala className="animate-spin-slow absolute -top-16 -right-16 -z-10 size-72 text-zari/30" />
+                        <Paisley className="absolute top-6 left-6 -z-10 w-16 text-zari-light/60 transition-transform duration-700 group-hover/card:rotate-12" />
+                        <p className="font-deva text-lg text-zari-light">
+                          नए आगमन
+                        </p>
+                        <p className="font-display text-3xl">New arrivals</p>
+                        <span className="mt-3 inline-flex items-center gap-2 text-sm text-zari-light">
+                          Shop the latest{" "}
+                          <ArrowIcon
+                            size={16}
+                            className="transition-transform group-hover/card:translate-x-1"
+                          />
+                        </span>
+                      </Link>
                     </div>
-                    <Link
-                      href="/shop?sort=newest"
-                      className="group/card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-indigo p-7 text-ivory"
-                    >
-                      <Mandala className="animate-spin-slow absolute -top-16 -right-16 -z-10 size-72 text-zari/30" />
-                      <Paisley className="absolute top-6 left-6 -z-10 w-16 text-zari-light/60 transition-transform duration-700 group-hover/card:rotate-12" />
-                      <p className="font-deva text-lg text-zari-light">नए आगमन</p>
-                      <p className="font-display text-3xl">New arrivals</p>
-                      <span className="mt-3 inline-flex items-center gap-2 text-sm text-zari-light">
-                        Shop the latest <ArrowIcon size={16} className="transition-transform group-hover/card:translate-x-1" />
-                      </span>
-                    </Link>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <Link
-                key={item.href}
-                href={contactHref(item.href)}
-                className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
-                  pathname === item.href ? "text-accent" : ""
-                } group/link`}
-              >
-                {item.label}
-                <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/link:scale-x-100" />
-              </Link>
-            ),
-          )}
-        </nav>
-
-        <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">
-          <button
-            type="button"
-            className="grid size-11 place-items-center"
-            aria-label="Search"
-            onClick={() => setSearchOpen((v) => !v)}
-          >
-            <SearchIcon />
-          </button>
-          <button
-            type="button"
-            className="relative -mr-2 grid size-11 place-items-center"
-            aria-label={`Cart, ${count} ${count === 1 ? "item" : "items"}`}
-            onClick={() => cart.open()}
-          >
-            <BagIcon />
-            {count > 0 && (
-              <span
-                key={count}
-                className="animate-bump absolute top-1.5 right-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.7rem] leading-5 font-semibold text-white"
-              >
-                {count}
-              </span>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={contactHref(item.href)}
+                  className={`relative py-7 text-sm tracking-wide transition-colors hover:text-accent ${
+                    pathname === item.href ? "text-accent" : ""
+                  } group/link`}
+                >
+                  {item.label}
+                  <span className="absolute inset-x-0 bottom-5 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover/link:scale-x-100" />
+                </Link>
+              ),
             )}
-          </button>
+          </nav>
+
+          <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">
+            <button
+              type="button"
+              className="grid size-11 place-items-center"
+              aria-label="Search"
+              onClick={() => setSearchOpen((v) => !v)}
+            >
+              <SearchIcon />
+            </button>
+            <button
+              type="button"
+              className="relative -mr-2 grid size-11 place-items-center"
+              aria-label={`Cart, ${count} ${count === 1 ? "item" : "items"}`}
+              onClick={() => cart.open()}
+            >
+              <BagIcon />
+              {count > 0 && (
+                <span
+                  key={count}
+                  className="animate-bump absolute top-1.5 right-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.7rem] leading-5 font-semibold text-white"
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {searchOpen && (
-        <form
-          role="search"
-          className="container-page pb-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const q = new FormData(e.currentTarget).get("q")?.toString().trim();
-            router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
-          }}
-        >
-          <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4">
-            <SearchIcon size={18} className="text-muted" />
-            <input
-              ref={searchRef}
-              name="q"
-              type="search"
-              placeholder="Search lohi, Kullu, pashmina…"
-              className="h-12 w-full bg-transparent text-base outline-none"
-              aria-label="Search products"
-            />
-          </label>
-        </form>
-      )}
+        {searchOpen && (
+          <form
+            role="search"
+            className="container-page pb-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = new FormData(e.currentTarget)
+                .get("q")
+                ?.toString()
+                .trim();
+              router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+            }}
+          >
+            <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4">
+              <SearchIcon size={18} className="text-muted" />
+              <input
+                ref={searchRef}
+                name="q"
+                type="search"
+                placeholder="Search lohi, Kullu, pashmina…"
+                className="h-12 w-full bg-transparent text-base outline-none"
+                aria-label="Search products"
+              />
+            </label>
+          </form>
+        )}
+      </header>
 
-      {/* Mobile menu drawer */}
+      {/* Mobile menu drawer. Kept outside <header>: the header's backdrop-blur
+          makes it the containing block for fixed children, which squeezed the
+          drawer into the 64px header strip. */}
       <div
         className={`fixed inset-0 z-50 md:hidden ${menuOpen ? "" : "pointer-events-none"}`}
         aria-hidden={!menuOpen}
@@ -222,7 +264,7 @@ export function Header({
         />
         <nav
           aria-label="Mobile"
-          className={`absolute inset-y-0 left-0 flex w-[85%] max-w-sm flex-col bg-ivory shadow-xl transition-transform duration-300 ease-soft ${
+          className={`absolute inset-y-0 left-0 flex w-[85%] max-w-sm flex-col bg-ivory pt-[env(safe-area-inset-top)] shadow-xl transition-transform duration-300 ease-soft ${
             menuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -241,23 +283,52 @@ export function Header({
           <ul className="flex-1 overflow-y-auto px-4 py-2">
             {(menu
               ? menu.map((l) => ({ ...l }))
-              : [{ href: "/shop", label: "Shop all" }, ...categories.map((c) => ({ href: `/shop/${c.slug}`, label: c.title }))]
-            ).map(
-              (item, i) => (
-                <li
-                  key={`${item.href}-${item.label}`}
-                  style={{ transitionDelay: menuOpen ? `${120 + i * 50}ms` : "0ms" }}
-                  className={`transition duration-500 ease-soft ${menuOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
+              : [
+                  { href: "/shop", label: "Shop all" },
+                  ...categories.map((c) => ({
+                    href: `/shop/${c.slug}`,
+                    label: c.title,
+                  })),
+                ]
+            ).map((item, i) => (
+              <li
+                key={`${item.href}-${item.label}`}
+                style={{
+                  transitionDelay: menuOpen ? `${120 + i * 50}ms` : "0ms",
+                }}
+                className={`transition duration-500 ease-soft ${menuOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
+              >
+                <Link
+                  href={contactHref(item.href)}
+                  tabIndex={menuOpen ? 0 : -1}
+                  className="flex h-14 items-center border-b border-line font-display text-2xl"
                 >
-                  <Link
-                    href={contactHref(item.href)}
-                    tabIndex={menuOpen ? 0 : -1}
-                    className="flex h-14 items-center border-b border-line font-display text-2xl"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ),
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+            {crafts.length > 0 && (
+              <li className="pt-6">
+                <p className="eyebrow mb-3">Shop by craft</p>
+                <ul className="flex flex-wrap gap-2">
+                  {crafts.map((c) => (
+                    <li key={c.value}>
+                      <Link
+                        href={`/shop?craft=${c.value}`}
+                        tabIndex={menuOpen ? 0 : -1}
+                        className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[0.95rem]"
+                      >
+                        {c.label}
+                        {c.hindi && (
+                          <span className="font-deva text-sm text-zari">
+                            {c.hindi}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </li>
             )}
             {(menu
               ? []
@@ -268,9 +339,13 @@ export function Header({
                   { href: "/faq", label: "FAQ" },
                   { href: "/contact", label: "Contact" },
                 ]
-            ).map((item) => (
-              <li key={item.href}>
-                <Link href={contactHref(item.href)} tabIndex={menuOpen ? 0 : -1} className="flex h-12 items-center text-[0.95rem]">
+            ).map((item, i) => (
+              <li key={item.href} className={i === 0 ? "mt-4" : ""}>
+                <Link
+                  href={contactHref(item.href)}
+                  tabIndex={menuOpen ? 0 : -1}
+                  className="flex h-12 items-center text-[0.95rem]"
+                >
                   {item.label}
                 </Link>
               </li>
@@ -281,12 +356,12 @@ export function Header({
             target="_blank"
             rel="noopener noreferrer"
             tabIndex={menuOpen ? 0 : -1}
-            className="m-4 btn btn-outline"
+            className="btn btn-primary m-4 mb-[max(1rem,env(safe-area-inset-bottom))]"
           >
             Visit our Etsy shop
           </a>
         </nav>
       </div>
-    </header>
+    </>
   );
 }
