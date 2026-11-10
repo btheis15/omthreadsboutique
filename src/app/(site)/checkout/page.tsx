@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import type { CartItem } from "@/components/cart/store";
-import type { ProductVariant } from "@/lib/types";
 import { getProduct, getSettings, getTextOverrides } from "@/lib/catalog";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
-import { defaultVariant, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
+import { defaultVariant, variantLabel, variantPrice } from "@/lib/variants";
 import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
@@ -14,49 +13,49 @@ type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; prod
 /**
  * A Meta Shops (Facebook / Instagram) checkout link:
  * /checkout?products=<slug>:<qty>,<slug>:<qty>&coupon=&cart_origin=meta_shops.
- * Meta sends no option, so each product starts with its default one (as on its page), at
- * the catalog's price; more than that option has in stock goes to the product's next
- * in-stock options in order (most pieces are one of each colour). Unknown or sold-out
- * products are left out. A `coupon` is passed on to the checkout, which tries it when the
- * shop has coupon codes.
+ * A content ID is a product's slug (its default option, as on its page) or the slug and an
+ * option joined by "--" (e.g. `…-wrap--heather-grey`: that exact colour). Each line gets
+ * exactly the quantity Meta sent, at the catalog's price, even past the stock count (the
+ * payment step still checks stock). Unknown products or options are left out. A `coupon`
+ * is passed on to the checkout, which tries it when the shop has coupon codes.
  */
+/** "Heather Grey" → "heather-grey", "Ash & Ember" → "ash-ember" (an option as Meta's content IDs name it). */
+const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
 async function metaShopsCart(param: string | string[] | undefined): Promise<Omit<CartItem, "key">[] | null> {
   const raw = Array.isArray(param) ? param.join(",") : param;
   if (raw === undefined) return null;
   const wanted = new Map<string, number>();
   for (const pair of raw.split(",")) {
-    const [slug, qtyText] = pair.trim().split(":");
+    const [id, qtyText] = pair.trim().split(":");
     const qty = qtyText === undefined ? 1 : Number.parseInt(qtyText, 10);
-    if (slug && Number.isFinite(qty) && qty > 0) wanted.set(slug, (wanted.get(slug) ?? 0) + qty);
+    if (id && Number.isFinite(qty) && qty > 0) wanted.set(id, (wanted.get(id) ?? 0) + qty);
   }
   const lines = await Promise.all(
-    [...wanted].map(async ([slug, qty]) => {
+    [...wanted].map(async ([id, qty]) => {
+      const split = id.indexOf("--");
+      const slug = split === -1 ? id : id.slice(0, split);
+      const optionSlug = split === -1 ? null : id.slice(split + 2).toLowerCase();
       const product = await getProduct(slug);
       if (!product) return [];
-      const line = (variant: ProductVariant | undefined, n: number) => ({
-        productId: product.id,
-        variantId: variant?.id,
-        option: variant ? variantLabel(variant) : undefined,
-        slug: product.slug,
-        title: product.title,
-        price: variantPrice(product, variant),
-        image: variant?.image ?? product.images[0],
-        etsyUrl: product.etsyUrl,
-        maxQty: variant ? variant.stock : product.stock,
-        qty: n,
-      });
-      const first = defaultVariant(product);
-      if (!first) return [line(undefined, qty)];
-      const options = [first, ...product.variants!.filter((v) => v !== first && variantAvailable(v))];
-      let left = qty;
-      const out = [];
-      for (const v of options) {
-        if (left <= 0) break;
-        const n = v.stock === undefined ? left : Math.min(left, v.stock);
-        if (n > 0) out.push(line(v, n));
-        left -= n;
-      }
-      return out.length ? out : [line(first, qty)];
+      const variant = optionSlug === null ? defaultVariant(product) : product.variants?.find((v) => slugify(variantLabel(v)) === optionSlug);
+      if (optionSlug !== null && !variant) return [];
+      const stock = variant ? variant.stock : product.stock;
+      return [
+        {
+          productId: product.id,
+          variantId: variant?.id,
+          option: variant ? variantLabel(variant) : undefined,
+          slug: product.slug,
+          title: product.title,
+          price: variantPrice(product, variant),
+          image: variant?.image ?? product.images[0],
+          etsyUrl: product.etsyUrl,
+          // Room for Meta's quantity, so the cart doesn't cut it down to the stock count.
+          maxQty: stock === undefined ? undefined : Math.max(stock, qty),
+          qty,
+        },
+      ];
     }),
   );
   return lines.flat();
