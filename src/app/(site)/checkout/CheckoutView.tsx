@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bold } from "@/components/Bold";
 import { type CartItem, cart, cartKey, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
@@ -16,6 +16,7 @@ import { PayPalButtons } from "./PayPalButtons";
 type Provider = CheckoutInfo["providers"][number];
 // PayPal, crypto, Zelle and Venmo need the address on this page (Stripe asks on its own page).
 const asksAddress = (p: Provider) => p !== "stripe";
+type Coupon = { code: string; label: string; discountCents: number; text: string };
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
@@ -33,6 +34,7 @@ export function CheckoutView({
   returnDays,
   text,
   linkCart,
+  linkCoupon,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -42,6 +44,8 @@ export function CheckoutView({
   text?: Record<string, string>;
   /** A Meta Shops checkout link's products: they replace the cart (null when the link has none). */
   linkCart?: Omit<CartItem, "key">[] | null;
+  /** That link's coupon code, tried once the cart is in place (ignored if it isn't valid). */
+  linkCoupon?: string | null;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -86,6 +90,73 @@ export function CheckoutView({
   const shipping = rate ? shippingCents(rate, subtotalCents, itemCount) : 0;
   const nextFree = rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
+  // Typed coupon code: shown here for the shopper; the admin checks it again when the order is priced.
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const couponRef = useRef<Coupon | null>(null);
+  useEffect(() => {
+    couponRef.current = coupon;
+  }, [coupon]);
+  const couponsOn = Boolean(checkout?.couponCodes);
+  const lines = items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }));
+  const linesKey = JSON.stringify(lines);
+  const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
+
+  async function checkCoupon(code: string): Promise<Coupon | string> {
+    try {
+      const res = await fetch("/api/coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, lines: JSON.parse(linesKey) }) });
+      const data = (await res.json().catch(() => ({}))) as Partial<Coupon> & { error?: string };
+      if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "" };
+      return data.error ?? "That coupon code isn't valid.";
+    } catch {
+      return "Couldn't check that code. Check your connection and try again.";
+    }
+  }
+
+  async function applyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    const result = await checkCoupon(code);
+    if (typeof result === "string") setCouponError(result);
+    else {
+      setCoupon(result);
+      setCouponOpen(false);
+      setCouponInput("");
+    }
+    setCouponBusy(false);
+  }
+
+  // The cart changed: check the applied code again, quietly (drop it if it no longer works).
+  useEffect(() => {
+    const applied = couponRef.current;
+    if (!applied) return;
+    let stale = false;
+    checkCoupon(applied.code).then((result) => {
+      if (stale) return;
+      setCoupon(typeof result === "string" ? null : result);
+    });
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linesKey]);
+
+  // A Meta Shops link's coupon: tried once the link's cart is in place; no message if it isn't valid.
+  const linkCouponTried = useRef(false);
+  useEffect(() => {
+    if (!linkCoupon || !couponsOn || linkPending || linkCouponTried.current || items.length === 0) return;
+    linkCouponTried.current = true;
+    checkCoupon(linkCoupon).then((result) => {
+      if (typeof result !== "string") setCoupon(result);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkCoupon, couponsOn, linkPending, items.length]);
+
   async function startCheckout() {
     setLoading(true);
     setError(null);
@@ -95,7 +166,8 @@ export function CheckoutView({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lines: items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty })),
+          lines,
+          coupon: coupon?.code,
           provider,
           country: place?.code,
           rateId: rate?.id,
@@ -117,6 +189,12 @@ export function CheckoutView({
         setPaypalOrder(data.paypal.token);
         setLoading(false);
         return;
+      }
+      if (data.errors?.coupon) {
+        // The admin no longer accepts the code: drop it and say so.
+        setCoupon(null);
+        setCouponError(data.errors.coupon);
+        setCouponOpen(true);
       }
       setError(data.error ?? "Something went wrong. Please try again.");
       setFieldErrors(data.errors ?? {});
@@ -385,11 +463,54 @@ export function CheckoutView({
             <dl className="grid grid-cols-[1fr_auto] gap-y-1 border-t border-line pt-4 text-[0.95rem]">
               <dt className="text-muted">Items</dt>
               <dd className="text-right">{dollars(subtotalCents)}</dd>
+              {coupon && (
+                <>
+                  <dt className="text-muted">
+                    Coupon {coupon.code}
+                    {coupon.text && ` (${coupon.text})`}{" "}
+                    <button type="button" onClick={() => setCoupon(null)} className="underline underline-offset-4">
+                      Remove
+                    </button>
+                  </dt>
+                  <dd className="text-right">−{dollars(discount)}</dd>
+                </>
+              )}
               <dt className="text-muted">Shipping</dt>
               <dd className="text-right">{shipping ? dollars(shipping) : "Free"}</dd>
               <dt className="text-lg font-medium">Total</dt>
-              <dd className="text-right text-lg font-medium">{dollars(subtotalCents + shipping)}</dd>
+              <dd className="text-right text-lg font-medium">{dollars(subtotalCents - discount + shipping)}</dd>
             </dl>
+            {couponsOn && !coupon && (
+              <div className="mt-2 text-sm">
+                {couponOpen ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void applyCoupon();
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.slice(0, 30))}
+                      aria-label="Coupon code"
+                      aria-invalid={Boolean(couponError)}
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      className={`min-w-0 flex-1 rounded-lg border bg-ivory px-3 py-2 ${couponError ? "border-sale" : "border-line"}`}
+                    />
+                    <button type="submit" disabled={couponBusy || !couponInput.trim()} className="btn btn-primary h-10 min-h-0 px-4 text-sm">
+                      {couponBusy ? "Checking…" : "Apply"}
+                    </button>
+                  </form>
+                ) : (
+                  <button type="button" onClick={() => setCouponOpen(true)} className="text-muted underline underline-offset-4">
+                    Have a coupon code?
+                  </button>
+                )}
+                {couponError && <p className="mt-1 text-sale">{couponError}</p>}
+              </div>
+            )}
             {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
             {provider === "stripe" && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 

@@ -9,7 +9,7 @@ import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
-type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; products?: string | string[] }> };
+type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; products?: string | string[]; coupon?: string | string[] }> };
 
 /**
  * A Meta Shops (Facebook / Instagram) checkout link:
@@ -17,7 +17,8 @@ type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; prod
  * Meta sends no option, so each product starts with its default one (as on its page), at
  * the catalog's price; more than that option has in stock goes to the product's next
  * in-stock options in order (most pieces are one of each colour). Unknown or sold-out
- * products are left out. The shop has no typed coupon codes, so `coupon` is ignored.
+ * products are left out. A `coupon` is passed on to the checkout, which tries it when the
+ * shop has coupon codes.
  */
 async function metaShopsCart(param: string | string[] | undefined): Promise<Omit<CartItem, "key">[] | null> {
   const raw = Array.isArray(param) ? param.join(",") : param;
@@ -64,6 +65,8 @@ async function metaShopsCart(param: string | string[] | undefined): Promise<Omit
 export default async function CheckoutPage({ searchParams }: Props) {
   const [params, jar, settings, text] = await Promise.all([searchParams, cookies(), getSettings(), getTextOverrides()]);
   const [checkout, linkCart] = await Promise.all([checkoutFor(jar.get(TESTER_COOKIE)?.value), metaShopsCart(params.products)]);
+  const couponParam = Array.isArray(params.coupon) ? params.coupon[0] : params.coupon;
+  const linkCoupon = couponParam?.trim().slice(0, 30) || null;
   return (
     <CheckoutView
       checkout={checkout}
@@ -72,6 +75,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
       returnDays={settings.returnDays}
       text={text}
       linkCart={linkCart}
+      linkCoupon={linkCoupon}
     />
   );
 }

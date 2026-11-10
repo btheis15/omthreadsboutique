@@ -159,6 +159,8 @@ export type CheckoutInfo = {
   /** What shoppers can pay with through Exodus Pay, e.g. "USDC or USDT" (set in the admin). */
   exodusCoins?: string;
   testerHash?: string;
+  /** Typed coupon codes: at least one is switched on, so checkout offers a code box. */
+  couponCodes?: boolean;
   /** Sales partners: open for sign-ups (their sales are paid with Bitcoin Cash), at this commission. */
   partners?: { ratePercent: number; business: { name: string; address: string | null; email: string | null } };
 };
