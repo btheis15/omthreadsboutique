@@ -153,7 +153,7 @@ export type CheckoutInfo = {
   zelle?: { holdHours: number };
   /** How long a Venmo order holds the pieces. */
   venmo?: { holdHours: number };
-  countries: { code: string; name: string; rates: ShippingRate[] }[];
+  countries: { code: string; name: string; rates: ShippingRate[]; /** Live carrier rates apply to this country right now (`rates` is then only the fallback). */ live?: boolean }[];
   /** Local pickup, when the shop offers it (the charge replaces shipping). */
   pickup?: { label: string; cents: number; details: string } | null;
   /** Personal delivery within `miles` of the shop, when offered. */
