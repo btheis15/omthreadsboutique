@@ -21,6 +21,8 @@ export async function POST(request: Request) {
       shopperIp: shopperIp(request.headers),
       body: { lines, country: body?.country, customer: body?.customer, testerKey },
     });
+    // Not priced live for this cart (e.g. an export over the AES limit): the site uses its flat prices.
+    if (status === 200 && data.fallback === true) return NextResponse.json({ fallback: true, rates: [] });
     if (status === 200 && typeof data.quoteId === "string" && Array.isArray(data.rates)) {
       return NextResponse.json({ quoteId: data.quoteId, rates: data.rates, expiresAt: data.expiresAt });
     }

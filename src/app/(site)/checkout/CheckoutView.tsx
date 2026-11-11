@@ -103,7 +103,10 @@ export function CheckoutView({
   // Pickup and delivery are US-only, so the country and shipping rate don't apply.
   const placeCode = fulfil === "ship" ? (place?.code ?? "US") : "US";
   // Live carrier rates: every provider gets the address form here, then the shopper picks a quoted option.
-  const live = fulfil === "ship" && place?.live === true;
+  // The shop says when a cart can't be priced live (an export over the AES limit): the flat prices apply to that cart.
+  const [flatFor, setFlatFor] = useState<string | null>(null);
+  const flatKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty])]);
+  const live = fulfil === "ship" && place?.live === true && flatFor !== flatKey;
   const needsForm = asksAddress(provider, fulfil) || live;
   const itemCount = items.reduce((n, i) => n + i.qty, 0);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -234,8 +237,11 @@ export function CheckoutView({
           customer: { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } },
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; error?: string; errors?: Record<string, string> };
-      if (res.ok && data.quoteId && Array.isArray(data.rates) && data.rates.length) {
+      const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
+      if (res.ok && data.fallback === true) {
+        setQuote(null);
+        setFlatFor(flatKey);
+      } else if (res.ok && data.quoteId && Array.isArray(data.rates) && data.rates.length) {
         setQuote({ id: data.quoteId, rates: data.rates, forKey });
         setQuoteRateId(data.rates[0].id);
       } else {
@@ -296,7 +302,7 @@ export function CheckoutView({
       if (!(data.errors?.coupon && Object.keys(data.errors).length === 1)) setError(data.error ?? "Something went wrong. Please try again.");
       setFieldErrors(data.errors ?? {});
       // The shop no longer honours the quote (expired, or the cart or address changed): ask for options again.
-      if (live && (res.status === 409 || data.errors?.rate)) setQuote(null);
+      if (live && data.errors?.rate) setQuote(null);
     } catch {
       setError("Couldn't reach checkout. Check your connection and try again.");
     }
