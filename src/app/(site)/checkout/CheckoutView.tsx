@@ -594,9 +594,7 @@ export function CheckoutView({
                             ? t("payStripeCardLabel")
                             : `Card, Apple Pay or Google Pay${placeCode === "IN" ? ", or UPI" : ""}`
                           : p === "paypal"
-                            ? placeCode === "US"
-                              ? "PayPal or Venmo"
-                              : "PayPal"
+                            ? "PayPal"
                             : p === "exodus"
                               ? "Exodus Pay or another crypto wallet"
                               : p === "bch"
@@ -850,9 +848,7 @@ export function CheckoutView({
                     : provider === "bch"
                       ? "Pay with Bitcoin Cash"
                     : provider === "paypal"
-                      ? placeCode === "US"
-                        ? "Continue to PayPal or Venmo"
-                        : "Continue to PayPal"
+                      ? "Continue to PayPal"
                       : provider === "zelle"
                         ? "Place order and get the Zelle details"
                         : provider === "venmo"

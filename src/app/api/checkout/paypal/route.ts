@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { catalogSource, shopApi, shopperIp } from "@/lib/catalog";
 
-/** A PayPal or Venmo button was pressed: the admin makes PayPal's order for the (already priced) order. */
+/** The PayPal button was pressed: the admin makes PayPal's order for the (already priced) order. */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { token?: string; fundingSource?: string } | null;
   if (catalogSource !== "shop" || !body?.token) return NextResponse.json({ error: "Checkout isn't available." }, { status: 400 });

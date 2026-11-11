@@ -148,7 +148,7 @@
     "key": "payPaypalDesc",
     "group": "Checkout & cart",
     "label": "PayPal: description",
-    "default": "Pay with your PayPal or Venmo account, in PayPal's own window."
+    "default": "Pay with your PayPal account or a card through PayPal, in PayPal's own window."
   },
   {
     "key": "payExodusDesc",
