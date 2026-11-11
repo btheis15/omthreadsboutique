@@ -6,8 +6,8 @@ import { useMemo, useRef, useState } from "react";
 import { formatPrice, site } from "@/lib/site";
 
 type Line = { productId: string; variantId?: string; qty: number };
-type ExpressRate = { id: string; displayName: string; amountCents: number; minDays?: number | null; maxDays?: number | null; taxCents: number };
-type ExpressQuote = { quoteId: string; subtotalCents: number; discountCents: number; rates: ExpressRate[] };
+type ExpressRate = { id: string; label: string; cents: number; taxCents: number; totalCents: number; minDays?: number | null; maxDays?: number | null };
+type ExpressQuote = { quoteId: string; rates: ExpressRate[] };
 type Props = {
   publishableKey: string;
   lines: Line[];
@@ -66,19 +66,22 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
   const quote = useRef<ExpressQuote | null>(null);
   const chosen = useRef<string | null>(null);
 
-  const totalFor = (q: ExpressQuote, r: ExpressRate) => q.subtotalCents - q.discountCents + r.amountCents + r.taxCents;
-  const lineItems = (q: ExpressQuote, r: ExpressRate) => [
-    { name: "Items", amount: q.subtotalCents },
-    ...(q.discountCents ? [{ name: "Discount", amount: -q.discountCents }] : []),
-    { name: "Shipping", amount: r.amountCents },
-    ...(r.taxCents ? [{ name: "Sales tax", amount: r.taxCents }] : []),
+  // The shop's total for each option (items, coupon, that option's shipping and tax); the browser only adds nothing up.
+  // After a "total changed" answer the new total replaces it for that option.
+  const totals = useRef<Record<string, { total: number; tax: number }>>({});
+  const totalFor = (r: ExpressRate) => totals.current[r.id]?.total ?? r.totalCents;
+  const taxFor = (r: ExpressRate) => totals.current[r.id]?.tax ?? r.taxCents;
+  const lineItems = (r: ExpressRate) => [
+    { name: "Items", amount: totalFor(r) - r.cents - taxFor(r) },
+    { name: "Shipping", amount: r.cents },
+    ...(taxFor(r) ? [{ name: "Sales tax", amount: taxFor(r) }] : []),
   ];
   const estimate = (r: ExpressRate) => {
-    const min = r.minDays && r.minDays > 0 ? { unit: "day" as const, value: r.minDays } : undefined;
-    const max = r.maxDays && r.maxDays > 0 ? { unit: "day" as const, value: r.maxDays } : undefined;
+    const min = r.minDays && r.minDays > 0 ? { unit: "business_day" as const, value: r.minDays } : undefined;
+    const max = r.maxDays && r.maxDays > 0 ? { unit: "business_day" as const, value: r.maxDays } : undefined;
     return min || max ? { deliveryEstimate: { ...(min ? { minimum: min } : {}), ...(max ? { maximum: max } : {}) } } : {};
   };
-  const sheetRate = (r: ExpressRate) => ({ id: r.id, displayName: r.displayName, amount: r.amountCents, ...estimate(r) });
+  const sheetRate = (r: ExpressRate) => ({ id: r.id, displayName: r.label, amount: r.cents, ...estimate(r) });
 
   return (
     <div>
@@ -96,6 +99,7 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
         onReady={({ availablePaymentMethods }) => onReady(Boolean(availablePaymentMethods && (availablePaymentMethods.applePay || availablePaymentMethods.googlePay)))}
         onClick={({ resolve }) => {
           setMessage(null);
+          totals.current = {};
           quote.current = null;
           chosen.current = null;
           resolve({
@@ -111,6 +115,7 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
         }}
         onShippingAddressChange={async ({ address, resolve, reject }) => {
           quote.current = null;
+          totals.current = {};
           try {
             const res = await fetch("/api/express/rates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines, coupon, address }) });
             const data = (await res.json().catch(() => ({}))) as Partial<ExpressQuote> & { fallback?: boolean };
@@ -118,8 +123,8 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
             const q = data as ExpressQuote;
             quote.current = q;
             chosen.current = q.rates[0].id;
-            elements?.update({ amount: Math.max(50, totalFor(q, q.rates[0])) });
-            resolve({ shippingRates: q.rates.map(sheetRate), lineItems: lineItems(q, q.rates[0]) });
+            elements?.update({ amount: Math.max(50, totalFor(q.rates[0])) });
+            resolve({ shippingRates: q.rates.map(sheetRate), lineItems: lineItems(q.rates[0]) });
           } catch {
             reject();
           }
@@ -129,8 +134,8 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
           const r = q?.rates.find((x) => x.id === shippingRate.id);
           if (!q || !r) return reject();
           chosen.current = r.id;
-          elements?.update({ amount: Math.max(50, totalFor(q, r)) });
-          resolve({ lineItems: lineItems(q, r) });
+          elements?.update({ amount: Math.max(50, totalFor(r)) });
+          resolve({ lineItems: lineItems(r) });
         }}
         onConfirm={async (event: StripeExpressCheckoutElementConfirmEvent) => {
           const fail = (text: string, reason: "fail" | "invalid_shipping_address" = "fail") => {
@@ -144,8 +149,8 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
           if (submitError) return fail(submitError.message ?? "Couldn't use that payment method.");
           const ship = event.shippingAddress;
           if (!ship) return fail("We need a shipping address to send this to.", "invalid_shipping_address");
-          const expected = totalFor(q, r);
-          let order: { clientSecret?: string; orderToken?: string; totalCents?: number; error?: string; errors?: Record<string, string> };
+          const expected = totalFor(r);
+          let order: { clientSecret?: string; orderToken?: string; totalCents?: number; taxCents?: number; code?: string; error?: string; errors?: Record<string, string> };
           try {
             const res = await fetch("/api/express/order", {
               method: "POST",
@@ -164,6 +169,13 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
               }),
             });
             order = await res.json().catch(() => ({}));
+            // The shop's total moved (tax for the full address, a price): nothing was created or charged.
+            // Show the new total; tapping the button again approves it.
+            if (res.status === 409 && order.code === "total_changed" && typeof order.totalCents === "number") {
+              totals.current[r.id] = { total: order.totalCents, tax: typeof order.taxCents === "number" ? order.taxCents : taxFor(r) };
+              elements.update({ amount: Math.max(50, order.totalCents) });
+              return fail(order.error ?? `The total changed to ${dollars(order.totalCents)}. Please review and pay again.`);
+            }
           } catch {
             return fail("Couldn't reach checkout. Check your connection and try again.");
           }
