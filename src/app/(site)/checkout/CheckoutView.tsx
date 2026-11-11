@@ -112,6 +112,10 @@ export function CheckoutView({
   // Apple Pay / Google Pay without typing the address: only where the shop prices shipping live and Stripe can take it.
   const liveCountries = checkout?.countries.filter((c) => c.live === true).map((c) => c.code) ?? [];
   const expressOn = Boolean(fulfil === "ship" && live && checkout?.providers.includes("stripe") && checkout.stripe?.express && checkout.stripe.publishableKey && liveCountries.length);
+  // True only while the express button is really showing on this device (then the card option drops the wallet wording).
+  const [walletsReady, setWalletsOnPage] = useState(false);
+  const walletsOnPage = expressOn && walletsReady;
+  const [moreRates, setMoreRates] = useState(false);
   const itemCount = items.reduce((n, i) => n + i.qty, 0);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteRateId, setQuoteRateId] = useState<string | undefined>(undefined);
@@ -318,6 +322,7 @@ export function CheckoutView({
           lines,
           coupon: coupon?.code,
           provider,
+          walletsOnPage: walletsOnPage && provider === "stripe" && fulfil === "ship" && placeCode !== "IN" ? true : undefined,
           country: placeCode,
           fulfillment: fulfil,
           rateId: fulfil === "ship" ? (live ? chosenRate?.id : rate?.id) : undefined,
@@ -456,6 +461,22 @@ export function CheckoutView({
 
       {checkout && place && rate && (
         <div className="mt-8 space-y-8">
+          {expressOn && checkout?.stripe && (
+            <div className={provider === "stripe" ? "" : "hidden"}>
+            <ExpressPay
+              publishableKey={checkout.stripe.publishableKey}
+              lines={lines}
+              openingCents={subtotalCents - discount}
+              coupon={coupon?.code}
+              giftNote={giftNote}
+              countries={liveCountries}
+              title={t("expressTitle")}
+              orText={t("expressOr")}
+              onAvailable={setWalletsOnPage}
+            />
+            </div>
+          )}
+
           {(pickup || delivery) && (
             <section>
               <h2 className="text-xl">How would you like to get it?</h2>
@@ -554,7 +575,7 @@ export function CheckoutView({
               <h2 className="text-xl">Pay with</h2>
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Pay with">
                 {checkout.providers.map((p) => (
-                  <label key={p} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${provider === p ? "border-ink" : "border-line"}`}>
+                  <label key={p} className={`flex cursor-pointer items-start gap-3 rounded-xl border ${provider === p ? "border-ink p-4" : "border-line px-4 py-2.5"}`}>
                     <input
                       type="radio"
                       name="provider"
@@ -569,7 +590,9 @@ export function CheckoutView({
                     <span>
                       <span className="block font-medium">
                         {p === "stripe"
-                          ? `Card, Apple Pay or Google Pay${placeCode === "IN" ? ", or UPI" : ""}`
+                          ? walletsOnPage && placeCode !== "IN"
+                            ? t("payStripeCardLabel")
+                            : `Card, Apple Pay or Google Pay${placeCode === "IN" ? ", or UPI" : ""}`
                           : p === "paypal"
                             ? placeCode === "US"
                               ? "PayPal or Venmo"
@@ -582,6 +605,7 @@ export function CheckoutView({
                                   ? "Venmo"
                                   : "Zelle"}
                       </span>
+                      {provider === p && (
                       <span className="block text-sm text-muted">
                         {p === "stripe"
                           ? placeCode === "IN"
@@ -599,22 +623,12 @@ export function CheckoutView({
                                   ? t("payVenmoDesc", { hours: checkout.venmo?.holdHours ?? 48 })
                                   : t("payZelleDesc", { hours: checkout.zelle?.holdHours ?? 48 })}
                       </span>
+                      )}
                     </span>
                   </label>
                 ))}
               </div>
             </section>
-          )}
-
-          {expressOn && checkout?.stripe && (
-            <ExpressPay
-              publishableKey={checkout.stripe.publishableKey}
-              lines={lines}
-              openingCents={subtotalCents - discount}
-              coupon={coupon?.code}
-              giftNote={giftNote}
-              countries={liveCountries}
-            />
           )}
 
           {needsForm && (
@@ -676,18 +690,35 @@ export function CheckoutView({
                       <div ref={optionsRef}>
                         <h3 className="text-lg">{t("shipOptionsChoose")}</h3>
                         <div className="mt-2 grid gap-2" role="radiogroup" aria-label={t("shipOptionsChoose")}>
-                          {activeQuote.rates.map((r) => (
-                            <label key={r.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
-                              <input type="radio" name="shipping-option" checked={chosenRate.id === r.id} onChange={() => setQuoteRateId(r.id)} className="mt-1" />
-                              <span>
-                                <span className="block font-medium">
-                                  {r.label} — {dollars(r.cents)}
-                                  {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
-                                </span>
+                          {(moreRates ? activeQuote.rates : [chosenRate]).map((r) => (
+                            <label key={r.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
+                              <input
+                                type="radio"
+                                name="shipping-option"
+                                checked={chosenRate.id === r.id}
+                                onChange={() => {
+                                  setQuoteRateId(r.id);
+                                  setMoreRates(false);
+                                }}
+                              />
+                              <span className="block font-medium">
+                                {r.label} — {dollars(r.cents)}
+                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
                               </span>
                             </label>
                           ))}
                         </div>
+                        {activeQuote.rates.length > 1 && (
+                          <button
+                            type="button"
+                            aria-expanded={moreRates}
+                            onClick={() => setMoreRates((v) => !v)}
+                            className="mt-1 inline-flex min-h-11 items-center gap-1.5 font-medium text-accent underline underline-offset-4"
+                          >
+                            {moreRates ? t("shipFewerOptions") : t("shipMoreOptions")}
+                            <span aria-hidden="true" className={`inline-block transition-transform ${moreRates ? "rotate-180" : ""}`}>▾</span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -787,7 +818,7 @@ export function CheckoutView({
                 {couponError && <p className="mt-1 text-sale">{couponError}</p>}
               </div>
             )}
-            {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
+            {checkout.taxAdded && provider === "stripe" && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
             {provider === "stripe" && fulfil === "ship" && !live && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
             {checkout.mode === "test" && provider === "stripe" && placeCode === "IN" && (

@@ -223,6 +223,36 @@
     "default": "Choose a shipping option"
   },
   {
+    "key": "shipMoreOptions",
+    "group": "Checkout & cart",
+    "label": "Live shipping: button that shows the other options",
+    "default": "More shipping options"
+  },
+  {
+    "key": "shipFewerOptions",
+    "group": "Checkout & cart",
+    "label": "Live shipping: button that hides the other options",
+    "default": "Fewer shipping options"
+  },
+  {
+    "key": "expressTitle",
+    "group": "Checkout & cart",
+    "label": "Express checkout: box title",
+    "default": "Express checkout"
+  },
+  {
+    "key": "expressOr",
+    "group": "Checkout & cart",
+    "label": "Express checkout: divider above the card form",
+    "default": "Or pay another way"
+  },
+  {
+    "key": "payStripeCardLabel",
+    "group": "Checkout & cart",
+    "label": "Pay with card: label when Apple Pay / Google Pay show above",
+    "default": "Credit or debit card"
+  },
+  {
     "key": "shipDays",
     "group": "Checkout & cart",
     "label": "Live shipping: delivery estimate",
