@@ -21,6 +21,15 @@ type Coupon = { code: string; label: string; discountCents: number; text: string
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
+/** A live carrier rate from the shop (see /api/shipping-rates). */
+type LiveRate = { id: string; label: string; cents: number; minDays?: number | null; maxDays?: number | null; carrier?: string };
+type Quote = { id: string; rates: LiveRate[]; forKey: string };
+const daysText = (r: LiveRate) => {
+  const a = r.minDays ?? null;
+  const b = r.maxDays ?? null;
+  if (a === null && b === null) return "";
+  return a !== null && b !== null && a !== b ? `${a}\u2013${b}` : String(b ?? a);
+};
 
 /**
  * The cart and, when the shop's own checkout is on, the way to pay: Stripe
@@ -93,10 +102,29 @@ export function CheckoutView({
   const fulfil: Fulfil = how === "pickup" && pickup ? "pickup" : how === "delivery" && delivery ? "delivery" : "ship";
   // Pickup and delivery are US-only, so the country and shipping rate don't apply.
   const placeCode = fulfil === "ship" ? (place?.code ?? "US") : "US";
-  const needsForm = asksAddress(provider, fulfil);
+  // Live carrier rates: every provider gets the address form here, then the shopper picks a quoted option.
+  const live = fulfil === "ship" && place?.live === true;
+  const needsForm = asksAddress(provider, fulfil) || live;
   const itemCount = items.reduce((n, i) => n + i.qty, 0);
-  const shipping = fulfil === "pickup" ? (pickup?.cents ?? 0) : fulfil === "delivery" ? (delivery?.cents ?? 0) : rate ? shippingCents(rate, subtotalCents, itemCount) : 0;
-  const nextFree = fulfil === "ship" && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteRateId, setQuoteRateId] = useState<string | undefined>(undefined);
+  const [quoteBusy, setQuoteBusy] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  // A quote is only good for the cart and address it was asked for; changing either makes it vanish.
+  const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim()]);
+  const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
+  const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates[0]) : undefined;
+  const shipping =
+    fulfil === "pickup"
+      ? (pickup?.cents ?? 0)
+      : fulfil === "delivery"
+        ? (delivery?.cents ?? 0)
+        : live
+          ? (chosenRate?.cents ?? 0)
+          : rate
+            ? shippingCents(rate, subtotalCents, itemCount)
+            : 0;
+  const nextFree = fulfil === "ship" && !live && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
   // Typed coupon code: shown here for the shopper; the admin checks it again when the order is priced.
   const [coupon, setCoupon] = useState<Coupon | null>(null);
@@ -190,6 +218,37 @@ export function CheckoutView({
   const zipAnswer = zipCheck && zipCheck.zip === zip5 ? zipCheck : null;
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
+  async function showShippingOptions() {
+    setQuoteBusy(true);
+    setQuoteError(null);
+    setError(null);
+    setFieldErrors({});
+    const forKey = quoteKey;
+    try {
+      const res = await fetch("/api/shipping-rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lines,
+          country: placeCode,
+          customer: { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } },
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; error?: string; errors?: Record<string, string> };
+      if (res.ok && data.quoteId && Array.isArray(data.rates) && data.rates.length) {
+        setQuote({ id: data.quoteId, rates: data.rates, forKey });
+        setQuoteRateId(data.rates[0].id);
+      } else {
+        setQuote(null);
+        setQuoteError(data.error ?? "Couldn't get shipping options. Please try again.");
+        setFieldErrors(data.errors ?? {});
+      }
+    } catch {
+      setQuoteError("Couldn't get shipping options. Check your connection and try again.");
+    }
+    setQuoteBusy(false);
+  }
+
   async function startCheckout() {
     setLoading(true);
     setError(null);
@@ -204,7 +263,8 @@ export function CheckoutView({
           provider,
           country: placeCode,
           fulfillment: fulfil,
-          rateId: fulfil === "ship" ? rate?.id : undefined,
+          rateId: fulfil === "ship" ? (live ? chosenRate?.id : rate?.id) : undefined,
+          quoteId: live ? activeQuote?.id : undefined,
           testAs: checkout?.mode === "test" && testAsIndia && placeCode === "IN" ? "IN" : undefined,
           giftNote: needsForm && fulfil !== "pickup" ? giftNote : undefined,
           receipt: provider === "bch" && checkout?.bch?.receipts ? receipt : undefined,
@@ -235,6 +295,8 @@ export function CheckoutView({
       // A coupon-only problem is shown once, under the coupon box.
       if (!(data.errors?.coupon && Object.keys(data.errors).length === 1)) setError(data.error ?? "Something went wrong. Please try again.");
       setFieldErrors(data.errors ?? {});
+      // The shop no longer honours the quote (expired, or the cart or address changed): ask for options again.
+      if (live && (res.status === 409 || data.errors?.rate)) setQuote(null);
     } catch {
       setError("Couldn't reach checkout. Check your connection and try again.");
     }
@@ -396,7 +458,9 @@ export function CheckoutView({
                   ))}
                 </select>
               </label>
-              {place.rates.length > 1 ? (
+              {live ? (
+                <div className="self-end pb-2.5 text-sm text-muted">{t("shipOptionsHint")}</div>
+              ) : place.rates.length > 1 ? (
                 <label className="block">
                   <span className="mb-1 block text-sm">Delivery</span>
                   <select value={rate.id} onChange={(e) => setRateId(e.target.value)} className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5">
@@ -413,11 +477,13 @@ export function CheckoutView({
                 </div>
               )}
             </div>
+            {!live && (
             <p className="mt-2 text-sm text-muted">
               Arrives in about {rate.minDays}–{rate.maxDays} business days after it ships.
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
               {nextFree !== null && nextFree > 0 && ` Add ${dollars(nextFree)} more for free shipping.`}
             </p>
+            )}
             {placeCode === "IN" && (
               <p className="mt-3 rounded-lg bg-sand p-3 text-sm leading-relaxed">
                 {t("checkoutIndiaNote")}
@@ -532,6 +598,36 @@ export function CheckoutView({
                 </label>
                 )}
               </fieldset>
+              {live && !paypalOrder && (
+                <div className="mt-5">
+                  <button type="button" onClick={showShippingOptions} disabled={quoteBusy} className="btn btn-secondary h-11 min-h-0 px-5 text-sm">
+                    {quoteBusy ? "Getting shipping options…" : t("shipShowOptions")}
+                  </button>
+                  {quoteError && (
+                    <p role="alert" className="mt-3 rounded-lg bg-sale/10 p-3 text-sm text-sale">
+                      {quoteError}
+                    </p>
+                  )}
+                  {activeQuote && chosenRate && (
+                    <div className="mt-4">
+                      <h3 className="text-lg">{t("shipOptionsChoose")}</h3>
+                      <div className="mt-2 grid gap-2" role="radiogroup" aria-label={t("shipOptionsChoose")}>
+                        {activeQuote.rates.map((r) => (
+                          <label key={r.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
+                            <input type="radio" name="shipping-option" checked={chosenRate.id === r.id} onChange={() => setQuoteRateId(r.id)} className="mt-1" />
+                            <span>
+                              <span className="block font-medium">
+                                {r.label} — {dollars(r.cents)}
+                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
+                              </span>
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           )}
 
@@ -579,7 +675,7 @@ export function CheckoutView({
                 </>
               )}
               <dt className="text-muted">{fulfil === "pickup" ? "Pickup" : fulfil === "delivery" ? "Delivery" : "Shipping"}</dt>
-              <dd className="text-right">{shipping ? dollars(shipping) : "Free"}</dd>
+              <dd className="text-right">{live && !chosenRate ? <span className="text-muted">{t("shipPickFirst")}</span> : shipping ? dollars(shipping) : "Free"}</dd>
               <dt className="text-lg font-medium">Total</dt>
               <dd className="text-right text-lg font-medium">{dollars(subtotalCents - discount + shipping)}</dd>
             </dl>
@@ -615,7 +711,7 @@ export function CheckoutView({
               </div>
             )}
             {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
-            {provider === "stripe" && fulfil === "ship" && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
+            {provider === "stripe" && fulfil === "ship" && !live && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
             {checkout.mode === "test" && provider === "stripe" && placeCode === "IN" && (
               <label className="mt-4 flex items-center gap-2 text-sm">
@@ -638,7 +734,7 @@ export function CheckoutView({
                 </button>
               </>
             ) : (
-              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked} className="btn btn-primary mt-6 w-full">
+              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || (live && !chosenRate)} className="btn btn-primary mt-6 w-full">
                 {loading
                   ? "Starting secure checkout…"
                   : provider === "exodus"

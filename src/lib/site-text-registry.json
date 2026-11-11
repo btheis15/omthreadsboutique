@@ -199,6 +199,37 @@
     "default": "We'll write it on a card and wrap your piece."
   },
   {
+    "key": "shipShowOptions",
+    "group": "Checkout & cart",
+    "label": "Live shipping: button to get options",
+    "default": "Show shipping options"
+  },
+  {
+    "key": "shipOptionsHint",
+    "group": "Checkout & cart",
+    "label": "Live shipping: line above the button",
+    "default": "Fill in your address, then see the shipping options and prices for it."
+  },
+  {
+    "key": "shipOptionsChoose",
+    "group": "Checkout & cart",
+    "label": "Live shipping: heading above the options",
+    "default": "Choose a shipping option"
+  },
+  {
+    "key": "shipDays",
+    "group": "Checkout & cart",
+    "label": "Live shipping: delivery estimate",
+    "hint": "{days} is like 2–5.",
+    "default": "{days} business days"
+  },
+  {
+    "key": "shipPickFirst",
+    "group": "Checkout & cart",
+    "label": "Live shipping: shown in place of the shipping price until one is chosen",
+    "default": "Choose an option"
+  },
+  {
     "key": "giftStripeNote",
     "group": "Checkout & cart",
     "label": "Gift note (card payments): line under the total",
