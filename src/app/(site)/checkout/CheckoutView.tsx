@@ -11,6 +11,7 @@ import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
 import { makeT } from "@/lib/site-text";
 import type { CheckoutInfo } from "@/lib/types";
+import { ExpressPay } from "./ExpressPay";
 import { PayPalButtons } from "./PayPalButtons";
 
 type Provider = CheckoutInfo["providers"][number];
@@ -108,6 +109,9 @@ export function CheckoutView({
   const flatKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty])]);
   const live = fulfil === "ship" && place?.live === true && flatFor !== flatKey;
   const needsForm = asksAddress(provider, fulfil) || live;
+  // Apple Pay / Google Pay without typing the address: only where the shop prices shipping live and Stripe can take it.
+  const liveCountries = checkout?.countries.filter((c) => c.live === true).map((c) => c.code) ?? [];
+  const expressOn = Boolean(fulfil === "ship" && live && checkout?.providers.includes("stripe") && checkout.stripe?.express && checkout.stripe.publishableKey && liveCountries.length);
   const itemCount = items.reduce((n, i) => n + i.qty, 0);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteRateId, setQuoteRateId] = useState<string | undefined>(undefined);
@@ -553,6 +557,17 @@ export function CheckoutView({
                 ))}
               </div>
             </section>
+          )}
+
+          {expressOn && checkout?.stripe && (
+            <ExpressPay
+              publishableKey={checkout.stripe.publishableKey}
+              lines={lines}
+              openingCents={subtotalCents - discount}
+              coupon={coupon?.code}
+              giftNote={giftNote}
+              countries={liveCountries}
+            />
           )}
 
           {needsForm && (

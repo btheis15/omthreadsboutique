@@ -1,0 +1,193 @@
+"use client";
+
+import { Elements, ExpressCheckoutElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { loadStripe, type Stripe, type StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
+import { useMemo, useRef, useState } from "react";
+import { formatPrice, site } from "@/lib/site";
+
+type Line = { productId: string; variantId?: string; qty: number };
+type ExpressRate = { id: string; displayName: string; amountCents: number; minDays?: number | null; maxDays?: number | null; taxCents: number };
+type ExpressQuote = { quoteId: string; subtotalCents: number; discountCents: number; rates: ExpressRate[] };
+type Props = {
+  publishableKey: string;
+  lines: Line[];
+  /** Items total after any coupon, only used as the sheet's opening amount. */
+  openingCents: number;
+  coupon?: string;
+  giftNote?: string;
+  /** Countries the shop prices live (the wallet only offers these). */
+  countries: string[];
+};
+
+// One Stripe.js load per key, and only once a checkout page actually offers the button.
+const stripes = new Map<string, Promise<Stripe | null>>();
+const stripeFor = (key: string) => {
+  let p = stripes.get(key);
+  if (!p) stripes.set(key, (p = loadStripe(key)));
+  return p;
+};
+
+const dollars = (cents: number) => formatPrice(cents / 100);
+
+/**
+ * Apple Pay and Google Pay: the wallet already knows the shopper's address, so they skip the form.
+ * Stripe's Express Checkout Element (deferred intent). Everything about money comes from the shop:
+ * options and tax for the partial address while the sheet is open, the exact total when it is approved.
+ * Shows nothing at all when no wallet is available on this device.
+ */
+export function ExpressPay(props: Props) {
+  const [ready, setReady] = useState(false);
+  const stripe = useMemo(() => stripeFor(props.publishableKey), [props.publishableKey]);
+  // A changed cart or coupon starts the sheet over (the amount must match what the shop will charge).
+  const key = JSON.stringify([props.lines, props.coupon]);
+  return (
+    <section className={ready ? "" : "h-0 overflow-hidden"} aria-label="Pay with Apple Pay or Google Pay">
+      <Elements
+        key={key}
+        stripe={stripe}
+        options={{
+          mode: "payment",
+          currency: "usd",
+          amount: Math.max(50, props.openingCents),
+          appearance: { variables: { borderRadius: "8px" } },
+        }}
+      >
+        <Inner {...props} onReady={setReady} />
+      </Elements>
+      {ready && <p className="my-6 text-center text-sm text-muted">or enter your address</p>}
+    </section>
+  );
+}
+
+function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Props & { onReady: (v: boolean) => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [message, setMessage] = useState<string | null>(null);
+  const quote = useRef<ExpressQuote | null>(null);
+  const chosen = useRef<string | null>(null);
+
+  const totalFor = (q: ExpressQuote, r: ExpressRate) => q.subtotalCents - q.discountCents + r.amountCents + r.taxCents;
+  const lineItems = (q: ExpressQuote, r: ExpressRate) => [
+    { name: "Items", amount: q.subtotalCents },
+    ...(q.discountCents ? [{ name: "Discount", amount: -q.discountCents }] : []),
+    { name: "Shipping", amount: r.amountCents },
+    ...(r.taxCents ? [{ name: "Sales tax", amount: r.taxCents }] : []),
+  ];
+  const estimate = (r: ExpressRate) => {
+    const min = r.minDays && r.minDays > 0 ? { unit: "day" as const, value: r.minDays } : undefined;
+    const max = r.maxDays && r.maxDays > 0 ? { unit: "day" as const, value: r.maxDays } : undefined;
+    return min || max ? { deliveryEstimate: { ...(min ? { minimum: min } : {}), ...(max ? { maximum: max } : {}) } } : {};
+  };
+  const sheetRate = (r: ExpressRate) => ({ id: r.id, displayName: r.displayName, amount: r.amountCents, ...estimate(r) });
+
+  return (
+    <div>
+      <ExpressCheckoutElement
+        options={{
+          emailRequired: true,
+          phoneNumberRequired: true,
+          shippingAddressRequired: true,
+          allowedShippingCountries: countries,
+          business: { name: site.name },
+          // Apple Pay and Google Pay only: Link and the other wallets stay off.
+          paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", klarna: "never", amazonPay: "never" },
+          buttonHeight: 48,
+        }}
+        onReady={({ availablePaymentMethods }) => onReady(Boolean(availablePaymentMethods && (availablePaymentMethods.applePay || availablePaymentMethods.googlePay)))}
+        onClick={({ resolve }) => {
+          setMessage(null);
+          quote.current = null;
+          chosen.current = null;
+          resolve({
+            lineItems: [{ name: "Items", amount: Math.max(0, openingCents) }],
+            // Replaced as soon as the wallet shares where it's going.
+            shippingRates: [{ id: "pending", displayName: "Shipping", amount: 0 }],
+          });
+        }}
+        onCancel={() => {
+          quote.current = null;
+          chosen.current = null;
+          elements?.update({ amount: Math.max(50, openingCents) });
+        }}
+        onShippingAddressChange={async ({ address, resolve, reject }) => {
+          quote.current = null;
+          try {
+            const res = await fetch("/api/express/rates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines, coupon, address }) });
+            const data = (await res.json().catch(() => ({}))) as Partial<ExpressQuote> & { fallback?: boolean };
+            if (!res.ok || data.fallback || !data.quoteId || !Array.isArray(data.rates) || !data.rates.length) return reject();
+            const q = data as ExpressQuote;
+            quote.current = q;
+            chosen.current = q.rates[0].id;
+            elements?.update({ amount: Math.max(50, totalFor(q, q.rates[0])) });
+            resolve({ shippingRates: q.rates.map(sheetRate), lineItems: lineItems(q, q.rates[0]) });
+          } catch {
+            reject();
+          }
+        }}
+        onShippingRateChange={({ shippingRate, resolve, reject }) => {
+          const q = quote.current;
+          const r = q?.rates.find((x) => x.id === shippingRate.id);
+          if (!q || !r) return reject();
+          chosen.current = r.id;
+          elements?.update({ amount: Math.max(50, totalFor(q, r)) });
+          resolve({ lineItems: lineItems(q, r) });
+        }}
+        onConfirm={async (event: StripeExpressCheckoutElementConfirmEvent) => {
+          const fail = (text: string, reason: "fail" | "invalid_shipping_address" = "fail") => {
+            setMessage(text);
+            event.paymentFailed({ reason, message: text });
+          };
+          const q = quote.current;
+          const r = q?.rates.find((x) => x.id === chosen.current);
+          if (!stripe || !elements || !q || !r) return fail("Something went wrong with your shipping choice. Please try again.");
+          const { error: submitError } = await elements.submit();
+          if (submitError) return fail(submitError.message ?? "Couldn't use that payment method.");
+          const ship = event.shippingAddress;
+          if (!ship) return fail("We need a shipping address to send this to.", "invalid_shipping_address");
+          const expected = totalFor(q, r);
+          let order: { clientSecret?: string; orderToken?: string; totalCents?: number; error?: string; errors?: Record<string, string> };
+          try {
+            const res = await fetch("/api/express/order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                lines,
+                coupon,
+                giftNote,
+                quoteId: q.quoteId,
+                rateId: r.id,
+                name: event.billingDetails?.name ?? ship.name,
+                email: event.billingDetails?.email,
+                phone: event.billingDetails?.phone,
+                shipping: { name: ship.name, address: ship.address },
+                expectedTotalCents: expected,
+              }),
+            });
+            order = await res.json().catch(() => ({}));
+          } catch {
+            return fail("Couldn't reach checkout. Check your connection and try again.");
+          }
+          if (!order.clientSecret || !order.orderToken) {
+            if (order.errors?.rate) quote.current = null;
+            return fail(order.error ?? "Couldn't start the payment. Nothing was charged.", order.errors?.rate ? "invalid_shipping_address" : "fail");
+          }
+          // The shop's real total isn't what the sheet showed (tax with the full address, a price that moved):
+          // never charge a different amount than the shopper approved; the unpaid order simply expires.
+          if (order.totalCents !== expected) return fail(`The total changed to ${dollars(order.totalCents ?? 0)}, so nothing was charged. Please check your cart and try again.`);
+          const { error } = await stripe.confirmPayment({
+            elements,
+            clientSecret: order.clientSecret,
+            confirmParams: { return_url: `${window.location.origin}/checkout/success?order=${encodeURIComponent(order.orderToken)}` },
+          });
+          // Only reached when the payment didn't go through (otherwise the browser is sent to return_url).
+          if (error) fail(error.message ?? "That payment didn't go through. Nothing was charged.");
+        }}
+      />
+      {message && (
+        <p role="alert" className="mt-3 rounded-lg bg-sale/10 p-3 text-sm text-sale">
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
