@@ -149,6 +149,8 @@ export type CheckoutInfo = {
 
   /** PayPal's public client id and its JavaScript SDK (v6) address. */
   paypal?: { clientId: string; sdkUrl: string };
+  /** Stripe's public key for this mode, and whether the Apple Pay / Google Pay button can be offered on the checkout page. */
+  stripe?: { publishableKey: string; express: boolean };
   /** How long a Zelle order holds the pieces. */
   zelle?: { holdHours: number };
   /** How long a Venmo order holds the pieces. */

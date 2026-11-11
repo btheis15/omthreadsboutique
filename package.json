@@ -12,6 +12,8 @@
   "dependencies": {
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^6.16.0",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.1",
     "@vercel/analytics": "^2.0.1",
     "@walletconnect/sign-client": "^2.25.0",
     "@walletconnect/types": "^2.25.0",
