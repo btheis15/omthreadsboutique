@@ -47,7 +47,9 @@ export async function POST(request: Request) {
     if (status === 200 && typeof data.clientSecret === "string" && typeof data.orderToken === "string") {
       return NextResponse.json({ clientSecret: data.clientSecret, orderToken: data.orderToken, totalCents: data.totalCents, taxCents: data.taxCents });
     }
-    return NextResponse.json({ error: typeof data.error === "string" ? data.error : "Couldn't start the payment.", errors: data.errors }, { status: status >= 400 ? status : 502 });
+    // "total_changed" carries the shop's new total, for the sheet to show next time (nothing was created or charged).
+    const changed = data.code === "total_changed" && typeof data.totalCents === "number" ? { code: "total_changed", totalCents: data.totalCents, taxCents: data.taxCents, shippingCents: data.shippingCents } : {};
+    return NextResponse.json({ error: typeof data.error === "string" ? data.error : "Couldn't start the payment.", errors: data.errors, ...changed }, { status: status >= 400 ? status : 502 });
   } catch {
     return NextResponse.json({ error: "Checkout is taking a break. Please try again in a few minutes." }, { status: 503 });
   }

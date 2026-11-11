@@ -1,13 +1,15 @@
 "use client";
 
 import { Elements, ExpressCheckoutElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { loadStripe, type Stripe, type StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
+// "pure": Stripe.js is only fetched when loadStripe is called (the plain import adds it to every page that imports this file).
+import { loadStripe } from "@stripe/stripe-js/pure";
+import type { Stripe, StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { useMemo, useRef, useState } from "react";
 import { formatPrice, site } from "@/lib/site";
 
 type Line = { productId: string; variantId?: string; qty: number };
 type ExpressRate = { id: string; label: string; cents: number; taxCents: number; totalCents: number; minDays?: number | null; maxDays?: number | null };
-type ExpressQuote = { quoteId: string; rates: ExpressRate[] };
+type ExpressQuote = { quoteId: string; subtotalCents?: number; discountCents?: number; rates: ExpressRate[] };
 type Props = {
   publishableKey: string;
   lines: Line[];
@@ -64,13 +66,26 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
   const elements = useElements();
   const [message, setMessage] = useState<string | null>(null);
   const quote = useRef<ExpressQuote | null>(null);
-  const chosen = useRef<string | null>(null);
+  // Where the last quote was for (the partial address: country, state, ZIP).
+  const place = useRef<string>("");
+  // The option and total the sheet is showing right now. The shop is only ever asked to charge this total.
+  const shown = useRef<{ rateId: string; total: number } | null>(null);
 
   // The shop's total for each option (items, coupon, that option's shipping and tax); the browser only adds nothing up.
-  // After a "total changed" answer the new total replaces it for that option.
-  const totals = useRef<Record<string, { total: number; tax: number }>>({});
-  const totalFor = (r: ExpressRate) => totals.current[r.id]?.total ?? r.totalCents;
-  const taxFor = (r: ExpressRate) => totals.current[r.id]?.tax ?? r.taxCents;
+  // After a "total changed" answer (the full street taxed differently) the shop's new total is remembered for that place
+  // and option, so the next time the sheet opens it shows it (a new sheet re-quotes with new rate ids, hence the signature).
+  // It's never used inside the sheet that failed: that sheet still shows the old total.
+  const changed = useRef<Map<string, { total: number; tax: number }>>(new Map());
+  const sig = (r: ExpressRate) => {
+    const q = quote.current;
+    return JSON.stringify([place.current, r.label, r.cents, r.taxCents, r.totalCents, q?.subtotalCents ?? null, q?.discountCents ?? null]);
+  };
+  const totalFor = (r: ExpressRate) => changed.current.get(sig(r))?.total ?? r.totalCents;
+  const taxFor = (r: ExpressRate) => changed.current.get(sig(r))?.tax ?? r.taxCents;
+  const show = (r: ExpressRate) => {
+    shown.current = { rateId: r.id, total: totalFor(r) };
+    elements?.update({ amount: Math.max(50, totalFor(r)) });
+  };
   const lineItems = (r: ExpressRate) => [
     { name: "Items", amount: totalFor(r) - r.cents - taxFor(r) },
     { name: "Shipping", amount: r.cents },
@@ -99,9 +114,8 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
         onReady={({ availablePaymentMethods }) => onReady(Boolean(availablePaymentMethods && (availablePaymentMethods.applePay || availablePaymentMethods.googlePay)))}
         onClick={({ resolve }) => {
           setMessage(null);
-          totals.current = {};
           quote.current = null;
-          chosen.current = null;
+          shown.current = null;
           resolve({
             lineItems: [{ name: "Items", amount: Math.max(0, openingCents) }],
             // Replaced as soon as the wallet shares where it's going.
@@ -110,20 +124,20 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
         }}
         onCancel={() => {
           quote.current = null;
-          chosen.current = null;
+          shown.current = null;
           elements?.update({ amount: Math.max(50, openingCents) });
         }}
         onShippingAddressChange={async ({ address, resolve, reject }) => {
           quote.current = null;
-          totals.current = {};
+          shown.current = null;
           try {
             const res = await fetch("/api/express/rates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines, coupon, address }) });
             const data = (await res.json().catch(() => ({}))) as Partial<ExpressQuote> & { fallback?: boolean };
             if (!res.ok || data.fallback || !data.quoteId || !Array.isArray(data.rates) || !data.rates.length) return reject();
             const q = data as ExpressQuote;
             quote.current = q;
-            chosen.current = q.rates[0].id;
-            elements?.update({ amount: Math.max(50, totalFor(q.rates[0])) });
+            place.current = JSON.stringify([address.country, address.state, address.postal_code].map((v) => String(v ?? "").toUpperCase().trim()));
+            show(q.rates[0]);
             resolve({ shippingRates: q.rates.map(sheetRate), lineItems: lineItems(q.rates[0]) });
           } catch {
             reject();
@@ -133,8 +147,7 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
           const q = quote.current;
           const r = q?.rates.find((x) => x.id === shippingRate.id);
           if (!q || !r) return reject();
-          chosen.current = r.id;
-          elements?.update({ amount: Math.max(50, totalFor(r)) });
+          show(r);
           resolve({ lineItems: lineItems(r) });
         }}
         onConfirm={async (event: StripeExpressCheckoutElementConfirmEvent) => {
@@ -143,13 +156,15 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
             event.paymentFailed({ reason, message: text });
           };
           const q = quote.current;
-          const r = q?.rates.find((x) => x.id === chosen.current);
-          if (!stripe || !elements || !q || !r) return fail("Something went wrong with your shipping choice. Please try again.");
+          const rateId = event.shippingRate?.id ?? shown.current?.rateId;
+          const r = q?.rates.find((x) => x.id === rateId);
+          // Only the total this sheet showed for this option is ever sent (never one learnt after it opened).
+          if (!stripe || !elements || !q || !r || shown.current?.rateId !== r.id) return fail("Something went wrong with your shipping choice. Please try again.");
+          const expected = shown.current.total;
           const { error: submitError } = await elements.submit();
           if (submitError) return fail(submitError.message ?? "Couldn't use that payment method.");
           const ship = event.shippingAddress;
           if (!ship) return fail("We need a shipping address to send this to.", "invalid_shipping_address");
-          const expected = totalFor(r);
           let order: { clientSecret?: string; orderToken?: string; totalCents?: number; taxCents?: number; code?: string; error?: string; errors?: Record<string, string> };
           try {
             const res = await fetch("/api/express/order", {
@@ -172,9 +187,8 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
             // The shop's total moved (tax for the full address, a price): nothing was created or charged.
             // Show the new total; tapping the button again approves it.
             if (res.status === 409 && order.code === "total_changed" && typeof order.totalCents === "number") {
-              totals.current[r.id] = { total: order.totalCents, tax: typeof order.taxCents === "number" ? order.taxCents : taxFor(r) };
-              elements.update({ amount: Math.max(50, order.totalCents) });
-              return fail(order.error ?? `The total changed to ${dollars(order.totalCents)}. Please review and pay again.`);
+              changed.current.set(sig(r), { total: order.totalCents, tax: typeof order.taxCents === "number" ? order.taxCents : taxFor(r) });
+              return fail(`With your full address the total is ${dollars(order.totalCents)} (sales tax). Nothing was charged. Tap the button again to pay the new total.`);
             }
           } catch {
             return fail("Couldn't reach checkout. Check your connection and try again.");
