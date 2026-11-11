@@ -148,7 +148,7 @@
     "key": "payPaypalDesc",
     "group": "Checkout & cart",
     "label": "PayPal: description",
-    "default": "Pay with your PayPal or Venmo account, in PayPal's own window."
+    "default": "Pay with your PayPal account or a card through PayPal, in PayPal's own window."
   },
   {
     "key": "payExodusDesc",
@@ -202,19 +202,55 @@
     "key": "shipShowOptions",
     "group": "Checkout & cart",
     "label": "Live shipping: button to get options",
-    "default": "Show shipping options"
+    "default": "Calculate shipping"
   },
   {
     "key": "shipOptionsHint",
     "group": "Checkout & cart",
-    "label": "Live shipping: line above the button",
-    "default": "Fill in your address, then see the shipping options and prices for it."
+    "label": "Live shipping: line under the address, before options",
+    "default": "Shipping options appear once your address is filled in."
+  },
+  {
+    "key": "shipFinding",
+    "group": "Checkout & cart",
+    "label": "Live shipping: while looking up options",
+    "default": "Finding shipping options…"
   },
   {
     "key": "shipOptionsChoose",
     "group": "Checkout & cart",
     "label": "Live shipping: heading above the options",
     "default": "Choose a shipping option"
+  },
+  {
+    "key": "shipMoreOptions",
+    "group": "Checkout & cart",
+    "label": "Live shipping: button that shows the other options",
+    "default": "More shipping options"
+  },
+  {
+    "key": "shipFewerOptions",
+    "group": "Checkout & cart",
+    "label": "Live shipping: button that hides the other options",
+    "default": "Fewer shipping options"
+  },
+  {
+    "key": "expressTitle",
+    "group": "Checkout & cart",
+    "label": "Express checkout: box title",
+    "default": "Express checkout"
+  },
+  {
+    "key": "expressOr",
+    "group": "Checkout & cart",
+    "label": "Express checkout: divider above the card form",
+    "default": "Or pay another way"
+  },
+  {
+    "key": "payStripeCardLabel",
+    "group": "Checkout & cart",
+    "label": "Pay with card: label when Apple Pay / Google Pay show above",
+    "default": "Credit or debit card"
   },
   {
     "key": "shipDays",
@@ -227,7 +263,7 @@
     "key": "shipPickFirst",
     "group": "Checkout & cart",
     "label": "Live shipping: shown in place of the shipping price until one is chosen",
-    "default": "Choose an option"
+    "default": "Calculated from your address"
   },
   {
     "key": "giftStripeNote",

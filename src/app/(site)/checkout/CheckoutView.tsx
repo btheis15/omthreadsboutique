@@ -112,6 +112,10 @@ export function CheckoutView({
   // Apple Pay / Google Pay without typing the address: only where the shop prices shipping live and Stripe can take it.
   const liveCountries = checkout?.countries.filter((c) => c.live === true).map((c) => c.code) ?? [];
   const expressOn = Boolean(fulfil === "ship" && live && checkout?.providers.includes("stripe") && checkout.stripe?.express && checkout.stripe.publishableKey && liveCountries.length);
+  // True only while the express button is really showing on this device (then the card option drops the wallet wording).
+  const [walletsReady, setWalletsOnPage] = useState(false);
+  const walletsOnPage = expressOn && walletsReady;
+  const [moreRates, setMoreRates] = useState(false);
   const itemCount = items.reduce((n, i) => n + i.qty, 0);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteRateId, setQuoteRateId] = useState<string | undefined>(undefined);
@@ -120,6 +124,24 @@ export function CheckoutView({
   // A quote is only good for the cart and address it was asked for; changing either makes it vanish.
   const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim()]);
   const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
+  // Ready to ask the carrier: everything the shop checks (name, email, phone, address) would pass.
+  const addr = customer;
+  const addressReady =
+    addr.name.trim() !== "" &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr.email.trim()) &&
+    /^[+\d][\d\s().-]{6,23}$/.test(addr.phone.trim()) &&
+    addr.line1.trim() !== "" &&
+    addr.city.trim() !== "" &&
+    (placeCode === "US"
+      ? /^[A-Za-z]{2}$/.test(addr.state.trim()) && /^\d{5}(-\d{4})?$/.test(addr.postal_code.trim())
+      : placeCode === "IN"
+        ? addr.state.trim() !== "" && /^\d{6}$/.test(addr.postal_code.trim())
+        : true);
+  // What the quote would be asked for, contact details included: an error is remembered against it, so it isn't retried on its own.
+  const askKey = JSON.stringify([quoteKey, addr.name.trim(), addr.email.trim(), addr.phone.trim()]);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const quoteReqId = useRef(0);
+  const optionsRef = useRef<HTMLDivElement>(null);
   const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates[0]) : undefined;
   const shipping =
     fulfil === "pickup"
@@ -226,6 +248,8 @@ export function CheckoutView({
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
   async function showShippingOptions() {
+    const reqId = ++quoteReqId.current;
+    const asked = askKey;
     setQuoteBusy(true);
     setQuoteError(null);
     setError(null);
@@ -242,6 +266,7 @@ export function CheckoutView({
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
+      if (reqId !== quoteReqId.current) return;
       if (res.ok && data.fallback === true) {
         setQuote(null);
         setFlatFor(flatKey);
@@ -252,12 +277,38 @@ export function CheckoutView({
         setQuote(null);
         setQuoteError(data.error ?? "Couldn't get shipping options. Please try again.");
         setFieldErrors(data.errors ?? {});
+        setFailedKey(asked);
       }
     } catch {
+      if (reqId !== quoteReqId.current) return;
       setQuoteError("Couldn't get shipping options. Check your connection and try again.");
+      setFailedKey(asked);
     }
     setQuoteBusy(false);
   }
+
+  // Ask for the options by itself once the address is complete and has stopped changing (not again after an error for the same answers: the button retries).
+  const askRef = useRef(showShippingOptions);
+  useEffect(() => {
+    askRef.current = showShippingOptions;
+  });
+  const autoAsk = live && !paypalOrder && addressReady && !activeQuote && failedKey !== askKey;
+  useEffect(() => {
+    if (!autoAsk) return;
+    const timer = setTimeout(() => void askRef.current(), 800);
+    return () => clearTimeout(timer);
+  }, [autoAsk, askKey]);
+
+  // Options just arrived: bring them into view, only if they're off-screen.
+  const optionsShown = Boolean(activeQuote);
+  useEffect(() => {
+    const el = optionsRef.current;
+    if (!optionsShown || !el) return;
+    const r = el.getBoundingClientRect();
+    if (r.top >= 0 && r.bottom <= window.innerHeight) return;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
+  }, [optionsShown]);
 
   async function startCheckout() {
     setLoading(true);
@@ -271,6 +322,7 @@ export function CheckoutView({
           lines,
           coupon: coupon?.code,
           provider,
+          walletsOnPage: walletsOnPage && provider === "stripe" && fulfil === "ship" && placeCode !== "IN" ? true : undefined,
           country: placeCode,
           fulfillment: fulfil,
           rateId: fulfil === "ship" ? (live ? chosenRate?.id : rate?.id) : undefined,
@@ -409,6 +461,22 @@ export function CheckoutView({
 
       {checkout && place && rate && (
         <div className="mt-8 space-y-8">
+          {expressOn && checkout?.stripe && (
+            <div className={provider === "stripe" ? "" : "hidden"}>
+            <ExpressPay
+              publishableKey={checkout.stripe.publishableKey}
+              lines={lines}
+              openingCents={subtotalCents - discount}
+              coupon={coupon?.code}
+              giftNote={giftNote}
+              countries={liveCountries}
+              title={t("expressTitle")}
+              orText={t("expressOr")}
+              onAvailable={setWalletsOnPage}
+            />
+            </div>
+          )}
+
           {(pickup || delivery) && (
             <section>
               <h2 className="text-xl">How would you like to get it?</h2>
@@ -469,7 +537,7 @@ export function CheckoutView({
                 </select>
               </label>
               {live ? (
-                <div className="self-end pb-2.5 text-sm text-muted">{t("shipOptionsHint")}</div>
+                <div className="hidden" />
               ) : place.rates.length > 1 ? (
                 <label className="block">
                   <span className="mb-1 block text-sm">Delivery</span>
@@ -507,7 +575,7 @@ export function CheckoutView({
               <h2 className="text-xl">Pay with</h2>
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Pay with">
                 {checkout.providers.map((p) => (
-                  <label key={p} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${provider === p ? "border-ink" : "border-line"}`}>
+                  <label key={p} className={`flex cursor-pointer items-start gap-3 rounded-xl border ${provider === p ? "border-ink p-4" : "border-line px-4 py-2.5"}`}>
                     <input
                       type="radio"
                       name="provider"
@@ -522,11 +590,11 @@ export function CheckoutView({
                     <span>
                       <span className="block font-medium">
                         {p === "stripe"
-                          ? `Card, Apple Pay or Google Pay${placeCode === "IN" ? ", or UPI" : ""}`
+                          ? walletsOnPage && placeCode !== "IN"
+                            ? t("payStripeCardLabel")
+                            : `Card, Apple Pay or Google Pay${placeCode === "IN" ? ", or UPI" : ""}`
                           : p === "paypal"
-                            ? placeCode === "US"
-                              ? "PayPal or Venmo"
-                              : "PayPal"
+                            ? "PayPal"
                             : p === "exodus"
                               ? "Exodus Pay or another crypto wallet"
                               : p === "bch"
@@ -535,6 +603,7 @@ export function CheckoutView({
                                   ? "Venmo"
                                   : "Zelle"}
                       </span>
+                      {provider === p && (
                       <span className="block text-sm text-muted">
                         {p === "stripe"
                           ? placeCode === "IN"
@@ -552,22 +621,12 @@ export function CheckoutView({
                                   ? t("payVenmoDesc", { hours: checkout.venmo?.holdHours ?? 48 })
                                   : t("payZelleDesc", { hours: checkout.zelle?.holdHours ?? 48 })}
                       </span>
+                      )}
                     </span>
                   </label>
                 ))}
               </div>
             </section>
-          )}
-
-          {expressOn && checkout?.stripe && (
-            <ExpressPay
-              publishableKey={checkout.stripe.publishableKey}
-              lines={lines}
-              openingCents={subtotalCents - discount}
-              coupon={coupon?.code}
-              giftNote={giftNote}
-              countries={liveCountries}
-            />
           )}
 
           {needsForm && (
@@ -606,6 +665,62 @@ export function CheckoutView({
                     )}
                   </>
                 )}
+                {live && !paypalOrder && (
+                  <div className="sm:col-span-2">
+                    {!activeQuote && !quoteBusy && <p className="mb-2 text-sm text-muted">{t("shipOptionsHint")}</p>}
+                    {quoteBusy && (
+                      <p role="status" aria-live="polite" className="mb-2 flex items-center gap-2 text-sm">
+                        <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
+                        {t("shipFinding")}
+                      </p>
+                    )}
+                    {!activeQuote && (
+                      <button type="button" onClick={showShippingOptions} disabled={quoteBusy} className="btn btn-primary w-full">
+                        {t("shipShowOptions")}
+                      </button>
+                    )}
+                    {quoteError && failedKey === askKey && !quoteBusy && (
+                      <p role="alert" className="mt-3 rounded-lg bg-sale/10 p-3 text-sm text-sale">
+                        {quoteError}
+                      </p>
+                    )}
+                    {activeQuote && chosenRate && (
+                      <div ref={optionsRef}>
+                        <h3 className="text-lg">{t("shipOptionsChoose")}</h3>
+                        <div className="mt-2 grid gap-2" role="radiogroup" aria-label={t("shipOptionsChoose")}>
+                          {(moreRates ? activeQuote.rates : [chosenRate]).map((r) => (
+                            <label key={r.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
+                              <input
+                                type="radio"
+                                name="shipping-option"
+                                checked={chosenRate.id === r.id}
+                                onChange={() => {
+                                  setQuoteRateId(r.id);
+                                  setMoreRates(false);
+                                }}
+                              />
+                              <span className="block font-medium">
+                                {r.label} — {dollars(r.cents)}
+                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                        {activeQuote.rates.length > 1 && (
+                          <button
+                            type="button"
+                            aria-expanded={moreRates}
+                            onClick={() => setMoreRates((v) => !v)}
+                            className="mt-1 inline-flex min-h-11 items-center gap-1.5 font-medium text-accent underline underline-offset-4"
+                          >
+                            {moreRates ? t("shipFewerOptions") : t("shipMoreOptions")}
+                            <span aria-hidden="true" className={`inline-block transition-transform ${moreRates ? "rotate-180" : ""}`}>▾</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {fulfil !== "pickup" && (
                 <label className="block sm:col-span-2">
                   <span className="mb-1 block text-sm">{t("giftNoteLabel")}</span>
@@ -619,36 +734,6 @@ export function CheckoutView({
                 </label>
                 )}
               </fieldset>
-              {live && !paypalOrder && (
-                <div className="mt-5">
-                  <button type="button" onClick={showShippingOptions} disabled={quoteBusy} className="btn btn-secondary h-11 min-h-0 px-5 text-sm">
-                    {quoteBusy ? "Getting shipping options…" : t("shipShowOptions")}
-                  </button>
-                  {quoteError && (
-                    <p role="alert" className="mt-3 rounded-lg bg-sale/10 p-3 text-sm text-sale">
-                      {quoteError}
-                    </p>
-                  )}
-                  {activeQuote && chosenRate && (
-                    <div className="mt-4">
-                      <h3 className="text-lg">{t("shipOptionsChoose")}</h3>
-                      <div className="mt-2 grid gap-2" role="radiogroup" aria-label={t("shipOptionsChoose")}>
-                        {activeQuote.rates.map((r) => (
-                          <label key={r.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
-                            <input type="radio" name="shipping-option" checked={chosenRate.id === r.id} onChange={() => setQuoteRateId(r.id)} className="mt-1" />
-                            <span>
-                              <span className="block font-medium">
-                                {r.label} — {dollars(r.cents)}
-                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
-                              </span>
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </section>
           )}
 
@@ -731,7 +816,7 @@ export function CheckoutView({
                 {couponError && <p className="mt-1 text-sale">{couponError}</p>}
               </div>
             )}
-            {checkout.taxAdded && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
+            {checkout.taxAdded && provider === "stripe" && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
             {provider === "stripe" && fulfil === "ship" && !live && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
             {checkout.mode === "test" && provider === "stripe" && placeCode === "IN" && (
@@ -763,9 +848,7 @@ export function CheckoutView({
                     : provider === "bch"
                       ? "Pay with Bitcoin Cash"
                     : provider === "paypal"
-                      ? placeCode === "US"
-                        ? "Continue to PayPal or Venmo"
-                        : "Continue to PayPal"
+                      ? "Continue to PayPal"
                       : provider === "zelle"
                         ? "Place order and get the Zelle details"
                         : provider === "venmo"

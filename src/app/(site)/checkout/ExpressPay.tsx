@@ -4,7 +4,7 @@ import { Elements, ExpressCheckoutElement, useElements, useStripe } from "@strip
 // "pure": Stripe.js is only fetched when loadStripe is called (the plain import adds it to every page that imports this file).
 import { loadStripe } from "@stripe/stripe-js/pure";
 import type { Stripe, StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatPrice, site } from "@/lib/site";
 
 type Line = { productId: string; variantId?: string; qty: number };
@@ -19,6 +19,11 @@ type Props = {
   giftNote?: string;
   /** Countries the shop prices live (the wallet only offers these). */
   countries: string[];
+  /** Box title and the divider under it (the owner's wording). */
+  title: string;
+  orText: string;
+  /** Tells the page whether the button is really showing (so it can drop the wallet wording from the card option). */
+  onAvailable?: (v: boolean) => void;
 };
 
 // One Stripe.js load per key, and only once a checkout page actually offers the button.
@@ -39,24 +44,38 @@ const dollars = (cents: number) => formatPrice(cents / 100);
  */
 export function ExpressPay(props: Props) {
   const [ready, setReady] = useState(false);
+  const { onAvailable } = props;
+  useEffect(() => {
+    onAvailable?.(ready);
+    return () => onAvailable?.(false);
+  }, [ready, onAvailable]);
   const stripe = useMemo(() => stripeFor(props.publishableKey), [props.publishableKey]);
   // A changed cart or coupon starts the sheet over (the amount must match what the shop will charge).
   const key = JSON.stringify([props.lines, props.coupon]);
   return (
-    <section className={ready ? "" : "h-0 overflow-hidden"} aria-label="Pay with Apple Pay or Google Pay">
-      <Elements
-        key={key}
-        stripe={stripe}
-        options={{
-          mode: "payment",
-          currency: "usd",
-          amount: Math.max(50, props.openingCents),
-          appearance: { variables: { borderRadius: "8px" } },
-        }}
-      >
-        <Inner {...props} onReady={setReady} />
-      </Elements>
-      {ready && <p className="my-6 text-center text-sm text-muted">or enter your address</p>}
+    <section className={ready ? "" : "h-0 overflow-hidden"} aria-label={props.title}>
+      <div className={ready ? "rounded-xl border border-line p-4" : ""}>
+        {ready && <h2 className="mb-3 text-xl">{props.title}</h2>}
+        <Elements
+          key={key}
+          stripe={stripe}
+          options={{
+            mode: "payment",
+            currency: "usd",
+            amount: Math.max(50, props.openingCents),
+            appearance: { variables: { borderRadius: "8px" } },
+          }}
+        >
+          <Inner {...props} onReady={setReady} />
+        </Elements>
+      </div>
+      {ready && (
+        <div className="mt-6 flex items-center gap-3 text-sm text-muted" role="separator">
+          <span className="h-px flex-1 bg-line" />
+          {props.orText}
+          <span className="h-px flex-1 bg-line" />
+        </div>
+      )}
     </section>
   );
 }

@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     giftNote?: string;
     receipt?: string;
     coupon?: unknown;
+    walletsOnPage?: unknown;
   } | null;
   const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     const { status, data } = await shopApi("/api/checkout", {
       method: "POST",
       shopperIp: shopperIp(request.headers),
-      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, quoteId: typeof body?.quoteId === "string" ? body.quoteId : undefined, fulfillment: body?.fulfillment === "pickup" || body?.fulfillment === "delivery" ? body.fulfillment : "ship", testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey, partner, coupon: coupon || undefined },
+      body: { lines, provider: body?.provider, country: body?.country, rateId: body?.rateId, quoteId: typeof body?.quoteId === "string" ? body.quoteId : undefined, fulfillment: body?.fulfillment === "pickup" || body?.fulfillment === "delivery" ? body.fulfillment : "ship", testAs: body?.testAs, customer: body?.customer, giftNote: typeof body?.giftNote === "string" ? body.giftNote.slice(0, 255) : undefined, receipt: ["email", "token", "both"].includes(body?.receipt ?? "") ? body?.receipt : undefined, testerKey, partner, coupon: coupon || undefined, walletsOnPage: body?.walletsOnPage === true ? true : undefined },
     });
     if (status === 200 && typeof data.url === "string") return NextResponse.json({ url: data.url });
     // PayPal and Venmo: the order is priced; the checkout page now shows PayPal's own buttons.
