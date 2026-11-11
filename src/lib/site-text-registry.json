@@ -202,13 +202,19 @@
     "key": "shipShowOptions",
     "group": "Checkout & cart",
     "label": "Live shipping: button to get options",
-    "default": "Show shipping options"
+    "default": "Calculate shipping"
   },
   {
     "key": "shipOptionsHint",
     "group": "Checkout & cart",
-    "label": "Live shipping: line above the button",
-    "default": "Fill in your address, then see the shipping options and prices for it."
+    "label": "Live shipping: line under the address, before options",
+    "default": "Shipping options appear once your address is filled in."
+  },
+  {
+    "key": "shipFinding",
+    "group": "Checkout & cart",
+    "label": "Live shipping: while looking up options",
+    "default": "Finding shipping options…"
   },
   {
     "key": "shipOptionsChoose",
@@ -227,7 +233,7 @@
     "key": "shipPickFirst",
     "group": "Checkout & cart",
     "label": "Live shipping: shown in place of the shipping price until one is chosen",
-    "default": "Choose an option"
+    "default": "Calculated from your address"
   },
   {
     "key": "giftStripeNote",

@@ -120,6 +120,24 @@ export function CheckoutView({
   // A quote is only good for the cart and address it was asked for; changing either makes it vanish.
   const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim()]);
   const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
+  // Ready to ask the carrier: everything the shop checks (name, email, phone, address) would pass.
+  const addr = customer;
+  const addressReady =
+    addr.name.trim() !== "" &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr.email.trim()) &&
+    /^[+\d][\d\s().-]{6,23}$/.test(addr.phone.trim()) &&
+    addr.line1.trim() !== "" &&
+    addr.city.trim() !== "" &&
+    (placeCode === "US"
+      ? /^[A-Za-z]{2}$/.test(addr.state.trim()) && /^\d{5}(-\d{4})?$/.test(addr.postal_code.trim())
+      : placeCode === "IN"
+        ? addr.state.trim() !== "" && /^\d{6}$/.test(addr.postal_code.trim())
+        : true);
+  // What the quote would be asked for, contact details included: an error is remembered against it, so it isn't retried on its own.
+  const askKey = JSON.stringify([quoteKey, addr.name.trim(), addr.email.trim(), addr.phone.trim()]);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const quoteReqId = useRef(0);
+  const optionsRef = useRef<HTMLDivElement>(null);
   const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates[0]) : undefined;
   const shipping =
     fulfil === "pickup"
@@ -226,6 +244,8 @@ export function CheckoutView({
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
   async function showShippingOptions() {
+    const reqId = ++quoteReqId.current;
+    const asked = askKey;
     setQuoteBusy(true);
     setQuoteError(null);
     setError(null);
@@ -242,6 +262,7 @@ export function CheckoutView({
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
+      if (reqId !== quoteReqId.current) return;
       if (res.ok && data.fallback === true) {
         setQuote(null);
         setFlatFor(flatKey);
@@ -252,12 +273,38 @@ export function CheckoutView({
         setQuote(null);
         setQuoteError(data.error ?? "Couldn't get shipping options. Please try again.");
         setFieldErrors(data.errors ?? {});
+        setFailedKey(asked);
       }
     } catch {
+      if (reqId !== quoteReqId.current) return;
       setQuoteError("Couldn't get shipping options. Check your connection and try again.");
+      setFailedKey(asked);
     }
     setQuoteBusy(false);
   }
+
+  // Ask for the options by itself once the address is complete and has stopped changing (not again after an error for the same answers: the button retries).
+  const askRef = useRef(showShippingOptions);
+  useEffect(() => {
+    askRef.current = showShippingOptions;
+  });
+  const autoAsk = live && !paypalOrder && addressReady && !activeQuote && failedKey !== askKey;
+  useEffect(() => {
+    if (!autoAsk) return;
+    const timer = setTimeout(() => void askRef.current(), 800);
+    return () => clearTimeout(timer);
+  }, [autoAsk, askKey]);
+
+  // Options just arrived: bring them into view, only if they're off-screen.
+  const optionsShown = Boolean(activeQuote);
+  useEffect(() => {
+    const el = optionsRef.current;
+    if (!optionsShown || !el) return;
+    const r = el.getBoundingClientRect();
+    if (r.top >= 0 && r.bottom <= window.innerHeight) return;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
+  }, [optionsShown]);
 
   async function startCheckout() {
     setLoading(true);
@@ -469,7 +516,7 @@ export function CheckoutView({
                 </select>
               </label>
               {live ? (
-                <div className="self-end pb-2.5 text-sm text-muted">{t("shipOptionsHint")}</div>
+                <div className="hidden" />
               ) : place.rates.length > 1 ? (
                 <label className="block">
                   <span className="mb-1 block text-sm">Delivery</span>
@@ -606,6 +653,45 @@ export function CheckoutView({
                     )}
                   </>
                 )}
+                {live && !paypalOrder && (
+                  <div className="sm:col-span-2">
+                    {!activeQuote && !quoteBusy && <p className="mb-2 text-sm text-muted">{t("shipOptionsHint")}</p>}
+                    {quoteBusy && (
+                      <p role="status" aria-live="polite" className="mb-2 flex items-center gap-2 text-sm">
+                        <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
+                        {t("shipFinding")}
+                      </p>
+                    )}
+                    {!activeQuote && (
+                      <button type="button" onClick={showShippingOptions} disabled={quoteBusy} className="btn btn-primary w-full">
+                        {t("shipShowOptions")}
+                      </button>
+                    )}
+                    {quoteError && failedKey === askKey && !quoteBusy && (
+                      <p role="alert" className="mt-3 rounded-lg bg-sale/10 p-3 text-sm text-sale">
+                        {quoteError}
+                      </p>
+                    )}
+                    {activeQuote && chosenRate && (
+                      <div ref={optionsRef}>
+                        <h3 className="text-lg">{t("shipOptionsChoose")}</h3>
+                        <div className="mt-2 grid gap-2" role="radiogroup" aria-label={t("shipOptionsChoose")}>
+                          {activeQuote.rates.map((r) => (
+                            <label key={r.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
+                              <input type="radio" name="shipping-option" checked={chosenRate.id === r.id} onChange={() => setQuoteRateId(r.id)} className="mt-1" />
+                              <span>
+                                <span className="block font-medium">
+                                  {r.label} — {dollars(r.cents)}
+                                  {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
+                                </span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {fulfil !== "pickup" && (
                 <label className="block sm:col-span-2">
                   <span className="mb-1 block text-sm">{t("giftNoteLabel")}</span>
@@ -619,36 +705,6 @@ export function CheckoutView({
                 </label>
                 )}
               </fieldset>
-              {live && !paypalOrder && (
-                <div className="mt-5">
-                  <button type="button" onClick={showShippingOptions} disabled={quoteBusy} className="btn btn-secondary h-11 min-h-0 px-5 text-sm">
-                    {quoteBusy ? "Getting shipping options…" : t("shipShowOptions")}
-                  </button>
-                  {quoteError && (
-                    <p role="alert" className="mt-3 rounded-lg bg-sale/10 p-3 text-sm text-sale">
-                      {quoteError}
-                    </p>
-                  )}
-                  {activeQuote && chosenRate && (
-                    <div className="mt-4">
-                      <h3 className="text-lg">{t("shipOptionsChoose")}</h3>
-                      <div className="mt-2 grid gap-2" role="radiogroup" aria-label={t("shipOptionsChoose")}>
-                        {activeQuote.rates.map((r) => (
-                          <label key={r.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${chosenRate.id === r.id ? "border-ink" : "border-line"}`}>
-                            <input type="radio" name="shipping-option" checked={chosenRate.id === r.id} onChange={() => setQuoteRateId(r.id)} className="mt-1" />
-                            <span>
-                              <span className="block font-medium">
-                                {r.label} — {dollars(r.cents)}
-                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
-                              </span>
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </section>
           )}
 
