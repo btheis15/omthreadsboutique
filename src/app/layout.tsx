@@ -43,6 +43,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="en"
+      // Tells Next.js to turn smooth scrolling off while it jumps to the top of a new page (otherwise the page
+      // visibly scrolls up during the page transition).
+      data-scroll-behavior="smooth"
       className={`${mukta.variable} ${kalnia.variable} ${tiro.variable}`}
       suppressHydrationWarning
     >

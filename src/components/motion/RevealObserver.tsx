@@ -27,15 +27,20 @@ export function RevealObserver() {
         else io.observe(el);
       });
     scan(document);
+    // A page opened by a click: what's on its first screen arrives with the page transition (shown at once),
+    // rather than animating a second time on top of it. Further down still reveals on scroll.
+    const firstScreen = (el: Element) => el.getBoundingClientRect().top + window.scrollY < window.innerHeight * 0.92;
+    const added = (el: Element) => {
+      if (reduce) el.classList.add("is-visible");
+      else if (firstScreen(el)) el.classList.add("is-visible", "reveal-now");
+      else io.observe(el);
+    };
     const mo = new MutationObserver((records) => {
       for (const r of records) {
         r.addedNodes.forEach((n) => {
           if (n instanceof Element) {
-            if (n.matches("[data-reveal]")) {
-              if (reduce) n.classList.add("is-visible");
-              else io.observe(n);
-            }
-            scan(n);
+            if (n.matches("[data-reveal]:not(.is-visible)")) added(n);
+            n.querySelectorAll("[data-reveal]:not(.is-visible)").forEach(added);
           }
         });
       }
