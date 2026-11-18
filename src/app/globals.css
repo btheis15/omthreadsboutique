@@ -156,12 +156,10 @@
   from {
     opacity: 0;
     transform: translate3d(0, 0.6em, 0);
-    filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 @keyframes spin-slow {
@@ -190,7 +188,7 @@
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 12px, 0);
+    transform: translate3d(0, 8px, 0);
   }
 }
 @keyframes parallax {
@@ -265,6 +263,12 @@
 .js [data-reveal="curtain"]:not(.is-visible) svg {
   transform: scale(1.18);
 }
+/* On the first screen of a page opened by a click, content arrives with the page transition instead of animating again. */
+.js [data-reveal].reveal-now,
+.js [data-reveal].reveal-now img,
+.js [data-reveal].reveal-now svg {
+  transition: none;
+}
 /* SVG line drawing: paths need pathLength="1" */
 .js [data-reveal="draw"] path {
   stroke-dasharray: 1;
@@ -279,24 +283,16 @@
   stroke-dashoffset: 1;
 }
 
-/* Route transitions (React <ViewTransition>) */
+/* Route transitions (React <ViewTransition>). Opacity and transform only (no blur): they stay smooth on phones. */
 ::view-transition-group(.morph) {
-  animation-duration: 450ms;
+  animation-duration: 520ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
-::view-transition-image-pair(.morph) {
-  animation-name: via-blur;
-}
-@keyframes via-blur {
-  30% {
-    filter: blur(3px);
-  }
-}
 ::view-transition-old(.page) {
-  animation: 180ms ease-out both fade-out;
+  animation: 240ms ease-out both fade-out;
 }
 ::view-transition-new(.page) {
-  animation: 420ms var(--ease-soft) both page-in;
+  animation: 520ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both page-in;
 }
 @keyframes fade-out {
   to {
