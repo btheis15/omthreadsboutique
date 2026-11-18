@@ -188,7 +188,6 @@
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 22px, 0);
   }
 }
 @keyframes parallax {
@@ -283,33 +282,37 @@
   stroke-dashoffset: 1;
 }
 
-/* Route transitions (React <ViewTransition>). Opacity and transform only (no blur): they stay smooth on phones.
-   A click: the page dims a little at once (html[data-navigating], NavFeedback), the old page lifts away, then the new
-   one rises gently into place. About three quarters of a second in all (taps wait while it plays, so not longer). */
+/* Route transitions (React <ViewTransition>): a quick, still crossfade. Nothing moves or resizes, so the page never
+   shifts around before it settles (only a product's photo glides into place on its page). A tap dims the page a
+   little at once (html[data-navigating], NavFeedback) so it answers while the next page loads. */
 main {
-  transition: opacity 0.35s ease;
+  transition: opacity 0.2s ease;
 }
 html[data-navigating] main {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 ::view-transition-group(.page) {
-  animation-duration: 760ms;
+  animation-duration: 320ms;
 }
 ::view-transition-old(.page) {
-  animation: 300ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+  animation: 180ms ease-out both fade-out;
 }
 ::view-transition-new(.page) {
-  animation: 640ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both page-in;
+  animation: 280ms ease-out 40ms both page-in;
 }
 ::view-transition-group(.morph) {
-  animation-duration: 680ms;
+  animation-duration: 420ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
-@keyframes page-out {
+@keyframes fade-out {
   to {
     opacity: 0;
-    transform: translate3d(0, -10px, 0);
   }
+}
+/* After the first click on the site, headings and the home photo don't animate in again on each new page. */
+html[data-navigated] .animate-rise,
+html[data-navigated] .animate-kenburns {
+  animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),

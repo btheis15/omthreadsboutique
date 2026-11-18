@@ -6,7 +6,8 @@ import { useEffect } from "react";
 /**
  * A tap on a link to another page answers at once: the page dims a little (html[data-navigating], globals.css)
  * while the next page loads, then the page transition takes over. Cleared when the new page is in, on
- * Back/Forward, and after a few seconds whatever happens.
+ * Back/Forward, and after a few seconds whatever happens. `navigated` stays: after the first click, headings
+ * don't animate in again on every page (globals.css).
  */
 export function NavFeedback() {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export function NavFeedback() {
       if (url.origin !== location.origin || url.pathname === location.pathname) return;
       if (/^\/(api|media|bcmr)\//.test(url.pathname)) return;
       document.documentElement.dataset.navigating = "";
+      document.documentElement.dataset.navigated = "";
       clearTimeout(timer);
       timer = setTimeout(clear, 4000);
     };
