@@ -52,6 +52,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         {/* Meta (Facebook / Instagram Shops) domain verification: plain HTML in the head of every page. */}
         <meta name="facebook-domain-verification" content="gu76jw9po145z7wu17vb4g0krwjwze" />
+        <meta name="facebook-domain-verification" content="ix37imgh8ape4yg69nvzze3ymwzgti" />
         {/* Lets CSS hide scroll-reveal content only when JS is available to reveal it. */}
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>
