@@ -130,6 +130,17 @@ export const cart = {
     set({ aside });
     cart.replace(items);
   },
+  /** Swaps one line for another in the same place (a different colour picked at checkout). */
+  swap(key: string, item: Omit<CartItem, "key" | "qty">) {
+    load();
+    const next = cartKey(item.productId, item.variantId);
+    set({
+      items: state.items
+        .filter((i) => i.key === key || i.key !== next)
+        .map((i) => (i.key === key ? { ...i, ...item, key: next, qty: clamp(i.qty, item.maxQty) } : i))
+        .filter((i) => i.qty > 0),
+    });
+  },
   /** Puts the set-aside bag back in the cart (next to what's there). */
   bringBack() {
     load();

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import type { T } from "@/lib/site-text";
-import { defaultVariant, variantLabel, variantPrice } from "@/lib/variants";
+import { defaultVariant, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
 import { ArrowIcon } from "./icons";
 import { formatPrice } from "@/lib/site";
 import { ProductImage } from "./ProductImage";
@@ -43,11 +43,11 @@ export function HotSale({
       <ul className={`mt-2.5 grid gap-2.5 md:grid-cols-1 md:gap-3 ${picks.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
         {picks.map(({ product, variant }) => {
           const price = variantPrice(product, variant);
-          const compareAt = variant ? (variant.compareAtPrice ?? (variant.price === undefined ? product.compareAtPrice : undefined)) : product.compareAtPrice;
+          const compareAt = variantCompareAt(product, variant);
           const onSale = compareAt !== undefined && compareAt > price;
           const option = variant && product.variants!.length > 1 ? variantLabel(variant) : null;
-          // Checkout with only this piece; the shopper's bag is set aside and comes back after (see CheckoutView).
-          const href = onSiteCheckout ? `/checkout?products=${encodeURIComponent(product.slug)}:1&cart_origin=hot_sale` : `/product/${product.slug}`;
+          // Checkout with only this piece, shown large with its colours (the shopper's bag is set aside and comes back after).
+          const href = onSiteCheckout ? `/checkout?product=${encodeURIComponent(product.slug)}` : `/product/${product.slug}`;
           return (
             <li key={product.id}>
               <Link

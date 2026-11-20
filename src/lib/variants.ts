@@ -7,6 +7,10 @@ export const hasOptions = (p: Product) => Boolean(p.options?.length && p.variant
 
 export const variantPrice = (p: Product, v?: ProductVariant) => v?.price ?? p.price;
 
+/** The regular price to strike through on a sale (an option with its own price has its own), or undefined. */
+export const variantCompareAt = (p: Product, v?: ProductVariant) =>
+  v ? (v.compareAtPrice ?? (v.price === undefined ? p.compareAtPrice : undefined)) : p.compareAtPrice;
+
 /** Lowest and highest price across the options (both the product's price when it has none). */
 export function priceRange(p: Product): { min: number; max: number } {
   if (!hasOptions(p)) return { min: p.price, max: p.price };

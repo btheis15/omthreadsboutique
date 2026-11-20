@@ -33,17 +33,20 @@ export function PiecePhotosViewer({
   items,
   photos,
   start,
+  startPhoto = 0,
   onClose,
 }: {
   items: CartItem[];
   photos: Record<string, PiecePhotos>;
   /** Which line was tapped. */
   start: number;
+  /** Which of that line's photos to open on. */
+  startPhoto?: number;
   onClose: () => void;
 }) {
   const slides: Slide[] = items.flatMap((item, i) => photosFor(item, photos[item.slug]).map((image) => ({ item: i, image })));
   const firstOf = (item: number) => Math.max(0, slides.findIndex((s) => s.item === item));
-  const [at, setAt] = useState(() => firstOf(start));
+  const [at, setAt] = useState(() => firstOf(start) + startPhoto);
   const [zoomed, setZoomed] = useState<{ slide: number; x: number; y: number } | null>(null);
   const track = useRef<HTMLDivElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
@@ -57,7 +60,7 @@ export function PiecePhotosViewer({
 
   // Open on the tapped piece, keep the page still behind, and answer the keyboard.
   useEffect(() => {
-    go(firstOf(start), "instant");
+    go(firstOf(start) + startPhoto, "instant");
     closeBtn.current?.focus();
     const scrollY = window.scrollY;
     document.body.style.overflow = "hidden";

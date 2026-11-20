@@ -14,6 +14,9 @@ import type { CheckoutInfo } from "@/lib/types";
 import { ExpressPay } from "./ExpressPay";
 import { PayPalButtons } from "./PayPalButtons";
 import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
+import { PieceSpotlight } from "./PieceSpotlight";
+import type { Product } from "@/lib/types";
+import { variantLabel, variantPrice } from "@/lib/variants";
 import type { PiecePhotos } from "@/app/api/piece-photos/route";
 
 type Provider = CheckoutInfo["providers"][number];
@@ -56,6 +59,8 @@ export function CheckoutView({
   linkCart,
   linkCoupon,
   buyAlone = false,
+  spotlight = null,
+  soldOutLink = null,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -69,6 +74,10 @@ export function CheckoutView({
   linkCoupon?: string | null;
   /** A Hot Sale tile's link: the bag is set aside (not emptied) while this piece is bought on its own. */
   buyAlone?: boolean;
+  /** A one-piece link's piece (/checkout?product=): shown large, with its colours, while it's the only thing in the cart. */
+  spotlight?: Product | null;
+  /** That link's piece when it has sold out (its title), to say so. */
+  soldOutLink?: string | null;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -80,7 +89,7 @@ export function CheckoutView({
     else cart.replace(linkCart);
     // Drop Meta's parameters, so reloading keeps the shopper's own changes to the cart.
     const url = new URL(window.location.href);
-    for (const k of ["products", "coupon", "cart_origin"]) url.searchParams.delete(k);
+    for (const k of ["products", "product", "coupon", "cart_origin"]) url.searchParams.delete(k);
     window.history.replaceState(window.history.state, "", url);
     // The cart store now holds the link's products; read from it from here on.
     queueMicrotask(() => setLinkPending(false));
@@ -91,8 +100,14 @@ export function CheckoutView({
       : saved.items;
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // Every photo of the pieces in the cart (the cart keeps one each), for a closer look before paying.
-  const [photos, setPhotos] = useState<Record<string, PiecePhotos>>({});
-  const [viewing, setViewing] = useState<number | null>(null);
+  const [photos, setPhotos] = useState<Record<string, PiecePhotos>>(() =>
+    spotlight
+      ? { [spotlight.slug]: { images: spotlight.images, optionImages: Object.fromEntries((spotlight.variants ?? []).filter((v) => v.image?.url).map((v) => [v.id, v.image!.url!])), details: [] } }
+      : {},
+  );
+  const [viewing, setViewing] = useState<{ line: number; photo: number } | null>(null);
+  // The link's piece, shown large while it's the only line (adding the bag back shows the usual list).
+  const spotLine = spotlight && items.length === 1 && items[0].productId === spotlight.id ? items[0] : null;
   const photoSlugs = [...new Set(items.map((i) => i.slug))].sort().join(",");
   useEffect(() => {
     if (!photoSlugs) return;
@@ -462,14 +477,40 @@ export function CheckoutView({
         </div>
       )}
 
-      {viewing !== null && <PiecePhotosViewer items={items} photos={photos} start={Math.min(viewing, items.length - 1)} onClose={() => setViewing(null)} />}
+      {viewing !== null && (
+        <PiecePhotosViewer items={items} photos={photos} start={Math.min(viewing.line, items.length - 1)} startPhoto={viewing.photo} onClose={() => setViewing(null)} />
+      )}
 
-      <ul className="mt-8 divide-y divide-line border-y border-line">
+      {soldOutLink && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Sorry, {soldOutLink} has just sold out.</p>}
+
+      {spotLine && spotlight && (
+        <PieceSpotlight
+          product={spotlight}
+          line={spotLine}
+          photos={photosFor(spotLine, photos[spotlight.slug])}
+          onOpen={(photo) => setViewing({ line: 0, photo })}
+          onPick={(v) =>
+            cart.swap(spotLine.key, {
+              productId: spotlight.id,
+              variantId: v.id,
+              option: variantLabel(v),
+              slug: spotlight.slug,
+              title: spotlight.title,
+              price: variantPrice(spotlight, v),
+              image: v.image ?? spotlight.images[0],
+              etsyUrl: spotlight.etsyUrl,
+              maxQty: v.stock,
+            })
+          }
+        />
+      )}
+
+      <ul className={`mt-8 divide-y divide-line border-y border-line ${spotLine ? "hidden" : ""}`}>
         {items.map((item, index) => (
           <li key={item.key} className="flex gap-4 py-5">
             <button
               type="button"
-              onClick={() => setViewing(index)}
+              onClick={() => setViewing({ line: index, photo: 0 })}
               className="group relative aspect-[4/5] w-24 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-sand"
               aria-label={`See photos of ${item.title}`}
             >
@@ -480,14 +521,14 @@ export function CheckoutView({
             </button>
             <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <button type="button" onClick={() => setViewing(index)} className="text-left hover:underline">
+                <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="text-left hover:underline">
                   {item.title}
                 </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
                 <p className="text-sm text-muted">
                   Qty {item.qty} · {formatPrice(item.price * item.qty)}
                 </p>
-                <button type="button" onClick={() => setViewing(index)} className="mt-1 text-sm font-medium text-accent underline-offset-4 hover:underline">
+                <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="mt-1 text-sm font-medium text-accent underline-offset-4 hover:underline">
                   {photosFor(item, photos[item.slug]).length > 1 ? `See all ${photosFor(item, photos[item.slug]).length} photos` : "See it bigger"}
                 </button>
               </div>
