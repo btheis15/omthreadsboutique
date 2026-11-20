@@ -38,7 +38,7 @@ export function PieceSpotlight({
   const compareAt = variantCompareAt(product, variant);
   const stock = variant ? variant.stock : product.stock;
   const choices = product.variants && product.variants.length > 1 ? product.variants : null;
-  const optionName = product.options?.join(" / ") || "Colour";
+  const optionName = product.options?.join(" / ") || "Color";
 
   return (
     <section className="mt-6 grid gap-5 md:grid-cols-2 md:items-start md:gap-8" aria-label="Your piece">
