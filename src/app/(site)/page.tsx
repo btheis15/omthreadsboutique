@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
+import { HotSale, hotSalePicks } from "@/components/HotSale";
 import { ArrowIcon, LeafIcon, ReturnIcon, TruckIcon } from "@/components/icons";
 import { Marquee } from "@/components/Marquee";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
@@ -7,6 +8,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { getCollections, getLists, getT, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
 import { carriedCrafts } from "@/lib/lists";
+import { liveCheckout } from "@/lib/payments";
 import { site } from "@/lib/site";
 
 export const revalidate = 300;
@@ -14,13 +16,14 @@ export const revalidate = 300;
 const delay = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
 export default async function HomePage() {
-  const [products, collections, settings, testimonials, lists, t] = await Promise.all([
+  const [products, collections, settings, testimonials, lists, t, onSiteCheckout] = await Promise.all([
     getProducts(),
     getCollections(),
     getSettings(),
     getTestimonials(),
     getLists(),
     getT(),
+    liveCheckout(),
   ]);
   const available = products.filter((p) => !isSoldOut(p));
   const newest = [...available].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, 8);
@@ -31,6 +34,8 @@ export default async function HomePage() {
     .map((c) => ({ ...c, title: c.plural, product: available.find((p) => p.type === c.value) }))
     .filter((c) => c.product)
     .slice(0, 2);
+
+  const hotPicks = hotSalePicks(products, settings.hotSale ?? []);
 
   // Only the crafts of pieces the shop has.
   const shownCrafts = carriedCrafts(lists, products);
@@ -48,9 +53,11 @@ export default async function HomePage() {
         craftsLabel={t("heroButtonCrafts")}
         videoUrl={settings.heroVideoUrl}
         poster={settings.heroImage?.url}
+        aside={hotPicks.length ? <HotSale picks={hotPicks} heading={settings.hotSaleHeading || "Hot sale"} onSiteCheckout={onSiteCheckout} t={t} /> : undefined}
       />
 
       <Marquee crafts={shownCrafts} />
+
 
       {/* Promises */}
       <section className="border-b border-line">
@@ -68,6 +75,7 @@ export default async function HomePage() {
           </li>
         </ul>
       </section>
+
 
       {/* Category arches */}
       {categoryTiles.length > 0 && (
