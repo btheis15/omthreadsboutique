@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
-import { HotSale } from "@/components/HotSale";
+import { HotSale, hotSalePicks } from "@/components/HotSale";
 import { ArrowIcon, LeafIcon, ReturnIcon, TruckIcon } from "@/components/icons";
 import { Marquee } from "@/components/Marquee";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
@@ -35,6 +35,8 @@ export default async function HomePage() {
     .filter((c) => c.product)
     .slice(0, 2);
 
+  const hotPicks = hotSalePicks(products, settings.hotSale ?? []);
+
   // Only the crafts of pieces the shop has.
   const shownCrafts = carriedCrafts(lists, products);
   const craftCards = shownCrafts.slice(0, 6);
@@ -51,6 +53,7 @@ export default async function HomePage() {
         craftsLabel={t("heroButtonCrafts")}
         videoUrl={settings.heroVideoUrl}
         poster={settings.heroImage?.url}
+        aside={hotPicks.length ? <HotSale picks={hotPicks} heading={settings.hotSaleHeading || "Hot sale"} onSiteCheckout={onSiteCheckout} t={t} /> : undefined}
       />
 
       <Marquee crafts={shownCrafts} />
@@ -73,7 +76,6 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      <HotSale products={products} ids={settings.hotSale ?? []} lists={lists} onSiteCheckout={onSiteCheckout} t={t} />
 
       {/* Category arches */}
       {categoryTiles.length > 0 && (

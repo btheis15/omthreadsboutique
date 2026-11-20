@@ -394,16 +394,10 @@
     "default": "ख़ास पेशकश"
   },
   {
-    "key": "homeHotHeading",
-    "group": "Home page",
-    "label": "Hot Sale: heading",
-    "default": "Hot sale"
-  },
-  {
     "key": "homeHotIntro",
     "group": "Home page",
-    "label": "Hot Sale: note beside the heading",
-    "default": "One tap takes you straight to checkout."
+    "label": "Hot Sale: small note beside the heading",
+    "default": "One tap to checkout"
   },
   {
     "key": "homeHotBuy",
@@ -416,12 +410,6 @@
     "group": "Home page",
     "label": "Hot Sale: tile link (website checkout off)",
     "default": "View piece"
-  },
-  {
-    "key": "homeHotSaleBadge",
-    "group": "Home page",
-    "label": "Hot Sale: badge on a piece that's on sale",
-    "default": "Sale"
   },
   {
     "key": "homeNewEyebrow",

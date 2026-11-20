@@ -1,78 +1,73 @@
 import Link from "next/link";
-import { craftByValue } from "@/lib/lists";
-import type { Lists, Product } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import type { T } from "@/lib/site-text";
 import { defaultVariant, variantLabel, variantPrice } from "@/lib/variants";
 import { ArrowIcon } from "./icons";
-import { Price } from "./Price";
+import { formatPrice } from "@/lib/site";
 import { ProductImage } from "./ProductImage";
 
-const delay = (i: number) => ({ "--i": i }) as React.CSSProperties;
-
-/**
- * The owner's Hot Sale pieces (admin: Site settings → Hot Sale), right under the hero. Each tile is one tap
- * to checkout with just that piece (its first colour that's in stock), or to its page when the website
- * checkout is off. Sold-out picks are left out; with none left the row isn't shown.
- */
-export function HotSale({ products, ids, lists, onSiteCheckout, t }: { products: Product[]; ids: string[]; lists: Lists; onSiteCheckout: boolean; t: T }) {
-  const picks = ids
+/** The owner's Hot Sale pieces that can still be bought (each with its first in-stock option), in the owner's order. */
+export function hotSalePicks(products: Product[], ids: string[]) {
+  return ids
     .map((id) => products.find((p) => p.id === id))
     .filter((p): p is Product => Boolean(p))
     .map((product) => ({ product, variant: defaultVariant(product) }))
     .filter(({ product, variant }) => (variant ? variant.stock !== 0 : product.stock !== 0));
-  if (!picks.length) return null;
+}
 
+/**
+ * The owner's Hot Sale pieces (admin: Site settings → Hot Sale), on the hero photo so a phone sees them
+ * without scrolling. Each tile is one tap to checkout with just that piece, or to its page when the
+ * website checkout is off.
+ */
+export function HotSale({
+  picks,
+  heading,
+  onSiteCheckout,
+  t,
+}: {
+  picks: ReturnType<typeof hotSalePicks>;
+  heading: string;
+  onSiteCheckout: boolean;
+  t: T;
+}) {
+  if (!picks.length) return null;
   return (
-    <section className="container-page mt-10 md:mt-14" aria-labelledby="hot-sale-heading">
-      <div className="mb-5 flex items-end justify-between gap-4" data-reveal>
-        <div>
-          <p className="font-deva text-lg text-accent">{t("homeHotEyebrow")}</p>
-          <h2 id="hot-sale-heading" className="text-3xl md:text-4xl">
-            {t("homeHotHeading")}
-          </h2>
-        </div>
-        {onSiteCheckout && <p className="hidden max-w-xs text-right text-sm text-muted sm:block">{t("homeHotIntro")}</p>}
+    <section aria-labelledby="hot-sale-heading" className="w-full md:w-[25rem] md:shrink-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="hot-sale-heading" className="flex items-center gap-2 font-sans text-[0.7rem] font-semibold tracking-[0.2em] text-zari-light uppercase">
+          <span aria-hidden="true">✦</span> {heading}
+        </h2>
+        {onSiteCheckout && <p className="text-[0.7rem] text-ivory/70">{t("homeHotIntro")}</p>}
       </div>
-      <ul className={`grid gap-3 md:gap-6 ${picks.length > 1 ? "sm:grid-cols-2" : "sm:max-w-xl"}`}>
-        {picks.map(({ product, variant }, i) => {
+      <ul className={`mt-2.5 grid gap-2.5 md:grid-cols-1 md:gap-3 ${picks.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+        {picks.map(({ product, variant }) => {
           const price = variantPrice(product, variant);
           const compareAt = variant ? (variant.compareAtPrice ?? (variant.price === undefined ? product.compareAtPrice : undefined)) : product.compareAtPrice;
           const onSale = compareAt !== undefined && compareAt > price;
           const option = variant && product.variants!.length > 1 ? variantLabel(variant) : null;
-          const craft = craftByValue(lists, product.craft);
           // Checkout with only this piece; the shopper's bag is set aside and comes back after (see CheckoutView).
           const href = onSiteCheckout ? `/checkout?products=${encodeURIComponent(product.slug)}:1&cart_origin=hot_sale` : `/product/${product.slug}`;
           return (
-            <li key={product.id} data-reveal style={delay(i)}>
+            <li key={product.id}>
               <Link
                 href={href}
                 prefetch={false}
-                className="group flex h-full items-stretch gap-4 overflow-hidden rounded-2xl border border-line bg-white p-2.5 pr-4 transition duration-500 hover:-translate-y-0.5 hover:border-zari/60 hover:shadow-[0_18px_40px_-22px_rgba(35,49,66,0.45)] md:gap-5 md:p-3 md:pr-5"
-                aria-label={`${product.title}${option ? `, ${option}` : ""}: ${onSiteCheckout ? t("homeHotBuy") : t("homeHotView")}`}
+                className="group flex h-full items-center gap-2.5 rounded-xl border border-ivory/20 bg-indigo-deep/55 p-1.5 pr-2.5 text-ivory backdrop-blur-md transition duration-500 hover:border-zari-light/70 hover:bg-indigo-deep/75 md:gap-4 md:p-2 md:pr-4"
+                aria-label={`${product.title}${option ? `, ${option}` : ""}, ${formatPrice(price)}${onSale ? `, was ${formatPrice(compareAt!)}` : ""}: ${onSiteCheckout ? t("homeHotBuy") : t("homeHotView")}`}
               >
-                <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-xl bg-sand sm:w-32 md:w-36">
-                  {onSale && (
-                    <span className="absolute top-1.5 left-1.5 z-10 rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-medium tracking-wide text-ivory">
-                      {t("homeHotSaleBadge")}
-                    </span>
-                  )}
-                  <ProductImage
-                    image={variant?.image ?? product.images[0]}
-                    sizes="(min-width: 768px) 144px, 128px"
-                    className="transition duration-[1200ms] ease-soft group-hover:scale-[1.06]"
-                  />
+                <div className="relative aspect-[4/5] w-12 shrink-0 overflow-hidden rounded-lg bg-sand md:w-20">
+                  <ProductImage image={variant?.image ?? product.images[0]} sizes="80px" className="transition duration-[1200ms] ease-soft group-hover:scale-[1.08]" />
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col py-1">
-                  {craft && <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-zari uppercase">{craft.label}</p>}
-                  <h3 className="mt-0.5 line-clamp-2 font-sans text-[0.95rem] leading-snug transition-colors group-hover:text-accent md:text-base">
-                    {product.title}
-                  </h3>
-                  {option && <p className="mt-0.5 text-xs text-muted">{option}</p>}
-                  <Price price={price} compareAt={compareAt} className="mt-1.5 text-lg font-medium" />
-                  {product.shortDescription && <p className="mt-1.5 line-clamp-2 hidden text-sm text-muted md:block">{product.shortDescription}</p>}
-                  <span className="mt-auto inline-flex items-center gap-2 pt-3 text-sm font-medium text-accent">
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-[0.8rem] leading-snug md:text-[0.95rem]">{product.title}</p>
+                  <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-[0.85rem] font-medium md:text-base">
+                    <span className={onSale ? "text-zari-light" : undefined}>{formatPrice(price)}</span>
+                    {onSale && <s className="text-[0.75rem] font-normal text-ivory/60 md:text-[0.85rem]">{formatPrice(compareAt!)}</s>}
+                  </p>
+                  <span className="mt-1 hidden items-center gap-1.5 text-xs font-medium text-zari-light md:inline-flex">
                     {onSiteCheckout ? t("homeHotBuy") : t("homeHotView")}
-                    <ArrowIcon size={16} className="transition-transform group-hover:translate-x-1" />
+                    <ArrowIcon size={14} className="transition-transform group-hover:translate-x-1" />
                   </span>
                 </div>
               </Link>
