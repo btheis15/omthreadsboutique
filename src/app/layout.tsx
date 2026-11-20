@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Kalnia, Mukta, Tiro_Devanagari_Hindi } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { getT } from "@/lib/catalog";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -56,7 +57,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* Lets CSS hide scroll-reveal content only when JS is available to reveal it. */}
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
