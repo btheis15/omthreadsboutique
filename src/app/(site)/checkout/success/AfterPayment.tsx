@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { cart } from "@/components/cart/store";
 
-/** Empties the cart once the order is paid, and re-checks while a payment is still confirming. */
+/** Empties the cart once the order is paid (a bag set aside for a Hot Sale piece comes back), and re-checks while a payment is still confirming. */
 export function AfterPayment({ clearCart, keepChecking }: { clearCart: boolean; keepChecking: boolean }) {
   const router = useRouter();
   useEffect(() => {
-    if (clearCart) cart.clear();
+    if (!clearCart) return;
+    cart.clear();
+    cart.bringBack();
   }, [clearCart]);
   useEffect(() => {
     if (!keepChecking) return;

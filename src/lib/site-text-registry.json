@@ -112,6 +112,19 @@
     "default": "You've unlocked free shipping ✨"
   },
   {
+    "key": "checkoutBagSaved",
+    "group": "Checkout",
+    "label": "Buy now: your bag was set aside",
+    "hint": "{count} is the number of items.",
+    "default": "Checking out just this piece. Your bag ({count}) is saved and comes back after you pay."
+  },
+  {
+    "key": "checkoutBagRestore",
+    "group": "Checkout",
+    "label": "Buy now: button to add the bag back",
+    "default": "Add my bag back"
+  },
+  {
     "key": "checkoutComingSoonTitle",
     "group": "Checkout & cart",
     "label": "Checkout (not yet open): heading",
@@ -373,6 +386,42 @@
     "label": "Category tile link",
     "hint": "{type} is the category name in lower case.",
     "default": "Shop {type}"
+  },
+  {
+    "key": "homeHotEyebrow",
+    "group": "Home page",
+    "label": "Hot Sale: Hindi eyebrow",
+    "default": "ख़ास पेशकश"
+  },
+  {
+    "key": "homeHotHeading",
+    "group": "Home page",
+    "label": "Hot Sale: heading",
+    "default": "Hot sale"
+  },
+  {
+    "key": "homeHotIntro",
+    "group": "Home page",
+    "label": "Hot Sale: note beside the heading",
+    "default": "One tap takes you straight to checkout."
+  },
+  {
+    "key": "homeHotBuy",
+    "group": "Home page",
+    "label": "Hot Sale: tile link (website checkout on)",
+    "default": "Buy now"
+  },
+  {
+    "key": "homeHotView",
+    "group": "Home page",
+    "label": "Hot Sale: tile link (website checkout off)",
+    "default": "View piece"
+  },
+  {
+    "key": "homeHotSaleBadge",
+    "group": "Home page",
+    "label": "Hot Sale: badge on a piece that's on sale",
+    "default": "Sale"
   },
   {
     "key": "homeNewEyebrow",

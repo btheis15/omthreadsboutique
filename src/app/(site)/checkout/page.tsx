@@ -8,7 +8,7 @@ import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
-type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; products?: string | string[]; coupon?: string | string[] }> };
+type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; products?: string | string[]; coupon?: string | string[]; cart_origin?: string | string[] }> };
 
 /**
  * A Meta Shops (Facebook / Instagram) checkout link:
@@ -18,6 +18,8 @@ type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; prod
  * exactly the quantity Meta sent, at the catalog's price, even past the stock count (the
  * payment step still checks stock). Unknown products or options are left out. A `coupon`
  * is passed on to the checkout, which tries it when the shop has coupon codes.
+ * The home page's Hot Sale tiles use the same link with cart_origin=hot_sale: the shopper's bag is set
+ * aside instead of emptied, and comes back once they've paid (or when they ask).
  */
 /** "Heather Grey" → "heather-grey", "Ash & Ember" → "ash-ember" (an option as Meta's content IDs name it). */
 const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -75,6 +77,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
       text={text}
       linkCart={linkCart}
       linkCoupon={linkCoupon}
+      buyAlone={params.cart_origin === "hot_sale"}
     />
   );
 }

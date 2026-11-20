@@ -120,6 +120,8 @@ export type SiteSettings = {
   heroVideoUrl?: string;
   etsyRating?: number;
   etsyReviewCount?: number;
+  /** The owner's Hot Sale pieces (product ids, up to 2, in order), shown under the home page hero. */
+  hotSale?: string[];
 };
 
 /** A shipping option at checkout (from the Om Threads admin's Checkout setup). */

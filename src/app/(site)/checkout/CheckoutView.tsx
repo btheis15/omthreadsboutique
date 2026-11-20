@@ -46,6 +46,7 @@ export function CheckoutView({
   text,
   linkCart,
   linkCoupon,
+  buyAlone = false,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -57,6 +58,8 @@ export function CheckoutView({
   linkCart?: Omit<CartItem, "key">[] | null;
   /** That link's coupon code, tried once the cart is in place (ignored if it isn't valid). */
   linkCoupon?: string | null;
+  /** A Hot Sale tile's link: the bag is set aside (not emptied) while this piece is bought on its own. */
+  buyAlone?: boolean;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -64,14 +67,15 @@ export function CheckoutView({
   const [linkPending, setLinkPending] = useState(Boolean(linkCart));
   useEffect(() => {
     if (!linkCart) return;
-    cart.replace(linkCart);
+    if (buyAlone) cart.buyAlone(linkCart);
+    else cart.replace(linkCart);
     // Drop Meta's parameters, so reloading keeps the shopper's own changes to the cart.
     const url = new URL(window.location.href);
     for (const k of ["products", "coupon", "cart_origin"]) url.searchParams.delete(k);
     window.history.replaceState(window.history.state, "", url);
     // The cart store now holds the link's products; read from it from here on.
     queueMicrotask(() => setLinkPending(false));
-  }, [linkCart]);
+  }, [linkCart, buyAlone]);
   const items: CartItem[] =
     linkPending && linkCart
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
@@ -370,6 +374,11 @@ export function CheckoutView({
       <div className="container-page max-w-xl py-20 text-center">
         {testerLink === "on" && <p className="mb-6 rounded-lg bg-sand p-3 text-sm">Tester link accepted: this browser now sees the test checkout. Add something to your cart to try it.</p>}
         <h1 className="text-4xl">Your cart is empty</h1>
+        {saved.aside.length > 0 && (
+          <button type="button" onClick={() => cart.bringBack()} className="btn btn-outline mt-8 mr-3">
+            {t("checkoutBagRestore")}
+          </button>
+        )}
         <Link href="/shop" className="btn btn-primary mt-8">
           Continue shopping
         </Link>
@@ -411,6 +420,14 @@ export function CheckoutView({
         </div>
       )}
       {cancelled && onSite && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Payment cancelled. Nothing was charged, and your cart is still here.</p>}
+      {saved.aside.length > 0 && !linkPending && (
+        <p className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-sand p-3 text-sm">
+          <span>{t("checkoutBagSaved", { count: saved.aside.reduce((n, i) => n + i.qty, 0) })}</span>
+          <button type="button" onClick={() => cart.bringBack()} className="font-medium text-accent underline underline-offset-4">
+            {t("checkoutBagRestore")}
+          </button>
+        </p>
+      )}
 
       {!onSite && (
         <div className="mt-6 rounded-xl border border-line bg-sand p-5">
