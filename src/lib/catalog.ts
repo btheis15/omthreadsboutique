@@ -10,6 +10,7 @@ import type { PortableTextBlock } from "next-sanity";
 import { sampleCollections, samplePages, samplePlaceholderReviews, sampleProducts } from "@/data/sample";
 import { client } from "@/sanity/client";
 import { carePresets } from "@/sanity/options";
+import { american } from "./american";
 import { craftByValue, fallbackLists, normalizeLists, typeByValue } from "./lists";
 import { defaultSettings } from "./site";
 import { makeT, newBadgeDays, normalizeMenus, type Menus, type T } from "./site-text";
@@ -167,6 +168,9 @@ function carePresetText(preset: keyof typeof carePresets, t: T) {
 function mapShopProduct({ carePreset, care, ...p }: ShopProduct, t: T): Product {
   return {
     ...p,
+    // Option names in American spelling (the admin, Etsy and Meta keep theirs; see american.ts).
+    options: p.options?.map(american),
+    variants: p.variants?.map((v) => ({ ...v, values: v.values.map(american) })),
     care: carePreset === "custom" ? care : carePreset ? carePresetText(carePreset, t) : undefined,
     isNew: isNewArrival(p.publishedAt, t),
   };

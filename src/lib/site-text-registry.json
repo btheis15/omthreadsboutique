@@ -475,7 +475,7 @@
     "key": "homeStoryBody",
     "group": "Home page",
     "label": "Brand story: paragraph",
-    "default": "Every shawl and stole is sourced from northern India and handpicked for how it feels, how it drapes and how long it will last. Natural fibres, honest craftsmanship, and colors you'll reach for again and again.",
+    "default": "Every shawl and stole is sourced from northern India and handpicked for how it feels, how it drapes and how long it will last. Natural fibers, honest craftsmanship, and colors you'll reach for again and again.",
     "multiline": true
   },
   {

@@ -30,7 +30,7 @@ export const crafts: Craft[] = [
     region: "Kanihama, Kashmir",
     summary: "Tapestry-woven with small wooden bobbins, following a coded pattern.",
     story:
-      "Kani shawls are woven with dozens of small wooden bobbins, the kanis, that carry each color across the loom. Weavers follow a coded pattern called a talim, and a single shawl can take many months to finish. The craft is centred on the village of Kanihama near Srinagar.",
+      "Kani shawls are woven with dozens of small wooden bobbins, the kanis, that carry each color across the loom. Weavers follow a coded pattern called a talim, and a single shawl can take many months to finish. The craft is centered on the village of Kanihama near Srinagar.",
   },
   {
     value: "sozni",
@@ -57,7 +57,7 @@ export const crafts: Craft[] = [
     region: "Kashmir",
     summary: "Embroidery in gleaming gold and silver thread.",
     story:
-      "Tilla is Kashmiri embroidery worked in metallic thread and couched onto the fabric by hand. It makes borders that glow in lamplight, which is why it is a favourite for weddings and festive evenings.",
+      "Tilla is Kashmiri embroidery worked in metallic thread and couched onto the fabric by hand. It makes borders that glow in lamplight, which is why it is a favorite for weddings and festive evenings.",
   },
   {
     value: "kullu",
@@ -66,7 +66,7 @@ export const crafts: Craft[] = [
     region: "Kullu Valley, Himachal Pradesh",
     summary: "Bright geometric borders on warm mountain wool.",
     story:
-      "In the Kullu Valley, weavers work bold geometric borders into warm wool, often in bright colors on a natural ground. Kullu shawls carry a Geographical Indication tag, which recognises their origin in Himachal Pradesh.",
+      "In the Kullu Valley, weavers work bold geometric borders into warm wool, often in bright colors on a natural ground. Kullu shawls carry a Geographical Indication tag, which recognizes their origin in Himachal Pradesh.",
   },
   {
     value: "lohi",

@@ -461,7 +461,7 @@ export function CheckoutView({
           </p>
         </div>
       )}
-      {cancelled && onSite && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Payment cancelled. Nothing was charged, and your cart is still here.</p>}
+      {cancelled && onSite && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Payment canceled. Nothing was charged, and your cart is still here.</p>}
       {saved.aside.length > 0 && !linkPending && (
         <p className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-sand p-3 text-sm">
           <span>{t("checkoutBagSaved", { count: saved.aside.reduce((n, i) => n + i.qty, 0) })}</span>
