@@ -61,6 +61,7 @@ export function CheckoutView({
   buyAlone = false,
   spotlight = null,
   soldOutLink = null,
+  colorNote = null,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -78,6 +79,8 @@ export function CheckoutView({
   spotlight?: Product | null;
   /** That link's piece when it has sold out (its title), to say so. */
   soldOutLink?: string | null;
+  /** A one-piece link named a colour that's sold out or unknown: what was picked instead. */
+  colorNote?: { text: string; variantId?: string } | null;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -89,7 +92,7 @@ export function CheckoutView({
     else cart.replace(linkCart);
     // Drop Meta's parameters, so reloading keeps the shopper's own changes to the cart.
     const url = new URL(window.location.href);
-    for (const k of ["products", "product", "coupon", "cart_origin"]) url.searchParams.delete(k);
+    for (const k of ["products", "product", "color", "coupon", "cart_origin"]) url.searchParams.delete(k);
     window.history.replaceState(window.history.state, "", url);
     // The cart store now holds the link's products; read from it from here on.
     queueMicrotask(() => setLinkPending(false));
@@ -482,6 +485,8 @@ export function CheckoutView({
       )}
 
       {soldOutLink && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Sorry, {soldOutLink} has just sold out.</p>}
+      {/* Gone once the shopper picks a colour themselves. */}
+      {colorNote && spotLine?.variantId === colorNote.variantId && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">{colorNote.text}</p>}
 
       {spotLine && spotlight && (
         <PieceSpotlight
