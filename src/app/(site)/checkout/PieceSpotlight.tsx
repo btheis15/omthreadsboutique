@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CartItem } from "@/components/cart/store";
 import { Price } from "@/components/Price";
+import { ChevronIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
 import type { Product, ProductImage as Img, ProductVariant } from "@/lib/types";
 import { variantAvailable, variantCompareAt, variantLabel } from "@/lib/variants";
@@ -89,35 +90,31 @@ export function PieceSpotlight({
         )}
 
         {choices && (
-          <fieldset className="mt-5">
-            <legend className="mb-2 text-sm">
+          // One quiet line, not every colour: tapping it opens the device's own list (the wheel on an iPhone).
+          <label className="group relative mt-4 flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-ivory px-4 transition focus-within:border-ink hover:border-ink">
+            <span className="min-w-0 truncate text-[0.95rem]">
               <span className="text-muted">{optionName}:</span> <span className="font-medium">{line.option}</span>
-            </legend>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={optionName}>
-              {choices.map((v) => {
-                const on = v.id === line.variantId;
-                const canBuy = variantAvailable(v);
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    disabled={!canBuy}
-                    aria-label={canBuy ? variantLabel(v) : `${variantLabel(v)}, sold out`}
-                    onClick={() => !on && onPick(v)}
-                    className={`min-h-11 rounded-full border px-4 text-[0.95rem] transition ${
-                      on ? "border-ink bg-ink text-ivory" : "border-line bg-ivory hover:border-ink"
-                    } ${canBuy ? "" : "cursor-not-allowed text-muted hover:border-line"}`}
-                  >
-                    {variantLabel(v)}
-                    {/* Said in words, as on the product page. */}
-                    {!canBuy && <span className="ml-1.5 text-[0.7rem] tracking-wider uppercase">Sold out</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-accent">
+              Change <ChevronIcon size={16} className="rotate-90" />
+            </span>
+            <select
+              value={line.variantId}
+              onChange={(e) => {
+                const v = choices.find((x) => x.id === e.target.value);
+                if (v && v.id !== line.variantId && variantAvailable(v)) onPick(v);
+              }}
+              className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+              aria-label={`${optionName}, now ${line.option}`}
+            >
+              {choices.map((v) => (
+                <option key={v.id} value={v.id} disabled={!variantAvailable(v)}>
+                  {variantLabel(v)}
+                  {variantAvailable(v) ? "" : " (sold out)"}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
 
         {product.shortDescription && <p className="mt-5 line-clamp-4 leading-relaxed text-ink/80">{product.shortDescription}</p>}
