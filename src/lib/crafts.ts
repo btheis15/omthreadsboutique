@@ -30,7 +30,7 @@ export const crafts: Craft[] = [
     region: "Kanihama, Kashmir",
     summary: "Tapestry-woven with small wooden bobbins, following a coded pattern.",
     story:
-      "Kani shawls are woven with dozens of small wooden bobbins, the kanis, that carry each colour across the loom. Weavers follow a coded pattern called a talim, and a single shawl can take many months to finish. The craft is centred on the village of Kanihama near Srinagar.",
+      "Kani shawls are woven with dozens of small wooden bobbins, the kanis, that carry each color across the loom. Weavers follow a coded pattern called a talim, and a single shawl can take many months to finish. The craft is centred on the village of Kanihama near Srinagar.",
   },
   {
     value: "sozni",
@@ -48,7 +48,7 @@ export const crafts: Craft[] = [
     region: "Kashmir",
     summary: "Richly patterned weaving once made for Mughal courts.",
     story:
-      "Jamawar weaving covers the cloth in dense, colourful motifs, with the paisley (buta) at their heart. Mughal nobility prized these textiles and cut them into robes, which gave them the name: jama for robe, war for yardage.",
+      "Jamawar weaving covers the cloth in dense, colorful motifs, with the paisley (buta) at their heart. Mughal nobility prized these textiles and cut them into robes, which gave them the name: jama for robe, war for yardage.",
   },
   {
     value: "tilla",
@@ -66,7 +66,7 @@ export const crafts: Craft[] = [
     region: "Kullu Valley, Himachal Pradesh",
     summary: "Bright geometric borders on warm mountain wool.",
     story:
-      "In the Kullu Valley, weavers work bold geometric borders into warm wool, often in bright colours on a natural ground. Kullu shawls carry a Geographical Indication tag, which recognises their origin in Himachal Pradesh.",
+      "In the Kullu Valley, weavers work bold geometric borders into warm wool, often in bright colors on a natural ground. Kullu shawls carry a Geographical Indication tag, which recognises their origin in Himachal Pradesh.",
   },
   {
     value: "lohi",
@@ -75,7 +75,7 @@ export const crafts: Craft[] = [
     region: "Punjab",
     summary: "Punjab's broad, warm winter shawl, worn by men and women alike.",
     story:
-      "A lohi is the shawl Punjab reaches for when winter sets in: broad enough to wrap around the shoulders, warm, and worn by men and women alike over a kurta or a coat. Lohis come in solid colours and in checks, from everyday plain ones to bolder patterns.",
+      "A lohi is the shawl Punjab reaches for when winter sets in: broad enough to wrap around the shoulders, warm, and worn by men and women alike over a kurta or a coat. Lohis come in solid colors and in checks, from everyday plain ones to bolder patterns.",
   },
   {
     value: "phulkari",
@@ -120,6 +120,6 @@ export const crafts: Craft[] = [
     region: "Bagru & Sanganer, Rajasthan",
     summary: "Stamped by hand with carved wooden blocks and natural dyes.",
     story:
-      "Printers carve motifs into blocks of sheesham wood and stamp them onto cloth by hand, one colour at a time. Small shifts in alignment are the signature of a human hand.",
+      "Printers carve motifs into blocks of sheesham wood and stamp them onto cloth by hand, one color at a time. Small shifts in alignment are the signature of a human hand.",
   },
 ];

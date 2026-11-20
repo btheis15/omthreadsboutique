@@ -90,8 +90,8 @@ async function directProduct(
     !wanted || !product.variants?.length || variant === named
       ? null
       : named
-        ? `${variantLabel(named)} has sold out, so we've picked ${variantLabel(firstInStock!)}. Choose another colour below if you like.`
-        : `We couldn't find the colour "${color}", so we've picked ${variantLabel(firstInStock!)}. Choose another colour below if you like.`;
+        ? `${variantLabel(named)} has sold out, so we've picked ${variantLabel(firstInStock!)}. Choose another color below if you like.`
+        : `We couldn't find the color "${color}", so we've picked ${variantLabel(firstInStock!)}. Choose another color below if you like.`;
   const stock = variant ? variant.stock : product.stock;
   return {
     product,
