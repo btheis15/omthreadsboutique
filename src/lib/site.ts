@@ -74,7 +74,7 @@ export const categories: { slug: string; type: ProductType; title: string; singu
 export const colors: { value: string; label: string; hex: string }[] = [
   { value: "ivory", label: "Ivory", hex: "#f3ecdf" },
   { value: "beige", label: "Beige", hex: "#d8c3a5" },
-  { value: "grey", label: "Grey", hex: "#9a9a98" },
+  { value: "grey", label: "Gray", hex: "#9a9a98" },
   { value: "black", label: "Black", hex: "#1f1f1f" },
   { value: "navy", label: "Navy", hex: "#1f2e4d" },
   { value: "teal", label: "Teal", hex: "#1f6f6b" },

@@ -69,7 +69,7 @@ export function PayPalButtons({ token, clientId, sdkUrl, onMessage }: { token: s
               onMessage(e instanceof Error ? e.message : "We couldn't confirm the payment.");
             }
           },
-          onCancel: () => onMessage("Payment cancelled. Nothing was charged."),
+          onCancel: () => onMessage("Payment canceled. Nothing was charged."),
           onError: () => onMessage("PayPal couldn't complete the payment. Please try again, or choose another way to pay."),
         };
         const wire = (el: HTMLElement | null, method: "paypal", make: () => Session) => {

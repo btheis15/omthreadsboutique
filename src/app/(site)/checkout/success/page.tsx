@@ -121,7 +121,7 @@ export default async function SuccessPage({ searchParams }: Props) {
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
             {new Date(zelle.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. {pickupOrder || deliveryOrder ? "We'll get it ready as soon" : "It ships as soon"}
-            {" "}as the payment arrives. Zelle payments can&apos;t be cancelled once sent, so please check the name and amount in your bank app first.
+            {" "}as the payment arrives. Zelle payments can&apos;t be canceled once sent, so please check the name and amount in your bank app first.
           </p>
         </div>
       )}
@@ -172,7 +172,7 @@ export default async function SuccessPage({ searchParams }: Props) {
           <p className="mt-3 text-sm text-ink/80">
             We&apos;re holding your order until{" "}
             {new Date(venmo.holdUntil).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short" })}. {pickupOrder || deliveryOrder ? "We'll get it ready as soon" : "It ships as soon"}
-            {" "}as the payment arrives. Venmo payments can&apos;t be cancelled once sent, so please check the name and amount first.
+            {" "}as the payment arrives. Venmo payments can&apos;t be canceled once sent, so please check the name and amount first.
           </p>
         </div>
       )}

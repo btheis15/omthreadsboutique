@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { CartItem } from "@/components/cart/store";
 import { getProduct, getSettings, getTextOverrides } from "@/lib/catalog";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
+import { american } from "@/lib/american";
 import type { Product } from "@/lib/types";
 import { defaultVariant, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { CheckoutView } from "./CheckoutView";
@@ -22,8 +23,8 @@ type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; prod
  * The home page's Hot Sale tiles use the same link with cart_origin=hot_sale: the shopper's bag is set
  * aside instead of emptied, and comes back once they've paid (or when they ask).
  */
-/** "Heather Grey" → "heather-grey", "Ash & Ember" → "ash-ember" (an option as Meta's content IDs name it). */
-const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+/** "Heather Grey" → "heather-gray", "Ash & Ember" → "ash-ember": an option as Meta's content IDs name it, in American spelling on both sides (so "heather-grey" still finds the option the site shows as "Heather Gray"). */
+const slugify = (s: string) => american(s).toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 async function metaShopsCart(param: string | string[] | undefined): Promise<Omit<CartItem, "key">[] | null> {
   const raw = Array.isArray(param) ? param.join(",") : param;
@@ -38,7 +39,7 @@ async function metaShopsCart(param: string | string[] | undefined): Promise<Omit
     [...wanted].map(async ([id, qty]) => {
       const split = id.indexOf("--");
       const slug = split === -1 ? id : id.slice(0, split);
-      const optionSlug = split === -1 ? null : id.slice(split + 2).toLowerCase();
+      const optionSlug = split === -1 ? null : slugify(id.slice(split + 2));
       const product = await getProduct(slug);
       if (!product) return [];
       const variant = optionSlug === null ? defaultVariant(product) : product.variants?.find((v) => slugify(variantLabel(v)) === optionSlug);

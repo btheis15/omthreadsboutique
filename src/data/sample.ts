@@ -57,7 +57,7 @@ const seeds: Seed[] = [
       "A generous Punjabi lohi in soft wool-touch fabric. Warm and elegant for men and women through the winter months.",
     description: [
       "The lohi is Punjab's classic winter shawl: large enough to wrap around the shoulders, and simple enough to wear every day. This one is by Oswal, a well-known Punjabi mill, in a soft wool-touch fabric.",
-      "It's unisex and versatile, good for everyday wear, meditation, prayer or a cosy winter morning. Each lohi carries the tradition of Punjab, blending everyday comfort with cultural roots.",
+      "It's unisex and versatile, good for everyday wear, meditation, prayer or a cozy winter morning. Each lohi carries the tradition of Punjab, blending everyday comfort with cultural roots.",
     ],
     colors: ["beige", "grey"],
     material: "wool-blend",
@@ -365,7 +365,7 @@ export const samplePages: ContentPage[] = [
         paragraphs: [
           "OmthreadsBoutique was born from a personal connection to India.",
           "Mimi Enterprises, in India, comes from a family involved in the garments business. Their daughter moved to the USA for higher studies and eventually we married in India. I had the opportunity to experience India not simply as a visitor, but through its family traditions, celebrations and everyday culture.",
-          "Sometimes, it is only after leaving one's birthplace that its culture and traditions are truly appreciated. For me, travelling through Northern India revealed how wonderfully diverse and vibrant Indian culture is—how every region, state and community carries its own history, textiles, rituals and traditions.",
+          "Sometimes, it is only after leaving one's birthplace that its culture and traditions are truly appreciated. For me, traveling through Northern India revealed how wonderfully diverse and vibrant Indian culture is—how every region, state and community carries its own history, textiles, rituals and traditions.",
           "During my travels, I also had the opportunity to meet local artisans and witness the shawl-making process first-hand—from the patient weaving of wool threads into beautiful fabrics to the intricate hand embroidery that transforms each piece into something unique. Seeing the skill, patience and dedication behind these textiles gave me a deeper appreciation for the people and traditions that keep this heritage alive.",
           "One experience became particularly meaningful. At our wedding in Jaipur, Indian stoles were gifted during the Milni, a beautiful tradition where the families of the bride and groom formally meet and exchange greetings and gifts. What touched me was the symbolism behind it—a simple gesture that brings two families closer and represents an enduring bond between them.",
           "That moment became the inspiration behind OmthreadsBoutique: to bring a small but meaningful part of India's heritage to the USA—for Indians living far from their homeland and for those discovering the richness of Indian culture for the first time.",
@@ -493,7 +493,7 @@ export const samplePages: ContentPage[] = [
     body: [
       {
         paragraphs: [
-          "We only collect the information needed to fulfil your order and, if you choose, send you our newsletter. We never sell your data.",
+          "We only collect the information needed to fulfill your order and, if you choose, send you our newsletter. We never sell your data.",
           "Replace this placeholder with a complete privacy policy before accepting payments on this site.",
         ],
       },
