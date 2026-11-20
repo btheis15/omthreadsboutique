@@ -13,6 +13,11 @@ import { makeT } from "@/lib/site-text";
 import type { CheckoutInfo } from "@/lib/types";
 import { ExpressPay } from "./ExpressPay";
 import { PayPalButtons } from "./PayPalButtons";
+import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
+import { PieceSpotlight } from "./PieceSpotlight";
+import type { Product } from "@/lib/types";
+import { variantLabel, variantPrice } from "@/lib/variants";
+import type { PiecePhotos } from "@/app/api/piece-photos/route";
 
 type Provider = CheckoutInfo["providers"][number];
 type Fulfil = "ship" | "pickup" | "delivery";
@@ -32,6 +37,13 @@ const daysText = (r: LiveRate) => {
   return a !== null && b !== null && a !== b ? `${a}\u2013${b}` : String(b ?? a);
 };
 
+/** Four corners pointing out: "see it bigger". */
+const ExpandIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+  </svg>
+);
+
 /**
  * The cart and, when the shop's own checkout is on, the way to pay: Stripe
  * (cards, Apple Pay, Google Pay, and UPI for shoppers in India), PayPal and
@@ -47,6 +59,9 @@ export function CheckoutView({
   linkCart,
   linkCoupon,
   buyAlone = false,
+  spotlight = null,
+  soldOutLink = null,
+  colorNote = null,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -60,6 +75,12 @@ export function CheckoutView({
   linkCoupon?: string | null;
   /** A Hot Sale tile's link: the bag is set aside (not emptied) while this piece is bought on its own. */
   buyAlone?: boolean;
+  /** A one-piece link's piece (/checkout?product=): shown large, with its colours, while it's the only thing in the cart. */
+  spotlight?: Product | null;
+  /** That link's piece when it has sold out (its title), to say so. */
+  soldOutLink?: string | null;
+  /** A one-piece link named a colour that's sold out or unknown: what was picked instead. */
+  colorNote?: { text: string; variantId?: string } | null;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -71,7 +92,7 @@ export function CheckoutView({
     else cart.replace(linkCart);
     // Drop Meta's parameters, so reloading keeps the shopper's own changes to the cart.
     const url = new URL(window.location.href);
-    for (const k of ["products", "coupon", "cart_origin"]) url.searchParams.delete(k);
+    for (const k of ["products", "product", "color", "coupon", "cart_origin"]) url.searchParams.delete(k);
     window.history.replaceState(window.history.state, "", url);
     // The cart store now holds the link's products; read from it from here on.
     queueMicrotask(() => setLinkPending(false));
@@ -81,6 +102,27 @@ export function CheckoutView({
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
+  // Every photo of the pieces in the cart (the cart keeps one each), for a closer look before paying.
+  const [photos, setPhotos] = useState<Record<string, PiecePhotos>>(() =>
+    spotlight
+      ? { [spotlight.slug]: { images: spotlight.images, optionImages: Object.fromEntries((spotlight.variants ?? []).filter((v) => v.image?.url).map((v) => [v.id, v.image!.url!])), details: [] } }
+      : {},
+  );
+  const [viewing, setViewing] = useState<{ line: number; photo: number } | null>(null);
+  // The link's piece, shown large while it's the only line (adding the bag back shows the usual list).
+  const spotLine = spotlight && items.length === 1 && items[0].productId === spotlight.id ? items[0] : null;
+  const photoSlugs = [...new Set(items.map((i) => i.slug))].sort().join(",");
+  useEffect(() => {
+    if (!photoSlugs) return;
+    let live = true;
+    fetch(`/api/piece-photos?slugs=${encodeURIComponent(photoSlugs)}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((p: Record<string, PiecePhotos>) => live && setPhotos(p))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [photoSlugs]);
   const onSite = Boolean(checkout);
   const [country, setCountry] = useState(checkout?.countries[0]?.code ?? "US");
   const [how, setHow] = useState<Fulfil>("ship");
@@ -438,21 +480,62 @@ export function CheckoutView({
         </div>
       )}
 
-      <ul className="mt-8 divide-y divide-line border-y border-line">
-        {items.map((item) => (
+      {viewing !== null && (
+        <PiecePhotosViewer items={items} photos={photos} start={Math.min(viewing.line, items.length - 1)} startPhoto={viewing.photo} onClose={() => setViewing(null)} />
+      )}
+
+      {soldOutLink && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Sorry, {soldOutLink} has just sold out.</p>}
+      {/* Gone once the shopper picks a colour themselves. */}
+      {colorNote && spotLine?.variantId === colorNote.variantId && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">{colorNote.text}</p>}
+
+      {spotLine && spotlight && (
+        <PieceSpotlight
+          product={spotlight}
+          line={spotLine}
+          photos={photosFor(spotLine, photos[spotlight.slug])}
+          onOpen={(photo) => setViewing({ line: 0, photo })}
+          onPick={(v) =>
+            cart.swap(spotLine.key, {
+              productId: spotlight.id,
+              variantId: v.id,
+              option: variantLabel(v),
+              slug: spotlight.slug,
+              title: spotlight.title,
+              price: variantPrice(spotlight, v),
+              image: v.image ?? spotlight.images[0],
+              etsyUrl: spotlight.etsyUrl,
+              maxQty: v.stock,
+            })
+          }
+        />
+      )}
+
+      <ul className={`mt-8 divide-y divide-line border-y border-line ${spotLine ? "hidden" : ""}`}>
+        {items.map((item, index) => (
           <li key={item.key} className="flex gap-4 py-5">
-            <div className="relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-md bg-sand">
-              <ProductImage image={item.image} sizes="80px" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setViewing({ line: index, photo: 0 })}
+              className="group relative aspect-[4/5] w-24 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-sand"
+              aria-label={`See photos of ${item.title}`}
+            >
+              <ProductImage image={item.image} sizes="96px" className="transition duration-700 ease-soft group-hover:scale-[1.06]" />
+              <span className="absolute right-1.5 bottom-1.5 grid size-7 place-items-center rounded-full bg-ivory/90 text-ink shadow-sm" aria-hidden="true">
+                <ExpandIcon />
+              </span>
+            </button>
             <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <Link href={`/product/${item.slug}`} className="hover:underline">
+                <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="text-left hover:underline">
                   {item.title}
-                </Link>
+                </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
                 <p className="text-sm text-muted">
                   Qty {item.qty} · {formatPrice(item.price * item.qty)}
                 </p>
+                <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="mt-1 text-sm font-medium text-accent underline-offset-4 hover:underline">
+                  {photosFor(item, photos[item.slug]).length > 1 ? `See all ${photosFor(item, photos[item.slug]).length} photos` : "See it bigger"}
+                </button>
               </div>
               {!onSite && (
                 <a

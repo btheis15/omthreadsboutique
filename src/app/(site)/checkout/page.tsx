@@ -3,12 +3,13 @@ import { cookies } from "next/headers";
 import type { CartItem } from "@/components/cart/store";
 import { getProduct, getSettings, getTextOverrides } from "@/lib/catalog";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
-import { defaultVariant, variantLabel, variantPrice } from "@/lib/variants";
+import type { Product } from "@/lib/types";
+import { defaultVariant, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
-type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; products?: string | string[]; coupon?: string | string[]; cart_origin?: string | string[] }> };
+type Props = { searchParams: Promise<{ cancelled?: string; tester?: string; products?: string | string[]; product?: string | string[]; color?: string | string[]; coupon?: string | string[]; cart_origin?: string | string[] }> };
 
 /**
  * A Meta Shops (Facebook / Instagram) checkout link:
@@ -63,9 +64,63 @@ async function metaShopsCart(param: string | string[] | undefined): Promise<Omit
   return lines.flat();
 }
 
+/**
+ * A direct-to-checkout link for one piece: /checkout?product=<slug>[&color=<colour name>] (the home page's Hot
+ * Sale tiles use it). The piece goes in the cart on its own (the shopper's bag is set aside and comes back after
+ * they pay), at the named colour (matched ignoring case, spaces and dashes; any one of an option's values, or all
+ * of them, e.g. "Teal / Large") or else its first in-stock colour, and checkout shows it large with its colours
+ * to choose from. A named colour that's sold out or unknown falls back to the first in-stock one, and says so. An unknown slug is
+ * ignored (the normal checkout); a sold-out piece is named, so the shopper knows why it isn't there.
+ */
+async function directProduct(
+  param: string | string[] | undefined,
+  colorParam: string | string[] | undefined,
+): Promise<{ product: Product; line: Omit<CartItem, "key">; colorNote: string | null } | { soldOut: string } | null> {
+  const slug = (Array.isArray(param) ? param[0] : param)?.trim();
+  if (!slug) return null;
+  const product = await getProduct(slug);
+  if (!product) return null;
+  const firstInStock = product.variants?.length ? product.variants.find(variantAvailable) : undefined;
+  if (product.variants?.length ? !firstInStock : product.stock === 0) return { soldOut: product.title };
+  const color = (Array.isArray(colorParam) ? colorParam[0] : colorParam)?.trim().slice(0, 80) ?? "";
+  const wanted = color ? slugify(color) : "";
+  const named = wanted ? product.variants?.find((v) => slugify(variantLabel(v)) === wanted || v.values.some((x) => slugify(x) === wanted)) : undefined;
+  const variant = named && variantAvailable(named) ? named : firstInStock;
+  const colorNote =
+    !wanted || !product.variants?.length || variant === named
+      ? null
+      : named
+        ? `${variantLabel(named)} has sold out, so we've picked ${variantLabel(firstInStock!)}. Choose another colour below if you like.`
+        : `We couldn't find the colour "${color}", so we've picked ${variantLabel(firstInStock!)}. Choose another colour below if you like.`;
+  const stock = variant ? variant.stock : product.stock;
+  return {
+    product,
+    line: {
+      productId: product.id,
+      variantId: variant?.id,
+      option: variant ? variantLabel(variant) : undefined,
+      slug: product.slug,
+      title: product.title,
+      price: variantPrice(product, variant),
+      image: variant?.image ?? product.images[0],
+      etsyUrl: product.etsyUrl,
+      maxQty: stock,
+      qty: 1,
+    },
+    colorNote,
+  };
+}
+
 export default async function CheckoutPage({ searchParams }: Props) {
   const [params, jar, settings, text] = await Promise.all([searchParams, cookies(), getSettings(), getTextOverrides()]);
-  const [checkout, linkCart] = await Promise.all([checkoutFor(jar.get(TESTER_COOKIE)?.value), metaShopsCart(params.products)]);
+  // A Meta Shops link (`products`) wins over a one-piece link (`product`).
+  const [checkout, metaCart, direct] = await Promise.all([
+    checkoutFor(jar.get(TESTER_COOKIE)?.value),
+    metaShopsCart(params.products),
+    params.products === undefined ? directProduct(params.product, params.color) : null,
+  ]);
+  const piece = direct && "product" in direct ? direct : null;
+  const linkCart = metaCart ?? (piece ? [piece.line] : null);
   const couponParam = Array.isArray(params.coupon) ? params.coupon[0] : params.coupon;
   const linkCoupon = couponParam?.trim().slice(0, 30) || null;
   return (
@@ -77,7 +132,10 @@ export default async function CheckoutPage({ searchParams }: Props) {
       text={text}
       linkCart={linkCart}
       linkCoupon={linkCoupon}
-      buyAlone={params.cart_origin === "hot_sale"}
+      buyAlone={Boolean(piece) || params.cart_origin === "hot_sale"}
+      spotlight={piece?.product ?? null}
+      soldOutLink={direct && "soldOut" in direct ? direct.soldOut : null}
+      colorNote={piece?.colorNote ? { text: piece.colorNote, variantId: piece.line.variantId } : null}
     />
   );
 }
