@@ -87,7 +87,7 @@ export default async function ProductPage({ params }: Props) {
 
         <div className="md:grid md:grid-cols-[1.15fr_1fr] md:gap-12 lg:gap-16">
           <ProductGallery
-            images={product.images}
+            images={product.images.map((img) => ({ ...img, live: directVideoUrl(img.live) }))}
             title={product.title}
             videos={(product.videos?.length ? product.videos : product.videoUrl ? [{ url: product.videoUrl }] : []).map((v) => ({ ...v, url: directVideoUrl(v.url) }))}
             initialValues={defaultVariant(product)?.values}
