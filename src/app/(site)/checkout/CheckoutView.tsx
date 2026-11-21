@@ -23,7 +23,7 @@ type Provider = CheckoutInfo["providers"][number];
 type Fulfil = "ship" | "pickup" | "delivery";
 // PayPal, crypto, Zelle and Venmo need the details on this page (Stripe asks on its own page when shipping; pickup and delivery are always asked here).
 const asksAddress = (p: Provider, f: Fulfil) => f !== "ship" || p !== "stripe";
-type Coupon = { code: string; label: string; discountCents: number; text: string };
+type Coupon = { code: string; label: string; discountCents: number; text: string; freeShipping?: boolean };
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
@@ -189,7 +189,7 @@ export function CheckoutView({
   const quoteReqId = useRef(0);
   const optionsRef = useRef<HTMLDivElement>(null);
   const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates[0]) : undefined;
-  const shipping =
+  const shippingFull =
     fulfil === "pickup"
       ? (pickup?.cents ?? 0)
       : fulfil === "delivery"
@@ -199,7 +199,6 @@ export function CheckoutView({
           : rate
             ? shippingCents(rate, subtotalCents, itemCount)
             : 0;
-  const nextFree = fulfil === "ship" && !live && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
   // Typed coupon code: shown here for the shopper; the admin checks it again when the order is priced.
   const [coupon, setCoupon] = useState<Coupon | null>(null);
@@ -215,12 +214,16 @@ export function CheckoutView({
   const lines = items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }));
   const linesKey = JSON.stringify(lines);
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
+  // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
+  const freeShip = Boolean(coupon?.freeShipping);
+  const shipping = freeShip ? 0 : shippingFull;
+  const nextFree = fulfil === "ship" && !live && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
   async function checkCoupon(code: string): Promise<Coupon | string | { error: string; gone: boolean }> {
     try {
       const res = await fetch("/api/coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, lines: JSON.parse(linesKey) }) });
       const data = (await res.json().catch(() => ({}))) as Partial<Coupon> & { error?: string };
-      if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "" };
+      if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "", ...(data.freeShipping ? { freeShipping: true } : {}) };
       return { error: data.error ?? "That coupon code isn't valid.", gone: res.status === 404 || res.status === 409 };
     } catch {
       return "Couldn't check that code. Check your connection and try again.";
@@ -584,8 +587,8 @@ export function CheckoutView({
                 {(
                   [
                     ["ship", "Ship it", "To your door, anywhere we ship."],
-                    ...(pickup ? [["pickup", pickup.label, pickup.cents ? dollars(pickup.cents) : "Free"]] : []),
-                    ...(delivery ? [["delivery", delivery.label, `${dollars(delivery.cents)} · within ${delivery.miles} miles of ${delivery.from || "our shop"}`]] : []),
+                    ...(pickup ? [["pickup", pickup.label, pickup.cents && !freeShip ? dollars(pickup.cents) : "Free"]] : []),
+                    ...(delivery ? [["delivery", delivery.label, `${freeShip ? "Free" : dollars(delivery.cents)} · within ${delivery.miles} miles of ${delivery.from || "our shop"}`]] : []),
                   ] as [Fulfil, string, string][]
                 ).map(([value, label, hint]) => (
                   <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${fulfil === value ? "border-ink" : "border-line"}`}>
@@ -644,7 +647,7 @@ export function CheckoutView({
                   <select value={rate.id} onChange={(e) => setRateId(e.target.value)} className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5">
                     {place.rates.map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.label} · {shippingCents(r, subtotalCents, itemCount) ? dollars(shippingCents(r, subtotalCents, itemCount)) : "Free"}
+                        {r.label} · {shippingCents(r, subtotalCents, itemCount) && !freeShip ? dollars(shippingCents(r, subtotalCents, itemCount)) : "Free"}
                       </option>
                     ))}
                   </select>
@@ -800,7 +803,7 @@ export function CheckoutView({
                                 }}
                               />
                               <span className="block font-medium">
-                                {r.label} — {dollars(r.cents)}
+                                {r.label} — {freeShip ? "Free" : dollars(r.cents)}
                                 {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
                               </span>
                             </label>
