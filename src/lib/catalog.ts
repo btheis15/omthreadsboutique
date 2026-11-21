@@ -457,3 +457,14 @@ export function relatedProducts(all: Product[], product: Product, limit = 4): Pr
     .sort((a, b) => score(b) - score(a))
     .slice(0, limit);
 }
+
+/**
+ * Videos play straight from the Mac mini's public address, not through the /media rewrite: Vercel's CDN
+ * cached the 2-byte range probe iPhone Safari sends first and then served that fragment for the whole
+ * video, so it never played. Photos are fine through the rewrite.
+ */
+export function directVideoUrl(url: string): string;
+export function directVideoUrl(url: string | undefined): string | undefined;
+export function directVideoUrl(url: string | undefined) {
+  return url && url.startsWith("/media/") && shopApiUrl ? `${shopApiUrl}${url}` : url;
+}

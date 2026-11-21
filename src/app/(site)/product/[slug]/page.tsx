@@ -7,7 +7,7 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { directVideoUrl, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { liveCheckout } from "@/lib/payments";
 import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { siteUrl } from "@/lib/site";
@@ -89,7 +89,7 @@ export default async function ProductPage({ params }: Props) {
           <ProductGallery
             images={product.images}
             title={product.title}
-            videos={product.videos?.length ? product.videos : product.videoUrl ? [{ url: product.videoUrl }] : []}
+            videos={(product.videos?.length ? product.videos : product.videoUrl ? [{ url: product.videoUrl }] : []).map((v) => ({ ...v, url: directVideoUrl(v.url) }))}
             vtName={productVtName(product.slug)}
           />
 
