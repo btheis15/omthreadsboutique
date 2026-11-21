@@ -6,7 +6,8 @@ import { SHOW_IMAGE_EVENT } from "@/lib/variants";
 import { CloseIcon } from "./icons";
 import { ProductImage } from "./ProductImage";
 
-type Slide = { kind: "image"; image: Img } | { kind: "video"; url: string; poster?: Img };
+type Clip = { url: string; poster?: string };
+type Slide = { kind: "image"; image: Img } | { kind: "video"; url: string; poster?: string };
 
 /**
  * Swipeable on phones (native scroll-snap), thumbnails on desktop, tap to open
@@ -16,12 +17,12 @@ type Slide = { kind: "image"; image: Img } | { kind: "video"; url: string; poste
 export function ProductGallery({
   images,
   title,
-  videoUrl,
+  videos = [],
   vtName,
 }: {
   images: Img[];
   title: string;
-  videoUrl?: string;
+  videos?: Clip[];
   vtName: string;
 }) {
   const [active, setActive] = useState(0);
@@ -29,7 +30,8 @@ export function ProductGallery({
   const track = useRef<HTMLDivElement>(null);
 
   const slides: Slide[] = (images.length ? images : [{ alt: title }]).map((image) => ({ kind: "image", image }));
-  if (videoUrl) slides.splice(1, 0, { kind: "video", url: videoUrl, poster: images[0] });
+  // The videos follow the first photo.
+  slides.splice(1, 0, ...videos.map((v): Slide => ({ kind: "video", url: v.url, poster: v.poster })));
 
   const goTo = (i: number) => {
     const el = track.current;
@@ -42,13 +44,13 @@ export function ProductGallery({
       const url = (e as CustomEvent<{ url: string }>).detail?.url;
       const i = images.findIndex((img) => img.url === url);
       const el = track.current;
-      // The video, when there is one, is the second slide.
-      const slide = videoUrl && i >= 1 ? i + 1 : i;
+      // The videos, when there are any, come right after the first photo.
+      const slide = i >= 1 ? i + videos.length : i;
       if (i >= 0 && el) el.scrollTo({ left: slide * el.clientWidth, behavior: "smooth" });
     };
     window.addEventListener(SHOW_IMAGE_EVENT, onShow);
     return () => window.removeEventListener(SHOW_IMAGE_EVENT, onShow);
-  }, [images, videoUrl]);
+  }, [images, videos.length]);
 
   useEffect(() => {
     if (zoom === null) return;
@@ -72,7 +74,11 @@ export function ProductGallery({
           onScroll={(e) => {
             const el = e.currentTarget;
             const i = Math.round(el.scrollLeft / el.clientWidth);
-            if (i !== active) setActive(i);
+            if (i !== active) {
+              // A video that is swiped away stops playing.
+              el.querySelectorAll("video").forEach((v) => v.pause());
+              setActive(i);
+            }
           }}
           aria-roledescription="carousel"
           aria-label={`${title} photos`}
@@ -81,11 +87,10 @@ export function ProductGallery({
             const inner =
               s.kind === "video" ? (
                 <video
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full bg-ink object-contain"
                   src={s.url}
-                  autoPlay
-                  muted
-                  loop
+                  poster={s.poster ?? images[0]?.url}
+                  controls
                   playsInline
                   preload="metadata"
                   aria-label={`${title} video`}
@@ -149,7 +154,12 @@ export function ProductGallery({
                 i === active ? "ring-1 ring-ink" : "opacity-70 hover:opacity-100"
               }`}
             >
-              <ProductImage image={s.kind === "image" ? s.image : s.poster} sizes="80px" />
+              {s.kind === "image" || !s.poster ? (
+                <ProductImage image={s.kind === "image" ? s.image : images[0]} sizes="80px" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.poster} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" />
+              )}
               {s.kind === "video" && (
                 <span className="absolute inset-0 grid place-items-center bg-ink/30 text-lg text-ivory" aria-hidden="true">
                   ▶

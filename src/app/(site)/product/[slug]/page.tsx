@@ -89,7 +89,7 @@ export default async function ProductPage({ params }: Props) {
           <ProductGallery
             images={product.images}
             title={product.title}
-            videoUrl={product.videoUrl}
+            videos={product.videos?.length ? product.videos : product.videoUrl ? [{ url: product.videoUrl }] : []}
             vtName={productVtName(product.slug)}
           />
 
