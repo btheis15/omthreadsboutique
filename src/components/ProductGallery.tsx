@@ -29,9 +29,25 @@ export function ProductGallery({
   const [zoom, setZoom] = useState<number | null>(null);
   const track = useRef<HTMLDivElement>(null);
 
-  const slides: Slide[] = (images.length ? images : [{ alt: title }]).map((image) => ({ kind: "image", image }));
-  // The videos follow the first photo.
-  slides.splice(1, 0, ...videos.map((v): Slide => ({ kind: "video", url: v.url, poster: v.poster })));
+  // Photos and videos are shown separately: a Photos / Videos switch appears when a piece has both.
+  const [view, setView] = useState<"photos" | "videos">("photos");
+  const pendingSlide = useRef(0);
+  const showVideos = view === "videos" && videos.length > 0;
+  const slides: Slide[] = showVideos
+    ? videos.map((v): Slide => ({ kind: "video", url: v.url, poster: v.poster }))
+    : (images.length ? images : [{ alt: title }]).map((image) => ({ kind: "image", image }));
+
+  // Switching sets the gallery back to its first slide (or the photo an option asked for).
+  useEffect(() => {
+    const to = pendingSlide.current;
+    pendingSlide.current = 0;
+    track.current?.scrollTo({ left: to * (track.current?.clientWidth ?? 0) });
+    setActive(to);
+  }, [view]);
+  const switchTo = (v: "photos" | "videos") => {
+    track.current?.querySelectorAll("video").forEach((el) => el.pause());
+    setView(v);
+  };
 
   const goTo = (i: number) => {
     const el = track.current;
@@ -44,13 +60,16 @@ export function ProductGallery({
       const url = (e as CustomEvent<{ url: string }>).detail?.url;
       const i = images.findIndex((img) => img.url === url);
       const el = track.current;
-      // The videos, when there are any, come right after the first photo.
-      const slide = i >= 1 ? i + videos.length : i;
-      if (i >= 0 && el) el.scrollTo({ left: slide * el.clientWidth, behavior: "smooth" });
+      if (i < 0 || !el) return;
+      // Looking at the videos: go back to the photos, then to that photo.
+      if (view === "videos") {
+        pendingSlide.current = i;
+        switchTo("photos");
+      } else el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
     };
     window.addEventListener(SHOW_IMAGE_EVENT, onShow);
     return () => window.removeEventListener(SHOW_IMAGE_EVENT, onShow);
-  }, [images, videos.length]);
+  }, [images, view]);
 
   useEffect(() => {
     if (zoom === null) return;
@@ -68,6 +87,24 @@ export function ProductGallery({
   return (
     <div className="md:flex md:flex-row-reverse md:gap-4">
       <div className="relative md:flex-1">
+        {videos.length > 0 && (
+          <div className="mb-3 flex gap-2 px-4 md:px-0" role="tablist" aria-label="Photos and videos">
+            {(["photos", "videos"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={view === v}
+                onClick={() => switchTo(v)}
+                className={`rounded-full border px-4 py-1.5 text-sm transition ${
+                  view === v ? "border-ink bg-ink text-ivory" : "border-ink/25 text-ink/70 hover:border-ink"
+                }`}
+              >
+                {v === "photos" ? `Photos (${images.length})` : `Videos (${videos.length})`}
+              </button>
+            ))}
+          </div>
+        )}
         <div
           ref={track}
           className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto md:rounded-lg"
@@ -81,7 +118,7 @@ export function ProductGallery({
             }
           }}
           aria-roledescription="carousel"
-          aria-label={`${title} photos`}
+          aria-label={showVideos ? `${title} videos` : `${title} photos`}
         >
           {slides.map((s, i) => {
             const inner =
@@ -114,7 +151,7 @@ export function ProductGallery({
                 {inner}
               </div>
             );
-            return i === 0 ? (
+            return i === 0 && !showVideos ? (
               <ViewTransition key={i} name={vtName} share="morph" default="none">
                 {slide}
               </ViewTransition>
