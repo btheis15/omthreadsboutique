@@ -24,5 +24,8 @@ export const variantAvailable = (v: ProductVariant) => v.stock === undefined || 
 /** The option to show first: the first one that can be bought. */
 export const defaultVariant = (p: Product) => p.variants?.find(variantAvailable) ?? p.variants?.[0];
 
+/** Tells the gallery which option values (e.g. ["Sage"]) are picked, so it shows that color's videos. */
+export const SELECT_VARIANT_EVENT = "omthreads:select-variant";
+
 /** Asks the gallery (ProductGallery) to show a photo, e.g. the one of the colour just picked. */
 export const SHOW_IMAGE_EVENT = "omthreads:show-image";

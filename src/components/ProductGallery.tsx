@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState, ViewTransition } from "react";
 import type { ProductImage as Img } from "@/lib/types";
-import { SHOW_IMAGE_EVENT } from "@/lib/variants";
+import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT } from "@/lib/variants";
 import { CloseIcon } from "./icons";
 import { ProductImage } from "./ProductImage";
 
-type Clip = { url: string; poster?: string };
+type Clip = { url: string; poster?: string; color?: string };
 type Slide = { kind: "image"; image: Img } | { kind: "video"; url: string; poster?: string };
 
 /**
@@ -17,12 +17,15 @@ type Slide = { kind: "image"; image: Img } | { kind: "video"; url: string; poste
 export function ProductGallery({
   images,
   title,
-  videos = [],
+  videos: allVideos = [],
+  initialValues = [],
   vtName,
 }: {
   images: Img[];
   title: string;
   videos?: Clip[];
+  /** The option values picked when the page opens (the default color) */
+  initialValues?: string[];
   vtName: string;
 }) {
   const [active, setActive] = useState(0);
@@ -31,6 +34,18 @@ export function ProductGallery({
 
   // Photos and videos are shown separately: a Photos / Videos switch appears when a piece has both.
   const [view, setView] = useState<"photos" | "videos">("photos");
+  // A video made for one color shows only while that color is picked; the others show for every color.
+  const [picked, setPicked] = useState<string[]>(initialValues);
+  useEffect(() => {
+    const onPick = (e: Event) => {
+      setPicked((e as CustomEvent<{ values: string[] }>).detail?.values ?? []);
+      // Another color's videos start from the first one.
+      if (view === "videos") requestAnimationFrame(() => track.current?.scrollTo({ left: 0 }));
+    };
+    window.addEventListener(SELECT_VARIANT_EVENT, onPick);
+    return () => window.removeEventListener(SELECT_VARIANT_EVENT, onPick);
+  }, [view]);
+  const videos = allVideos.filter((v) => !v.color || picked.includes(v.color));
   const pendingSlide = useRef(0);
   const showVideos = view === "videos" && videos.length > 0;
   const slides: Slide[] = showVideos

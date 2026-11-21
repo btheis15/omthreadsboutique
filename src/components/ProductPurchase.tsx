@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import { SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
+import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
 import { Price } from "./Price";
 
@@ -26,6 +26,12 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
   useEffect(() => {
     if (taggedImage) window.dispatchEvent(new CustomEvent(SHOW_IMAGE_EVENT, { detail: { url: taggedImage } }));
   }, [taggedImage]);
+
+  // The gallery shows the videos made for the picked color.
+  const selectedKey = selected.join("\u0000");
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(SELECT_VARIANT_EVENT, { detail: { values: selectedKey ? selectedKey.split("\u0000") : [] } }));
+  }, [selectedKey]);
 
   const choose = (kind: number, value: string) => {
     const next = [...selected];

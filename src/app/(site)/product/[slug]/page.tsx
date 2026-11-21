@@ -12,7 +12,7 @@ import { liveCheckout } from "@/lib/payments";
 import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
-import { hasOptions, priceRange, variantAvailable } from "@/lib/variants";
+import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -90,6 +90,7 @@ export default async function ProductPage({ params }: Props) {
             images={product.images}
             title={product.title}
             videos={(product.videos?.length ? product.videos : product.videoUrl ? [{ url: product.videoUrl }] : []).map((v) => ({ ...v, url: directVideoUrl(v.url) }))}
+            initialValues={defaultVariant(product)?.values}
             vtName={productVtName(product.slug)}
           />
 
