@@ -58,6 +58,8 @@ export type Product = {
   origin?: string;
   /** Optional short video (Sanity file URL) shown in the gallery */
   videoUrl?: string;
+  /** The piece's videos, any number and length, with the still frame shown before play (Om Threads admin) */
+  videos?: { url: string; poster?: string }[];
   dimensions?: string;
   care?: string;
   /** undefined = made to order / unlimited, 0 = sold out. With options, the total of theirs. */
