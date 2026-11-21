@@ -18,6 +18,8 @@ export type ProductImage = {
   alt: string;
   /** Low-quality blurred placeholder (data URL) from Sanity. */
   lqip?: string;
+  /** Live Photo: a short silent clip that plays once over the still */
+  live?: string;
   swatch?: { base: string; accent: string; pattern: SwatchPattern };
 };
 

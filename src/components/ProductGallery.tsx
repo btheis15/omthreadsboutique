@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, ViewTransition } from "react";
 import type { ProductImage as Img } from "@/lib/types";
 import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT } from "@/lib/variants";
 import { CloseIcon } from "./icons";
+import { LiveMotion } from "./LiveMotion";
 import { ProductImage } from "./ProductImage";
 
 type Clip = { url: string; poster?: string; color?: string };
@@ -148,14 +149,17 @@ export function ProductGallery({
                   aria-label={`${title} video`}
                 />
               ) : (
-                <button
-                  type="button"
-                  className="absolute inset-0 cursor-zoom-in"
-                  onClick={() => setZoom(zoomImages.indexOf(s))}
-                  aria-label={`Enlarge photo ${i + 1}`}
-                >
-                  <ProductImage image={s.image} preload={i === 0} sizes="(min-width: 768px) 50vw, 100vw" />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="absolute inset-0 cursor-zoom-in"
+                    onClick={() => setZoom(zoomImages.indexOf(s))}
+                    aria-label={`Enlarge photo ${i + 1}`}
+                  >
+                    <ProductImage image={s.image} preload={i === 0} sizes="(min-width: 768px) 50vw, 100vw" />
+                  </button>
+                  {s.image.live && <LiveMotion src={s.image.live} className="pointer-events-none [&_button]:pointer-events-auto" />}
+                </>
               );
             const slide = (
               <div
