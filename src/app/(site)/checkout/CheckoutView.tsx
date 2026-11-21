@@ -23,7 +23,7 @@ type Provider = CheckoutInfo["providers"][number];
 type Fulfil = "ship" | "pickup" | "delivery";
 // PayPal, crypto, Zelle and Venmo need the details on this page (Stripe asks on its own page when shipping; pickup and delivery are always asked here).
 const asksAddress = (p: Provider, f: Fulfil) => f !== "ship" || p !== "stripe";
-type Coupon = { code: string; label: string; discountCents: number; text: string; freeShipping?: boolean };
+type Coupon = { code: string; label: string; discountCents: number; text: string; freeShipping?: boolean; state?: string };
 type Customer = { name: string; email: string; phone: string; line1: string; line2: string; city: string; state: string; postal_code: string };
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
@@ -215,7 +215,8 @@ export function CheckoutView({
   const linesKey = JSON.stringify(lines);
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
-  const freeShip = Boolean(coupon?.freeShipping);
+  // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
+  const freeShip = Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
   const shipping = freeShip ? 0 : shippingFull;
   const nextFree = fulfil === "ship" && !live && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
 
@@ -223,7 +224,7 @@ export function CheckoutView({
     try {
       const res = await fetch("/api/coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, lines: JSON.parse(linesKey) }) });
       const data = (await res.json().catch(() => ({}))) as Partial<Coupon> & { error?: string };
-      if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "", ...(data.freeShipping ? { freeShipping: true } : {}) };
+      if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "", ...(data.freeShipping ? { freeShipping: true, ...(typeof data.state === "string" ? { state: data.state } : {}) } : {}) };
       return { error: data.error ?? "That coupon code isn't valid.", gone: res.status === 404 || res.status === 409 };
     } catch {
       return "Couldn't check that code. Check your connection and try again.";

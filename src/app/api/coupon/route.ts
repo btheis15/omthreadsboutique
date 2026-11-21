@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   try {
     const { status, data } = await shopApi("/api/coupon", { method: "POST", shopperIp: shopperIp(request.headers), body: { code, lines, testerKey } });
     if (status === 200 && typeof data.discountCents === "number") {
-      return NextResponse.json({ code: data.code, label: data.label, discountCents: data.discountCents, text: data.text, ...(data.freeShipping === true ? { freeShipping: true } : {}) });
+      return NextResponse.json({ code: data.code, label: data.label, discountCents: data.discountCents, text: data.text, ...(data.freeShipping === true ? { freeShipping: true, ...(typeof data.state === "string" ? { state: data.state } : {}) } : {}) });
     }
     return NextResponse.json({ error: typeof data.error === "string" ? data.error : "That coupon code isn't valid." }, { status: status >= 400 ? status : 502 });
   } catch {
