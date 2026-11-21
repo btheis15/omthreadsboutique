@@ -6,7 +6,7 @@ import { Marquee } from "@/components/Marquee";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
-import { getCollections, getLists, getT, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
+import { directVideoUrl, getCollections, getLists, getT, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
 import { carriedCrafts } from "@/lib/lists";
 import { liveCheckout } from "@/lib/payments";
 import { site } from "@/lib/site";
@@ -51,7 +51,7 @@ export default async function HomePage() {
         greeting={t("homeGreeting")}
         shopLabel={t("heroButtonShop")}
         craftsLabel={t("heroButtonCrafts")}
-        videoUrl={settings.heroVideoUrl}
+        videoUrl={directVideoUrl(settings.heroVideoUrl)}
         poster={settings.heroImage?.url}
         aside={hotPicks.length ? <HotSale picks={hotPicks} heading={settings.hotSaleHeading || "Hot sale"} onSiteCheckout={onSiteCheckout} t={t} /> : undefined}
       />
