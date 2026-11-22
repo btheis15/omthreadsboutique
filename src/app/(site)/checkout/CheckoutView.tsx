@@ -559,6 +559,36 @@ export function CheckoutView({
         </div>
       )}
 
+      {/* Phone, step 1: the piece(s) in small, tap to see them bigger (the full piece view is on the last step). */}
+      {checkout && place && rate && step === 1 && (
+        <ul className="mt-3 space-y-2 md:hidden" aria-label="Your pieces">
+          {items.map((item, index) => (
+            <li key={item.key} className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setViewing({ line: index, photo: 0 })}
+                className="relative aspect-[4/5] w-14 shrink-0 overflow-hidden rounded-md bg-sand"
+                aria-label={`See photos of ${item.title}`}
+              >
+                <ProductImage image={item.image} sizes="56px" />
+                <span className="absolute right-0.5 bottom-0.5 grid size-5 place-items-center rounded-full bg-ivory/90 text-ink" aria-hidden="true">
+                  <ExpandIcon />
+                </span>
+              </button>
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="truncate font-medium">{item.title}</p>
+                <p className="truncate text-muted">
+                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · {formatPrice(item.price * item.qty)}
+                </p>
+              </div>
+              <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
+                See bigger
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {testerLink === "invalid" && (
         <p className={`mt-6 rounded-lg bg-sale/10 p-3 text-sm text-sale ${hideUnless(1)}`}>That tester link is out of date. Copy the current one from the admin (Orders → Checkout setup).</p>
       )}
