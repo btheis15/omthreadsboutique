@@ -19,8 +19,9 @@ export type ForwardedMeta = {
 
 const ATTR_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "landing"] as const;
 // Meta's formats: fb.<subdomain index>.<creation time ms>.<id>
-const FBP = /^fb\.\d\.\d{10,13}\.\d{1,20}$/;
-const FBC = /^fb\.\d\.\d{10,13}\.[\w-]{1,500}$/;
+// Meta may add an ".appendix" suffix (e.g. ".AQ"); it is passed on unchanged.
+const FBP = /^fb\.\d\.\d{10,13}\.\d{1,20}(\.[A-Za-z0-9_-]{1,64})?$/;
+const FBC = /^fb\.\d\.\d{10,13}\.[\w-]{1,500}(\.[A-Za-z0-9_-]{1,64})?$/;
 const EVENT_ID = /^[\w-]{8,64}$/;
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max) : "");
@@ -36,7 +37,8 @@ const decode = (v: string | undefined) => {
 export function metaForOrder(request: Request, raw: unknown, jar: CookieJar): ForwardedMeta | undefined {
   try {
     const b = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-    const optOut = b.optOut === true;
+    // The visitor's browser said so in the request itself (Global Privacy Control / Do Not Track), or the page said so.
+    const optOut = b.optOut === true || request.headers.get("sec-gpc") === "1" || request.headers.get("dnt") === "1";
     const out: ForwardedMeta = {};
 
     const fbp = optOut ? "" : decode(jar.get("_fbp")?.value) || str(b.fbp, 80);

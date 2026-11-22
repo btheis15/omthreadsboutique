@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import type { BchPayment } from "@/lib/bch";
-import { getProducts, shopApi, shopperIp } from "@/lib/catalog";
+import { shopApi, shopperIp } from "@/lib/catalog";
 import { formatPrice } from "@/lib/site";
 import { AfterPayment } from "./AfterPayment";
 import { BchPay } from "@/components/bch/BchPay";
@@ -18,6 +18,10 @@ type Summary = {
   number: string;
   /** The id the browser's Purchase event shares with the shop's report to Meta (present once the shop stores it). */
   eventId?: string;
+  /** When the order was paid (ISO); the browser reports the Purchase only soon after this. */
+  paidAt?: string;
+  /** Catalog ids (product slugs) of the pieces, for the Purchase event. */
+  contentIds?: string[];
   status: "paid" | "processing" | "awaiting" | "awaiting_zelle" | "awaiting_venmo" | "awaiting_bch" | "failed" | "expired" | "refunded";
   provider: "stripe" | "exodus" | "paypal" | "zelle" | "venmo" | "bch";
   zelle?: { name: string; handle: string; amountCents: number; memo: string; holdUntil: string };
@@ -84,18 +88,13 @@ export default async function SuccessPage({ searchParams }: Props) {
   const bchStuck = summary.provider === "bch" && !paid && summary.bch?.state === "expired_partial";
   const pickupOrder = summary.fulfillment === "pickup";
   const deliveryOrder = summary.fulfillment === "delivery";
-  // Meta Pixel Purchase: paid, live orders only. Products are matched by title to give Meta the catalog's content ids (left out if any piece can't be matched).
-  let contentIds: string[] | undefined;
-  if (paid && !summary.test) {
-    const all = await getProducts().catch(() => []);
-    const ids = summary.items.map((i) => all.find((p) => p.title === i.title)?.slug);
-    if (ids.length && ids.every(Boolean)) contentIds = [...new Set(ids as string[])];
-  }
+  // Meta Pixel Purchase: paid, live orders only. content_ids are the product slugs the shop sends (omitted if absent).
+  const contentIds = paid && !summary.test && Array.isArray(summary.contentIds) ? [...new Set(summary.contentIds.filter((x): x is string => typeof x === "string" && x.length > 0))] : undefined;
   const waiting = summary.status === "processing" || summary.status === "awaiting";
   return (
     <div className="container-page max-w-2xl pt-10 pb-20 md:pt-16">
       {paid && !summary.test && order && (
-        <TrackPurchase orderKey={order} eventId={summary.eventId} value={Math.round(summary.totalCents) / 100} contentIds={contentIds} numItems={summary.items.reduce((n, i) => n + i.quantity, 0)} />
+        <TrackPurchase orderKey={order} eventId={summary.eventId} paidAt={summary.paidAt} value={Math.round(summary.totalCents) / 100} contentIds={contentIds} numItems={summary.items.reduce((n, i) => n + i.quantity, 0)} />
       )}
       <AfterPayment clearCart={paid || summary.status === "processing" || Boolean(zelle) || Boolean(venmo)} keepChecking={waiting} />
       {summary.test && !bch && (

@@ -4,7 +4,8 @@
  *
  *  - `om_attr` (localStorage): the first visit that carried an ad click (`fbclid`) or `utm_*` tags, kept 30 days.
  *    Plain visits store nothing, so an ordinary first visit never blocks a later ad click from being recorded.
- *  - Do Not Track / Global Privacy Control: no `fbp`/`fbc`/`fbclid` is forwarded (the pixel isn't loaded either).
+ *  - Do Not Track / Global Privacy Control: nothing is stored (no fbclid, no utm), and no `fbp`/`fbc`/`fbclid` is
+ *    forwarded (the pixel isn't loaded either).
  *  - Nothing here may ever block or fail a checkout: every read is guarded.
  */
 const KEY = "om_attr";
@@ -41,7 +42,7 @@ function readStored(): Stored | null {
 
 /** Records an ad click / campaign tags found in the address bar (first touch kept for 30 days). Safe to call on every page. */
 export function captureAttribution(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || optedOut()) return;
   try {
     const params = new URLSearchParams(window.location.search);
     const found: Attribution = {};
