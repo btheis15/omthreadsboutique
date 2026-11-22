@@ -5,6 +5,7 @@ import { Elements, ExpressCheckoutElement, useElements, useStripe } from "@strip
 import { loadStripe } from "@stripe/stripe-js/pure";
 import type { Stripe, StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { checkoutMeta } from "@/lib/attribution";
 import { formatPrice, site } from "@/lib/site";
 
 type Line = { productId: string; variantId?: string; qty: number };
@@ -191,6 +192,7 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 lines,
+                meta: checkoutMeta(),
                 coupon,
                 giftNote,
                 quoteId: q.quoteId,

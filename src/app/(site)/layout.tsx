@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { MetaPixel } from "@/components/MetaPixel";
 import { RevealObserver } from "@/components/motion/RevealObserver";
 import { PartnerRef } from "@/components/PartnerRef";
 import { catalogSource, getCheckout, getLists, getMenus, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
@@ -64,6 +65,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} text={text} />
       <RevealObserver />
       <PartnerRef />
+      <MetaPixel pixelId={settings.metaPixelId} />
       <Analytics />
     </>
   );

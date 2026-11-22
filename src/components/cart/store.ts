@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { track } from "@/lib/track";
 
 export type CartItem = {
   /** One line per product, or per option of a product with options. */
@@ -92,6 +93,8 @@ export const cart = {
       ? state.items.map((i) => (i.key === key ? { ...i, ...item, key, qty: clamp(i.qty + qty, item.maxQty) } : i))
       : [...state.items, { ...item, key, qty: clamp(qty, item.maxQty) }];
     set({ items, open: true });
+    // Meta Pixel (does nothing without a pixel): the product's slug is its Meta catalog content id.
+    track("AddToCart", { content_ids: [item.slug], content_type: "product", contents: [{ id: item.slug, quantity: qty, item_price: item.price }], value: Math.round(item.price * qty * 100) / 100, currency: "USD" });
   },
   setQty(key: string, qty: number) {
     set({

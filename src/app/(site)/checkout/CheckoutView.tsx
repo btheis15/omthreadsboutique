@@ -10,6 +10,8 @@ import { wcProjectId } from "@/lib/bch/walletConnect";
 import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
 import { makeT } from "@/lib/site-text";
+import { checkoutMeta } from "@/lib/attribution";
+import { track } from "@/lib/track";
 import type { CheckoutInfo } from "@/lib/types";
 import { ExpressPay } from "./ExpressPay";
 import { PayPalButtons } from "./PayPalButtons";
@@ -218,6 +220,23 @@ export function CheckoutView({
   const couponsOn = Boolean(checkout?.couponCodes);
   const lines = items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }));
   const linesKey = JSON.stringify(lines);
+  // Meta Pixel InitiateCheckout, once, when the page opens with a bag (not for the "Buy on Etsy" view).
+  const initiated = useRef(false);
+  const hasBag = Boolean(checkout) && !linkPending && items.length > 0;
+  useEffect(() => {
+    if (!hasBag || initiated.current) return;
+    initiated.current = true;
+    const n = items.reduce((c, i) => c + i.qty, 0);
+    track("InitiateCheckout", {
+      content_ids: items.map((i) => i.slug),
+      content_type: "product",
+      contents: items.map((i) => ({ id: i.slug, quantity: i.qty, item_price: i.price })),
+      num_items: n,
+      value: Math.round(subtotal * 100) / 100,
+      currency: "USD",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per page open
+  }, [hasBag]);
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
@@ -391,6 +410,7 @@ export function CheckoutView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lines,
+          meta: checkoutMeta(),
           coupon: coupon?.code,
           provider,
           walletsOnPage: walletsOnPage && provider === "stripe" && fulfil === "ship" && placeCode !== "IN" ? true : undefined,

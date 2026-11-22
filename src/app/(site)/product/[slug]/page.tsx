@@ -5,6 +5,7 @@ import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons"
 import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
+import { TrackViewContent } from "@/components/TrackViewContent";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
 import { directVideoUrl, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
@@ -103,6 +104,7 @@ export default async function ProductPage({ params }: Props) {
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
               <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} />
+              <TrackViewContent slug={product.slug} title={product.title} price={product.price} />
               {/* A sales partner signed in on this device: their link for this piece. */}
               <PartnerShareBar title={product.title} />
 
