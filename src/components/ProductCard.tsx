@@ -4,7 +4,7 @@ import { getLists, isSoldOut } from "@/lib/catalog";
 import { craftByValue } from "@/lib/lists";
 import { formatPrice } from "@/lib/site";
 import type { Product } from "@/lib/types";
-import { listingCompareAt, priceRange } from "@/lib/variants";
+import { listingCompareAt, lowStockLeft, priceRange } from "@/lib/variants";
 import { Price } from "./Price";
 import { ProductImage } from "./ProductImage";
 
@@ -13,7 +13,7 @@ export function Badge({ product }: { product: Product }) {
     ? "Sold out"
     : (listingCompareAt(product) ?? 0) > priceRange(product).min
       ? "Sale"
-      : product.stock !== undefined && product.stock <= 2
+      : lowStockLeft(product.stock) !== null
         ? `Only ${product.stock} left`
         : product.isNew
           ? "New"
@@ -84,6 +84,10 @@ export async function ProductCard({
           <p className="text-[0.95rem] font-medium">From {formatPrice(priceRange(product).min)}</p>
         ) : (
           <Price price={priceRange(product).min} compareAt={listingCompareAt(product)} className="text-[0.95rem] font-medium" />
+        )}
+        {/* A sale badge takes the corner, so the real stock is said here instead. */}
+        {(listingCompareAt(product) ?? 0) > priceRange(product).min && !isSoldOut(product) && lowStockLeft(product.stock) !== null && (
+          <p className="text-[0.75rem] font-medium text-accent">Only {product.stock} left</p>
         )}
       </div>
     </Link>
