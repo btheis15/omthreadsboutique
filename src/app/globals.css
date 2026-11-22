@@ -1701,3 +1701,10 @@
   color: #fff;
   font-size: 0.85rem;
 }
+
+/* A phone shopper who arrived from an ad has a bottom bar (price + Buy now); keep the page's end clear of it. */
+@media (max-width: 767px) {
+  html.ad-bar body {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
