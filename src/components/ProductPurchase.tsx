@@ -3,6 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
+import { AdBuyBar } from "./ad/AdBuyBar";
+import { useAdMode } from "./ad/useAdMode";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
 import { Price } from "./Price";
 
@@ -49,6 +51,8 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
 
   const price = variantPrice(product, variant);
   const stock = variant ? variant.stock : product.stock;
+  // From an Instagram / Facebook ad: the phone bar is the price and one "Buy now" (only when the shop takes orders itself).
+  const fromAd = useAdMode() && onSiteCheckout;
 
   return (
     <>
@@ -80,7 +84,11 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
       <div id="buy-buttons" className="mt-6">
         <AddToCart product={product} variant={variant} onSiteCheckout={onSiteCheckout} />
       </div>
-      <StickyBuyBar product={product} variant={variant} onSiteCheckout={onSiteCheckout} watchId="buy-buttons" />
+      {fromAd ? (
+        <AdBuyBar product={product} variant={variant} />
+      ) : (
+        <StickyBuyBar product={product} variant={variant} onSiteCheckout={onSiteCheckout} watchId="buy-buttons" />
+      )}
     </>
   );
 }

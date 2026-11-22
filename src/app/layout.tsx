@@ -5,18 +5,23 @@ import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 // Mukta is by Ek Type (Mumbai); Tiro Devanagari carries the Hindi accents.
+// Speed: only the Latin files are preloaded (the Devanagari ones, about 65 KB each per weight, were fetched on every
+// page before anything could paint, ahead of the photo; the browser still loads them on demand when a page
+// has Devanagari text). Weight 300 and Tiro's italic aren't used anywhere.
 const mukta = Mukta({
   variable: "--font-mukta",
-  subsets: ["latin", "devanagari"],
-  weight: ["300", "400", "500", "600"],
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 const kalnia = Kalnia({ variable: "--font-kalnia", subsets: ["latin"], weight: "variable", display: "swap" });
 const tiro = Tiro_Devanagari_Hindi({
   variable: "--font-tiro",
-  subsets: ["devanagari", "latin"],
+  subsets: ["devanagari"],
   weight: "400",
-  style: ["normal", "italic"],
+  style: "normal",
+  // Not preloaded: it's only the Hindi accents (the ॐ in the top bar), and 63 KB is too much to fetch ahead of the photo.
+  preload: false,
   display: "swap",
 });
 
