@@ -31,6 +31,7 @@ export async function ShopView({
   searchParams,
   activeCategory,
   allProducts,
+  quizLink,
 }: {
   title: string;
   description?: string;
@@ -39,6 +40,8 @@ export async function ShopView({
   activeCategory?: string;
   /** The whole catalog, when `products` is already narrowed (category page), so other types still show. */
   allProducts?: Product[];
+  /** A quiet "not sure where to start?" link under the intro (the main shop page only). */
+  quizLink?: boolean;
 }) {
   const [lists, tx] = await Promise.all([getLists(), getT()]);
   const filtered = filterProducts(products, parseFilters(searchParams), lists);
@@ -61,6 +64,14 @@ export async function ShopView({
         {description && (
           <p className="animate-rise mt-3 text-muted md:text-lg" style={{ "--i": 2 } as React.CSSProperties}>
             {description}
+          </p>
+        )}
+        {quizLink && (
+          <p className="animate-rise mt-3 text-sm text-muted" style={{ "--i": 3 } as React.CSSProperties}>
+            Not sure where to start?{" "}
+            <Link href="/find-your-shawl" className="text-ink underline underline-offset-4 hover:text-accent">
+              Find your shawl
+            </Link>
           </p>
         )}
       </header>

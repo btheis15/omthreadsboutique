@@ -16,6 +16,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       description={q ? undefined : t("shopIntro")}
       products={products}
       searchParams={sp}
+      quizLink={!q}
     />
   );
 }
