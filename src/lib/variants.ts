@@ -39,3 +39,7 @@ export const SELECT_VARIANT_EVENT = "omthreads:select-variant";
 
 /** Asks the gallery (ProductGallery) to show a photo, e.g. the one of the colour just picked. */
 export const SHOW_IMAGE_EVENT = "omthreads:show-image";
+
+/** "Only N left" is said at this many or fewer, and only for a real stock count (made-to-order has none). */
+export const LOW_STOCK_MAX = 3;
+export const lowStockLeft = (stock?: number): number | null => (stock !== undefined && stock > 0 && stock <= LOW_STOCK_MAX ? stock : null);
