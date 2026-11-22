@@ -5,6 +5,7 @@ import { Elements, ExpressCheckoutElement, useElements, useStripe } from "@strip
 import { loadStripe } from "@stripe/stripe-js/pure";
 import type { Stripe, StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { checkoutMeta } from "@/lib/attribution";
 import { formatPrice, site } from "@/lib/site";
 
 type Line = { productId: string; variantId?: string; qty: number };
@@ -19,9 +20,14 @@ type Props = {
   giftNote?: string;
   /** Countries the shop prices live (the wallet only offers these). */
   countries: string[];
-  /** Box title and the divider under it (the owner's wording). */
-  title: string;
-  orText: string;
+  /** Box title and the divider under it (the owner's wording). Not used in `bare` mode. */
+  title?: string;
+  orText?: string;
+  /** The product page's "Buy now": just the wallet button (no box, title or divider), labelled "Buy". */
+  bare?: boolean;
+  /** Called right before the payment is confirmed (the shopper's bag can be set aside), and if it then doesn't go through. */
+  onBeforePay?: () => void;
+  onPayFailed?: () => void;
   /** Tells the page whether the button is really showing (so it can drop the wallet wording from the card option). */
   onAvailable?: (v: boolean) => void;
 };
@@ -53,9 +59,9 @@ export function ExpressPay(props: Props) {
   // A changed cart or coupon starts the sheet over (the amount must match what the shop will charge).
   const key = JSON.stringify([props.lines, props.coupon]);
   return (
-    <section className={ready ? "" : "h-0 overflow-hidden"} aria-label={props.title}>
-      <div className={ready ? "rounded-xl border border-line p-4" : ""}>
-        {ready && <h2 className="mb-3 text-xl">{props.title}</h2>}
+    <section className={ready ? "" : "h-0 overflow-hidden"} aria-label={props.title ?? "Apple Pay and Google Pay"}>
+      <div className={ready && !props.bare ? "rounded-xl border border-line p-4" : ""}>
+        {ready && !props.bare && <h2 className="mb-3 text-xl">{props.title}</h2>}
         <Elements
           key={key}
           stripe={stripe}
@@ -69,7 +75,7 @@ export function ExpressPay(props: Props) {
           <Inner {...props} onReady={setReady} />
         </Elements>
       </div>
-      {ready && (
+      {ready && !props.bare && (
         <div className="mt-6 flex items-center gap-3 text-sm text-muted" role="separator">
           <span className="h-px flex-1 bg-line" />
           {props.orText}
@@ -80,7 +86,7 @@ export function ExpressPay(props: Props) {
   );
 }
 
-function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Props & { onReady: (v: boolean) => void }) {
+function Inner({ lines, openingCents, coupon, giftNote, countries, bare, onBeforePay, onPayFailed, onReady }: Props & { onReady: (v: boolean) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState<string | null>(null);
@@ -129,6 +135,7 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
           // Apple Pay and Google Pay only: Link and the other wallets stay off.
           paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", klarna: "never", amazonPay: "never" },
           buttonHeight: 48,
+          ...(bare ? { buttonType: { applePay: "buy" as const, googlePay: "buy" as const } } : {}),
         }}
         onReady={({ availablePaymentMethods }) => onReady(Boolean(availablePaymentMethods && (availablePaymentMethods.applePay || availablePaymentMethods.googlePay)))}
         onClick={({ resolve }) => {
@@ -191,6 +198,7 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 lines,
+                meta: checkoutMeta(),
                 coupon,
                 giftNote,
                 quoteId: q.quoteId,
@@ -219,13 +227,17 @@ function Inner({ lines, openingCents, coupon, giftNote, countries, onReady }: Pr
           // The shop's real total isn't what the sheet showed (tax with the full address, a price that moved):
           // never charge a different amount than the shopper approved; the unpaid order simply expires.
           if (order.totalCents !== expected) return fail(`The total changed to ${dollars(order.totalCents ?? 0)}, so nothing was charged. Please check your cart and try again.`);
+          onBeforePay?.();
           const { error } = await stripe.confirmPayment({
             elements,
             clientSecret: order.clientSecret,
             confirmParams: { return_url: `${window.location.origin}/checkout/success?order=${encodeURIComponent(order.orderToken)}` },
           });
           // Only reached when the payment didn't go through (otherwise the browser is sent to return_url).
-          if (error) fail(error.message ?? "That payment didn't go through. Nothing was charged.");
+          if (error) {
+            onPayFailed?.();
+            fail(error.message ?? "That payment didn't go through. Nothing was charged.");
+          }
         }}
       />
       {message && (

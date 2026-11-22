@@ -39,3 +39,16 @@ export async function checkoutFor(testerKey: string | undefined): Promise<Checko
 export async function liveCheckout(): Promise<boolean> {
   return (await getCheckout())?.mode === "live";
 }
+
+/**
+ * What the product page's Apple Pay / Google Pay "Buy now" needs, or null when it shouldn't be offered: on-site checkout is
+ * live (the page is cached for everyone, so never in test mode), Stripe can take wallets, and some country is priced live.
+ * The publishable key is public by design.
+ */
+export type ProductExpress = { publishableKey: string; countries: string[] };
+export async function productExpress(): Promise<ProductExpress | null> {
+  const info = await getCheckout();
+  if (info?.mode !== "live" || !info.providers.includes("stripe") || !info.stripe?.express || !info.stripe.publishableKey) return null;
+  const countries = info.countries.filter((c) => c.live === true).map((c) => c.code);
+  return countries.length ? { publishableKey: info.stripe.publishableKey, countries } : null;
+}

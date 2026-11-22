@@ -12,7 +12,10 @@ export function RichText({ value }: { value: PortableTextBlock[] | ContentSectio
     return (
       <div className="prose-om">
         {(value as string[]).map((p, i) => (
-          <p key={i}>{p}</p>
+          // A description keeps its line breaks (headings, bullet lines) the way it reads on Etsy.
+          <p key={i} className="whitespace-pre-line">
+            {p}
+          </p>
         ))}
       </div>
     );

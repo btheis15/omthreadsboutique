@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const [products, collections, lists] = await Promise.all([getProducts(), getCollections(), getLists()]);
   const categories = typesWithProducts(lists, products);
-  const staticPaths = ["", "/shop", "/about", "/faq", "/care-guide", "/contact", "/policies/shipping", "/policies/returns"];
+  const staticPaths = ["", "/shop", "/find-your-shawl", "/about", "/faq", "/care-guide", "/contact", "/policies/shipping", "/policies/returns"];
   return [
     ...staticPaths.map((p) => ({ url: `${base}${p}`, changeFrequency: "weekly" as const, priority: p ? 0.6 : 1 })),
     ...categories.map((c) => ({ url: `${base}/shop/${c.slug}`, changeFrequency: "weekly" as const, priority: 0.8 })),

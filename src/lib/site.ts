@@ -5,6 +5,7 @@ export const site = {
   tagline: "Heirloom shawls & stoles from North India",
   description: "Kullu shawls from Himachal Pradesh, lohis from Punjab, pashmina and more: shawls and stoles from North India.",
   etsyUrl: "https://omthreadsboutique.etsy.com",
+  facebookUrl: "https://www.facebook.com/profile.php?id=61595850270254",
   contactEmail: "omthreadsboutique@icloud.com",
   contactMailto: "mailto:omthreadsboutique@icloud.com?subject=Om%20Threads%20Boutique%20Inquiry",
 };

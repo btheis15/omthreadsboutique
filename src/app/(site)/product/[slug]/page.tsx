@@ -5,10 +5,13 @@ import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons"
 import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
+import { TrackViewContent } from "@/components/TrackViewContent";
+import { ArtisanCard } from "@/components/ArtisanCard";
+import { EtsyRatingLine } from "@/components/EtsyRatingLine";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
 import { directVideoUrl, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
-import { liveCheckout } from "@/lib/payments";
+import { liveCheckout, productExpress } from "@/lib/payments";
 import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
@@ -37,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout, lists, t] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), getLists(), getT()]);
+  const [product, all, settings, onSiteCheckout, express, lists, t] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT()]);
   if (!product) notFound();
 
   const category = typeByValue(lists, product.type);
@@ -101,8 +104,10 @@ export default async function ProductPage({ params }: Props) {
                 {product.origin && <span className="text-zari"> · {product.origin}</span>}
               </p>
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
+              <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} />
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
-              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} />
+              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} express={express} />
+              <TrackViewContent slug={product.slug} title={product.title} price={product.price} />
               {/* A sales partner signed in on this device: their link for this piece. */}
               <PartnerShareBar title={product.title} />
 
@@ -121,18 +126,7 @@ export default async function ProductPage({ params }: Props) {
                 </li>
               </ul>
 
-              {craft && (
-                <Link
-                  href={`/crafts#${craft.value}`}
-                  className="mt-8 flex items-center gap-4 rounded-2xl border border-line bg-sand p-5 transition hover:border-zari"
-                >
-                  <span className="font-deva text-3xl text-accent">{craft.hindi}</span>
-                  <span>
-                    <span className="block font-medium">{t("productCraftPrefix", { craft: craft.label })}</span>
-                    <span className="block text-sm text-muted">{craft.summary}</span>
-                  </span>
-                </Link>
-              )}
+              <ArtisanCard craft={craft} origin={product.origin} craftTitle={craft ? t("productCraftPrefix", { craft: craft.label }) : undefined} />
 
               <div className="mt-8 divide-y divide-line border-y border-line">
                 {product.description && product.description.length > 0 && (

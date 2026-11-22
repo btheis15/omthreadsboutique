@@ -2,9 +2,13 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
+import type { ProductExpress } from "@/lib/payments";
+import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, lowStockLeft, variantAvailable, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
+import { AdBuyBar } from "./ad/AdBuyBar";
+import { useAdMode } from "./ad/useAdMode";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
 import { Price } from "./Price";
+import { ProductExpressBuy } from "./ProductExpressBuy";
 
 /**
  * Price, stock and the buy buttons, with the option picker for a product
@@ -13,7 +17,7 @@ import { Price } from "./Price";
  */
 const noSubscribe = () => () => {};
 
-export function ProductPurchase({ product, onSiteCheckout }: { product: Product; onSiteCheckout: boolean }) {
+export function ProductPurchase({ product, onSiteCheckout, express = null }: { product: Product; onSiteCheckout: boolean; express?: ProductExpress | null }) {
   const withOptions = hasOptions(product);
   // Opened from a printed tag (/p/<code> → ?option=<id>): that option is chosen, e.g. the colour on the tag.
   // Read after the page loads (the page itself is the same for everyone), until the shopper picks another.
@@ -49,18 +53,21 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
 
   const price = variantPrice(product, variant);
   const stock = variant ? variant.stock : product.stock;
+  // From an Instagram / Facebook ad: the phone bar is the price and one "Buy now" (only when the shop takes orders itself).
+  const fromAd = useAdMode() && onSiteCheckout;
+  const left = lowStockLeft(stock);
 
   return (
     <>
-      <Price price={price} compareAt={variant ? (variant.compareAtPrice ?? (variant.price === undefined ? product.compareAtPrice : undefined)) : product.compareAtPrice} className="mt-3 text-xl font-medium" />
+      <Price price={price} compareAt={variantCompareAt(product, variant)} className="mt-3 text-xl font-medium" />
       {product.saleEndsOn && (
         <p className="mt-1 text-sm text-sale">
           Sale ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
         </p>
       )}
-      {stock !== undefined && stock > 0 && stock <= 3 && (
+      {left !== null && (
         <p className="mt-2 text-sm text-accent">
-          Only {stock} left{variant ? ` in ${variantLabel(variant)}` : ""}
+          Only {left} left{variant ? ` in ${variantLabel(variant)}` : ""}
         </p>
       )}
 
@@ -78,9 +85,14 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
 
       <p className="mt-5 leading-relaxed text-ink/85">{product.shortDescription}</p>
       <div id="buy-buttons" className="mt-6">
+        {onSiteCheckout && <ProductExpressBuy product={product} variant={variant} express={express} />}
         <AddToCart product={product} variant={variant} onSiteCheckout={onSiteCheckout} />
       </div>
-      <StickyBuyBar product={product} variant={variant} onSiteCheckout={onSiteCheckout} watchId="buy-buttons" />
+      {fromAd ? (
+        <AdBuyBar product={product} variant={variant} />
+      ) : (
+        <StickyBuyBar product={product} variant={variant} onSiteCheckout={onSiteCheckout} watchId="buy-buttons" />
+      )}
     </>
   );
 }

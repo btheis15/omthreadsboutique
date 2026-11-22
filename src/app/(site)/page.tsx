@@ -74,6 +74,12 @@ export default async function HomePage() {
             <ReturnIcon size={20} className="text-zari" /> {t("promiseReturns", { days: settings.returnDays })}
           </li>
         </ul>
+        <p className="container-page pb-4 text-center text-sm text-muted">
+          Not sure where to start?{" "}
+          <Link href="/find-your-shawl" className="text-ink underline underline-offset-4 hover:text-accent">
+            Find your shawl
+          </Link>
+        </p>
       </section>
 
 

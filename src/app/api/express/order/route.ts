@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { catalogSource, shopApi, shopperIp } from "@/lib/catalog";
+import { metaForOrder } from "@/lib/meta-forward";
 import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
 
 /**
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
   const coupon = str(body?.coupon, 30);
   const expected = Number(body?.expectedTotalCents);
 
-  const testerKey = (await cookies()).get(TESTER_COOKIE)?.value;
+  const jar = await cookies();
+  const testerKey = jar.get(TESTER_COOKIE)?.value;
   try {
     const { status, data } = await shopApi("/api/express/order", {
       method: "POST",
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
         shipping,
         expectedTotalCents: Number.isFinite(expected) ? Math.round(expected) : undefined,
         testerKey,
+        meta: metaForOrder(request, body?.meta, jar),
       },
     });
     if (status === 200 && typeof data.clientSecret === "string" && typeof data.orderToken === "string") {

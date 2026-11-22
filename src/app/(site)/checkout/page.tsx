@@ -137,6 +137,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
       spotlight={piece?.product ?? null}
       soldOutLink={direct && "soldOut" in direct ? direct.soldOut : null}
       colorNote={piece?.colorNote ? { text: piece.colorNote, variantId: piece.line.variantId } : null}
+      freeShippingThreshold={settings.freeShippingThreshold}
     />
   );
 }

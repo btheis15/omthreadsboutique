@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { MetaPixel } from "@/components/MetaPixel";
 import { RevealObserver } from "@/components/motion/RevealObserver";
 import { PartnerRef } from "@/components/PartnerRef";
 import { catalogSource, getCheckout, getLists, getMenus, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
@@ -41,6 +42,11 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           Preview mode: showing sample products. Connect the admin to show your own (see ADMIN_GUIDE.md).
         </div>
       )}
+      {settings.freeShippingThreshold > 0 && (
+        <div className="bg-marigold px-4 py-1.5 text-center text-xs font-medium tracking-wide text-ink">
+          Free shipping on orders ${settings.freeShippingThreshold}+
+        </div>
+      )}
       {settings.announcement && (
         <div className="bg-indigo-deep px-4 py-2 text-center text-xs tracking-wide text-ivory/90">
           <span className="font-deva mr-2 text-zari-light">ॐ</span>
@@ -59,6 +65,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} text={text} />
       <RevealObserver />
       <PartnerRef />
+      <MetaPixel pixelId={settings.metaPixelId} />
       <Analytics />
     </>
   );
