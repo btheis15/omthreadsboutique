@@ -9,7 +9,7 @@ import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
  * when the order is placed, so this only passes the question along.
  */
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as { lines?: CheckoutLine[]; country?: string; customer?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { lines?: CheckoutLine[]; country?: string; customer?: unknown; coupon?: unknown } | null;
   const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Online checkout isn't available yet. Please buy on Etsy." }, { status: 501 });
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const { status, data } = await shopApi("/api/shipping-rates", {
       method: "POST",
       shopperIp: shopperIp(request.headers),
-      body: { lines, country: body?.country, customer: body?.customer, testerKey },
+      body: { lines, country: body?.country, customer: body?.customer, coupon: typeof body?.coupon === "string" ? body.coupon.trim().slice(0, 30) : undefined, testerKey },
     });
     // Not priced live for this cart (e.g. an export over the AES limit): the site uses its flat prices.
     if (status === 200 && data.fallback === true) return NextResponse.json({ fallback: true, rates: [] });

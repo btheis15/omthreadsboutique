@@ -92,6 +92,14 @@ export function Footer({
                   Instagram
                 </a>
               )}
+              <a
+                href={site.facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center rounded-full border border-ivory/30 px-4 text-sm hover:bg-ivory hover:text-indigo-deep"
+              >
+                Facebook
+              </a>
             </div>
           </div>
           {(partnersOpen && !menu ? allGroups.map((g) => (g.title === "About" ? { ...g, links: [...g.links, { href: "/partners", label: "Sell for Om Threads" }] } : g)) : allGroups).map((g) => (

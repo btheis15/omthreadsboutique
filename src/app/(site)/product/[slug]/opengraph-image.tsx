@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { getLists, getProduct, getProducts, isSoldOut } from "@/lib/catalog";
 import { formatPrice, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
-import { priceRange } from "@/lib/variants";
+import { listingCompareAt, priceRange } from "@/lib/variants";
 
 /**
  * The card a product link unfolds into when it's texted, posted or shared
@@ -62,7 +62,7 @@ export default async function Image({ params }: Props) {
   const range = priceRange(product);
   const price = range.min === range.max ? formatPrice(range.min) : `From ${formatPrice(range.min)}`;
   // As on the shop's product cards: the lowest price, struck beside the original when marked down.
-  const wasPrice = product.compareAtPrice && product.compareAtPrice > range.min ? formatPrice(product.compareAtPrice) : undefined;
+  const wasPrice = (listingCompareAt(product) ?? 0) > range.min ? formatPrice(listingCompareAt(product)!) : undefined;
   const kind = (await getLists()).types.find((t) => t.value === product.type)?.label;
   const title = clip(product.title, 80);
 

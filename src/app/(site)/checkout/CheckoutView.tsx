@@ -28,7 +28,7 @@ type Customer = { name: string; email: string; phone: string; line1: string; lin
 const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", city: "", state: "", postal_code: "" };
 const dollars = (cents: number) => formatPrice(cents / 100);
 /** A live carrier rate from the shop (see /api/shipping-rates). */
-type LiveRate = { id: string; label: string; cents: number; minDays?: number | null; maxDays?: number | null; carrier?: string };
+type LiveRate = { id: string; label: string; cents: number; /** Estimated sales tax for this option (null when the shop couldn't work it out). */ taxCents?: number | null; minDays?: number | null; maxDays?: number | null; carrier?: string };
 type Quote = { id: string; rates: LiveRate[]; forKey: string };
 const daysText = (r: LiveRate) => {
   const a = r.minDays ?? null;
@@ -62,6 +62,7 @@ export function CheckoutView({
   spotlight = null,
   soldOutLink = null,
   colorNote = null,
+  freeShippingThreshold = 0,
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -81,6 +82,8 @@ export function CheckoutView({
   soldOutLink?: string | null;
   /** A one-piece link named a colour that's sold out or unknown: what was picked instead. */
   colorNote?: { text: string; variantId?: string } | null;
+  /** The site-wide free standard shipping amount in dollars (0 = none); the shop's own US rate wins when it has one. */
+  freeShippingThreshold?: number;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -130,6 +133,9 @@ export function CheckoutView({
   const [provider, setProvider] = useState<Provider>(checkout?.providers[0] ?? "stripe");
   const [testAsIndia, setTestAsIndia] = useState(false);
   const [customer, setCustomer] = useState<Customer>(EMPTY);
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  // Mobile: the three screens (on larger screens everything shows on one page).
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [giftNote, setGiftNote] = useState("");
   // Bitcoin Cash: the receipt as an email, an Om Receipt CashToken, or both (when the shop offers it).
   const [receipt, setReceipt] = useState<"email" | "token" | "both">("both");
@@ -168,7 +174,7 @@ export function CheckoutView({
   const [quoteBusy, setQuoteBusy] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   // A quote is only good for the cart and address it was asked for; changing either makes it vanish.
-  const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim()]);
+  const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim(), coupon?.code ?? ""]);
   const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
   // Ready to ask the carrier: everything the shop checks (name, email, phone, address) would pass.
   const addr = customer;
@@ -201,7 +207,6 @@ export function CheckoutView({
             : 0;
 
   // Typed coupon code: shown here for the shopper; the admin checks it again when the order is priced.
-  const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState<string | null>(null);
@@ -218,7 +223,13 @@ export function CheckoutView({
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
   const freeShip = Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
   const shipping = freeShip ? 0 : shippingFull;
-  const nextFree = fulfil === "ship" && !live && rate && rate.freeOverCents !== null && shipping > 0 ? rate.freeOverCents - subtotalCents : null;
+  // Estimated sales tax: the shop works it out for the chosen option and address exactly as the order will be priced.
+  const taxCents = live && chosenRate && typeof chosenRate.taxCents === "number" ? chosenRate.taxCents : null;
+  const total = subtotalCents - discount + shipping + (taxCents ?? 0);
+  const shippingKnown = fulfil !== "ship" || !live || Boolean(chosenRate);
+  // Free standard shipping (US, by merchandise subtotal): the shop's own US rate decides, else the site-wide amount.
+  const freeOverCents = checkout?.countries.find((c) => c.code === "US")?.rates.find((r) => r.freeOverCents !== null && r.freeOverCents !== undefined)?.freeOverCents ?? Math.round(freeShippingThreshold * 100);
+  const awayFreeCents = fulfil === "ship" && placeCode === "US" && freeOverCents > 0 ? freeOverCents - subtotalCents : null;
 
   async function checkCoupon(code: string): Promise<Coupon | string | { error: string; gone: boolean }> {
     try {
@@ -297,6 +308,14 @@ export function CheckoutView({
   const zipAnswer = zipCheck && zipCheck.zip === zip5 ? zipCheck : null;
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
+  /** The shop (or carrier) complained about something: show the screen it's on. */
+  function jumpToErrors(errors?: Record<string, string>) {
+    if (!errors) return;
+    const keys = Object.keys(errors);
+    if (keys.some((k) => k in EMPTY)) setStep(1);
+    else if (keys.includes("rate")) setStep(2);
+  }
+
   async function showShippingOptions() {
     const reqId = ++quoteReqId.current;
     const asked = askKey;
@@ -312,6 +331,7 @@ export function CheckoutView({
         body: JSON.stringify({
           lines,
           country: placeCode,
+          coupon: coupon?.code,
           customer: { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } },
         }),
       });
@@ -327,6 +347,7 @@ export function CheckoutView({
         setQuote(null);
         setQuoteError(data.error ?? "Couldn't get shipping options. Please try again.");
         setFieldErrors(data.errors ?? {});
+        jumpToErrors(data.errors);
         setFailedKey(asked);
       }
     } catch {
@@ -407,6 +428,7 @@ export function CheckoutView({
       // A coupon-only problem is shown once, under the coupon box.
       if (!(data.errors?.coupon && Object.keys(data.errors).length === 1)) setError(data.error ?? "Something went wrong. Please try again.");
       setFieldErrors(data.errors ?? {});
+      jumpToErrors(data.errors);
       // The shop no longer honours the quote (expired, or the cart or address changed): ask for options again.
       if (live && data.errors?.rate) setQuote(null);
     } catch {
@@ -414,6 +436,65 @@ export function CheckoutView({
     }
     setLoading(false);
   }
+
+  // Mobile steps: which screens an element shows on (everything shows on larger screens).
+  const stepped = onSite;
+  const hideUnless = (...n: (1 | 2 | 3)[]) => (stepped && !n.includes(step) ? "max-md:hidden" : "");
+  const STEP_NAMES = ["Address", "Shipping", "Review & pay"] as const;
+
+  /** What step 1 needs before Next: the same rules the shop applies when the order is placed. */
+  function addressProblems(): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (!needsForm) return e;
+    const c = customer;
+    if (!c.name.trim()) e.name = "Enter your full name.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim())) e.email = "Enter a valid email address.";
+    if (!/^[+\d][\d\s().-]{6,23}$/.test(c.phone.trim())) e.phone = "Enter a phone number.";
+    if (fulfil !== "pickup") {
+      if (!c.line1.trim()) e.line1 = "Enter your street address.";
+      if (!c.city.trim()) e.city = "Enter your city.";
+      if (placeCode === "US") {
+        if (!/^[A-Za-z]{2}$/.test(c.state.trim())) e.state = "Use the 2-letter state, e.g. IL.";
+        if (!/^\d{5}(-\d{4})?$/.test(c.postal_code.trim())) e.postal_code = "Enter a 5-digit ZIP code.";
+      } else if (placeCode === "IN") {
+        if (!c.state.trim()) e.state = "Enter your state.";
+        if (!/^\d{6}$/.test(c.postal_code.trim())) e.postal_code = "Enter a 6-digit PIN code.";
+      }
+      if (fulfil === "delivery" && deliveryBlocked && !e.postal_code) e.postal_code = "We can't deliver to that ZIP yet.";
+    }
+    return e;
+  }
+
+  function goTo(n: 1 | 2 | 3) {
+    setStep(n);
+    setError(null);
+    window.scrollTo({ top: 0 });
+  }
+  function goNext() {
+    if (step === 1) {
+      const e = addressProblems();
+      setFieldErrors(e);
+      if (Object.keys(e).length) return;
+      goTo(2);
+    } else if (step === 2 && (!live || chosenRate)) goTo(3);
+  }
+  const payLabel = loading
+    ? "Starting secure checkout…"
+    : provider === "exodus"
+      ? "Continue to Exodus Pay"
+      : provider === "bch"
+        ? "Pay with Bitcoin Cash"
+        : provider === "paypal"
+          ? "Continue to PayPal"
+          : provider === "zelle"
+            ? "Place order and get the Zelle details"
+            : provider === "venmo"
+              ? "Place order and get the Venmo details"
+              : "Continue to secure payment";
+  // One quiet reassurance by the pay button (US orders; international orders are final sale).
+  const returnsLine = placeCode === "US" ? `${returnDays}-day returns — if it's not right, send it back.` : null;
+  const showTax = taxCents !== null && (checkout?.taxAdded || taxCents > 0);
+  const nextBlocked = step === 2 && live && (quoteBusy || !chosenRate);
 
   if (items.length === 0) {
     return (
@@ -432,13 +513,16 @@ export function CheckoutView({
     );
   }
 
-  const field = (name: keyof Customer, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
-    <label className="block">
+  const field = (name: keyof Customer, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, wide = true) => (
+    <label className={`block ${wide ? "col-span-2 sm:col-span-1" : ""}`}>
       <span className="mb-1 block text-sm">{label}</span>
       <input
         {...props}
         value={customer[name]}
-        onChange={(e) => setCustomer({ ...customer, [name]: e.target.value })}
+        onChange={(e) => {
+          setCustomer({ ...customer, [name]: e.target.value });
+          if (fieldErrors[name]) setFieldErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== name)));
+        }}
         aria-invalid={Boolean(fieldErrors[name])}
         className={`w-full rounded-lg border bg-ivory px-3 py-2.5 ${fieldErrors[name] ? "border-sale" : "border-line"}`}
       />
@@ -447,14 +531,39 @@ export function CheckoutView({
   );
 
   return (
-    <div className="container-page max-w-3xl pt-10 pb-16 md:pt-16">
-      <h1 className="text-4xl md:text-5xl">Checkout</h1>
+    <div className={`container-page max-w-3xl pt-10 pb-16 md:pt-16 ${onSite ? "max-md:pt-4 max-md:pb-36" : ""}`}>
+      <h1 className={`text-4xl md:text-5xl ${onSite ? "max-md:sr-only" : ""}`}>Checkout</h1>
+
+      {/* Phone: where you are in the three steps, and a slim running total that stays under the header. */}
+      {checkout && place && rate && (
+        <div className="sticky top-16 z-30 -mx-4 border-b border-line bg-ivory/95 px-4 pt-2 pb-2 backdrop-blur md:hidden">
+          <p className="text-sm font-medium" aria-live="polite">
+            Step {step} of 3 — {STEP_NAMES[step - 1]}
+          </p>
+          <div className="mt-1.5 flex gap-1.5" aria-hidden="true">
+            {[1, 2, 3].map((n) => (
+              <span key={n} className={`h-1 flex-1 rounded-full ${n <= step ? "bg-ink" : "bg-line"}`} />
+            ))}
+          </div>
+          <p className="mt-2 flex items-baseline justify-between gap-3 text-sm">
+            <span className="min-w-0 truncate text-muted">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+              {shippingKnown && ` · ${shipping ? `${dollars(shipping)} shipping` : "free shipping"}`}
+              {showTax && ` · ${dollars(taxCents)} est. tax`}
+            </span>
+            <span className="shrink-0 font-medium">
+              {dollars(total)}
+              {!shippingKnown || (taxCents === null && checkout.taxAdded && provider === "stripe") ? <span className="font-normal text-muted"> + more</span> : null}
+            </span>
+          </p>
+        </div>
+      )}
 
       {testerLink === "invalid" && (
-        <p className="mt-6 rounded-lg bg-sale/10 p-3 text-sm text-sale">That tester link is out of date. Copy the current one from the admin (Orders → Checkout setup).</p>
+        <p className={`mt-6 rounded-lg bg-sale/10 p-3 text-sm text-sale ${hideUnless(1)}`}>That tester link is out of date. Copy the current one from the admin (Orders → Checkout setup).</p>
       )}
       {checkout?.mode === "test" && (
-        <div className="mt-6 rounded-xl border border-dashed border-zari bg-sand p-4 text-[0.95rem]">
+        <div className={`mt-6 rounded-xl border border-dashed border-zari bg-sand p-4 text-[0.95rem] ${hideUnless(1)}`}>
           <p className="font-medium">Test mode: only you can see this checkout.</p>
           <p className="mt-1 text-ink/80">
             Pay with the test card 4242 4242 4242 4242, any future date and any 3 digits. No real money moves, and your stock and Etsy aren&apos;t changed.
@@ -465,9 +574,9 @@ export function CheckoutView({
           </p>
         </div>
       )}
-      {cancelled && onSite && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Payment canceled. Nothing was charged, and your cart is still here.</p>}
+      {cancelled && onSite && <p className={`mt-6 rounded-lg bg-sand p-3 text-sm ${hideUnless(1)}`}>Payment canceled. Nothing was charged, and your cart is still here.</p>}
       {saved.aside.length > 0 && !linkPending && (
-        <p className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-sand p-3 text-sm">
+        <p className={`mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-sand p-3 text-sm ${hideUnless(1)}`}>
           <span>{t("checkoutBagSaved", { count: saved.aside.reduce((n, i) => n + i.qty, 0) })}</span>
           <button type="button" onClick={() => cart.bringBack()} className="font-medium text-accent underline underline-offset-4">
             {t("checkoutBagRestore")}
@@ -488,11 +597,12 @@ export function CheckoutView({
         <PiecePhotosViewer items={items} photos={photos} start={Math.min(viewing.line, items.length - 1)} startPhoto={viewing.photo} onClose={() => setViewing(null)} />
       )}
 
-      {soldOutLink && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">Sorry, {soldOutLink} has just sold out.</p>}
+      {soldOutLink && <p className={`mt-6 rounded-lg bg-sand p-3 text-sm ${hideUnless(1, 3)}`}>Sorry, {soldOutLink} has just sold out.</p>}
       {/* Gone once the shopper picks a colour themselves. */}
-      {colorNote && spotLine?.variantId === colorNote.variantId && <p className="mt-6 rounded-lg bg-sand p-3 text-sm">{colorNote.text}</p>}
+      {colorNote && spotLine?.variantId === colorNote.variantId && <p className={`mt-6 rounded-lg bg-sand p-3 text-sm ${hideUnless(3)}`}>{colorNote.text}</p>}
 
       {spotLine && spotlight && (
+        <div className={hideUnless(3)}>
         <PieceSpotlight
           product={spotlight}
           line={spotLine}
@@ -512,9 +622,10 @@ export function CheckoutView({
             })
           }
         />
+        </div>
       )}
 
-      <ul className={`mt-8 divide-y divide-line border-y border-line ${spotLine ? "hidden" : ""}`}>
+      <ul className={`mt-8 divide-y divide-line border-y border-line ${spotLine ? "hidden" : hideUnless(3)}`}>
         {items.map((item, index) => (
           <li key={item.key} className="flex gap-4 py-5">
             <button
@@ -564,9 +675,9 @@ export function CheckoutView({
       )}
 
       {checkout && place && rate && (
-        <div className="mt-8 space-y-8">
+        <div className={`mt-8 space-y-8 ${stepped ? "max-md:mt-4 max-md:space-y-4" : ""}`}>
           {expressOn && checkout?.stripe && (
-            <div className={provider === "stripe" ? "" : "hidden"}>
+            <div className={`${provider === "stripe" ? "" : "hidden"} ${hideUnless(1)}`}>
             <ExpressPay
               publishableKey={checkout.stripe.publishableKey}
               lines={lines}
@@ -582,7 +693,7 @@ export function CheckoutView({
           )}
 
           {(pickup || delivery) && (
-            <section>
+            <section className={hideUnless(1)}>
               <h2 className="text-xl">How would you like to get it?</h2>
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="How would you like to get it?">
                 {(
@@ -619,11 +730,20 @@ export function CheckoutView({
             </section>
           )}
 
+          {fulfil !== "ship" && (
+            <section className={`md:hidden ${step === 2 ? "" : "hidden"}`}>
+              <h2 className="text-xl">{fulfil === "pickup" ? "Pickup" : "Delivery"}</h2>
+              <p className="mt-2 text-[0.95rem]">
+                {fulfil === "pickup" ? pickup?.label : delivery?.label} · {shipping ? dollars(shipping) : "Free"}
+              </p>
+            </section>
+          )}
+
           {fulfil === "ship" && (
-          <section>
-            <h2 className="text-xl">Shipping</h2>
+          <section className={hideUnless(1, 2)}>
+            <h2 className={`text-xl ${hideUnless(2)}`}>Shipping</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="block">
+              <label className={`block ${hideUnless(1)}`}>
                 <span className="mb-1 block text-sm">Ship to</span>
                 <select
                   value={placeCode}
@@ -643,7 +763,7 @@ export function CheckoutView({
               {live ? (
                 <div className="hidden" />
               ) : place.rates.length > 1 ? (
-                <label className="block">
+                <label className={`block ${hideUnless(2)}`}>
                   <span className="mb-1 block text-sm">Delivery</span>
                   <select value={rate.id} onChange={(e) => setRateId(e.target.value)} className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5">
                     {place.rates.map((r) => (
@@ -654,20 +774,24 @@ export function CheckoutView({
                   </select>
                 </label>
               ) : (
-                <div className="self-end pb-2.5 text-[0.95rem]">
+                <div className={`self-end pb-2.5 text-[0.95rem] ${hideUnless(2)}`}>
                   {rate.label} · {shipping ? dollars(shipping) : "Free"}
                 </div>
               )}
             </div>
+            {awayFreeCents !== null && (
+              <p className={`mt-3 rounded-lg bg-sand p-3 text-center text-sm ${hideUnless(2)}`}>
+                {awayFreeCents > 0 ? <Bold text={t("cartAwayFree", { amount: dollars(awayFreeCents) })} /> : t("cartUnlockedFree")}
+              </p>
+            )}
             {!live && (
-            <p className="mt-2 text-sm text-muted">
+            <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
               Arrives in about {rate.minDays}–{rate.maxDays} business days after it ships.
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
-              {nextFree !== null && nextFree > 0 && ` Add ${dollars(nextFree)} more for free shipping.`}
             </p>
             )}
             {placeCode === "IN" && (
-              <p className="mt-3 rounded-lg bg-sand p-3 text-sm leading-relaxed">
+              <p className={`mt-3 rounded-lg bg-sand p-3 text-sm leading-relaxed ${hideUnless(2)}`}>
                 {t("checkoutIndiaNote")}
               </p>
             )}
@@ -675,7 +799,7 @@ export function CheckoutView({
           )}
 
           {checkout.providers.length > 1 && (
-            <section>
+            <section className={hideUnless(3)}>
               <h2 className="text-xl">Pay with</h2>
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Pay with">
                 {checkout.providers.map((p) => (
@@ -734,25 +858,25 @@ export function CheckoutView({
           )}
 
           {needsForm && (
-            <section>
-              <h2 className="text-xl">Your details</h2>
-              <p className="mt-1 text-sm text-muted">
+            <section className={hideUnless(1)}>
+              <h2 className={`text-xl ${stepped ? "max-md:hidden" : ""}`}>Your details</h2>
+              <p className={`mt-1 text-sm text-muted ${stepped ? "max-md:hidden" : ""}`}>
                 {fulfil === "pickup" ? "So we can tell you when it's ready, and send your receipt." : fulfil === "delivery" ? "Where we bring it, and how to send your receipt." : "Where we ship it, and how to send your receipt."}
               </p>
-              <fieldset disabled={Boolean(paypalOrder)} className="mt-3 grid gap-3 disabled:opacity-60 sm:grid-cols-2">
+              <fieldset disabled={Boolean(paypalOrder)} className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 disabled:opacity-60 md:gap-3 max-md:mt-0">
                 {field("name", "Full name", { autoComplete: "name" })}
                 {field("email", "Email", { type: "email", autoComplete: "email" })}
                 {field("phone", "Phone", { type: "tel", autoComplete: "tel" })}
                 {fulfil !== "pickup" && (
                   <>
-                    <div className="hidden sm:block" />
+                    <div className="hidden sm:block" aria-hidden="true" />
                     {field("line1", "Address", { autoComplete: "address-line1" })}
-                    {field("line2", "Apartment, suite (optional)", { autoComplete: "address-line2" })}
-                    {field("city", "City", { autoComplete: "address-level2" })}
-                    {field("state", placeCode === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: placeCode === "US" ? "IL" : undefined })}
-                    {field("postal_code", placeCode === "US" ? "ZIP code" : placeCode === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: placeCode === "US" || placeCode === "IN" ? "numeric" : undefined })}
+                    {field("line2", "Apt, suite (optional)", { autoComplete: "address-line2" }, false)}
+                    {field("city", "City", { autoComplete: "address-level2" }, false)}
+                    {field("state", placeCode === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: placeCode === "US" ? "IL" : undefined }, false)}
+                    {field("postal_code", placeCode === "US" ? "ZIP code" : placeCode === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: placeCode === "US" || placeCode === "IN" ? "numeric" : undefined }, false)}
                     {fulfil === "delivery" && zip5 && (
-                      <p className={`text-sm sm:col-span-2 ${zipAnswer?.ok === true ? "text-ink" : zipAnswer ? "text-sale" : "text-muted"}`} role="status">
+                      <p className={`col-span-2 text-sm ${zipAnswer?.ok === true ? "text-ink" : zipAnswer ? "text-sale" : "text-muted"}`} role="status">
                         {!zipAnswer
                           ? "Checking your ZIP…"
                           : zipAnswer.ok === true
@@ -769,8 +893,14 @@ export function CheckoutView({
                     )}
                   </>
                 )}
+              </fieldset>
+            </section>
+          )}
+
+          {needsForm && live && !paypalOrder && (
+            <section className={hideUnless(2)}>
                 {live && !paypalOrder && (
-                  <div className="sm:col-span-2">
+                  <div>
                     {!activeQuote && !quoteBusy && <p className="mb-2 text-sm text-muted">{t("shipOptionsHint")}</p>}
                     {quoteBusy && (
                       <p role="status" aria-live="polite" className="mb-2 flex items-center gap-2 text-sm">
@@ -804,7 +934,7 @@ export function CheckoutView({
                                 }}
                               />
                               <span className="block font-medium">
-                                {r.label} — {freeShip ? "Free" : dollars(r.cents)}
+                                {r.label} — {freeShip || r.cents === 0 ? "Free" : dollars(r.cents)}
                                 {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
                               </span>
                             </label>
@@ -825,24 +955,11 @@ export function CheckoutView({
                     )}
                   </div>
                 )}
-                {fulfil !== "pickup" && (
-                <label className="block sm:col-span-2">
-                  <span className="mb-1 block text-sm">{t("giftNoteLabel")}</span>
-                  <textarea
-                    value={giftNote}
-                    onChange={(e) => setGiftNote(e.target.value.slice(0, 255))}
-                    rows={2}
-                    placeholder={t("giftNotePlaceholder")}
-                    className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5"
-                  />
-                </label>
-                )}
-              </fieldset>
             </section>
           )}
 
           {provider === "bch" && checkout.bch?.receipts && (
-            <section>
+            <section className={hideUnless(3)}>
               <h2 className="text-xl">Your receipt</h2>
               <p className="mt-1 text-sm text-muted">
                 Get it as an <span className="font-medium text-ink">Om Receipt</span>: a CashToken in your own wallet, one of a kind and numbered by your order. Shipping updates still come by email.
@@ -866,7 +983,22 @@ export function CheckoutView({
             </section>
           )}
 
-          <section>
+          {needsForm && fulfil !== "pickup" && (
+            <fieldset disabled={Boolean(paypalOrder)} className={`disabled:opacity-60 ${hideUnless(3)}`}>
+                <label className="block">
+                  <span className="mb-1 block text-sm">{t("giftNoteLabel")}</span>
+                  <textarea
+                    value={giftNote}
+                    onChange={(e) => setGiftNote(e.target.value.slice(0, 255))}
+                    rows={2}
+                    placeholder={t("giftNotePlaceholder")}
+                    className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5"
+                  />
+                </label>
+            </fieldset>
+          )}
+
+          <section className={hideUnless(3)}>
             <dl className="grid grid-cols-[1fr_auto] gap-y-1 border-t border-line pt-4 text-[0.95rem]">
               <dt className="text-muted">Items</dt>
               <dd className="text-right">{dollars(subtotalCents)}</dd>
@@ -886,8 +1018,14 @@ export function CheckoutView({
               )}
               <dt className="text-muted">{fulfil === "pickup" ? "Pickup" : fulfil === "delivery" ? "Delivery" : "Shipping"}</dt>
               <dd className="text-right">{live && !chosenRate ? <span className="text-muted">{t("shipPickFirst")}</span> : shipping ? dollars(shipping) : "Free"}</dd>
+              {live && (showTax || taxCents === null) && (
+                <>
+                  <dt className="text-muted">Estimated tax</dt>
+                  <dd className="text-right">{taxCents !== null ? dollars(taxCents) : <span className="text-muted">{chosenRate ? "Added at payment" : t("shipPickFirst")}</span>}</dd>
+                </>
+              )}
               <dt className="text-lg font-medium">Total</dt>
-              <dd className="text-right text-lg font-medium">{dollars(subtotalCents - discount + shipping)}</dd>
+              <dd className="text-right text-lg font-medium">{dollars(total)}</dd>
             </dl>
             {couponsOn && !coupon && !paypalOrder && (
               <div className="mt-2 text-sm">
@@ -920,7 +1058,7 @@ export function CheckoutView({
                 {couponError && <p className="mt-1 text-sale">{couponError}</p>}
               </div>
             )}
-            {checkout.taxAdded && provider === "stripe" && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
+            {checkout.taxAdded && provider === "stripe" && taxCents === null && <p className="mt-1 text-sm text-muted">Sales tax, where it applies, is added on the payment page.</p>}
             {provider === "stripe" && fulfil === "ship" && !live && <p className="mt-1 text-sm text-muted">{t("giftStripeNote")}</p>}
 
             {checkout.mode === "test" && provider === "stripe" && placeCode === "IN" && (
@@ -944,22 +1082,11 @@ export function CheckoutView({
                 </button>
               </>
             ) : (
-              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || (live && !chosenRate)} className="btn btn-primary mt-6 w-full">
-                {loading
-                  ? "Starting secure checkout…"
-                  : provider === "exodus"
-                    ? "Continue to Exodus Pay"
-                    : provider === "bch"
-                      ? "Pay with Bitcoin Cash"
-                    : provider === "paypal"
-                      ? "Continue to PayPal"
-                      : provider === "zelle"
-                        ? "Place order and get the Zelle details"
-                        : provider === "venmo"
-                          ? "Place order and get the Venmo details"
-                          : "Continue to secure payment"}
+              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || (live && !chosenRate)} className={`btn btn-primary mt-6 w-full ${stepped ? "max-md:hidden" : ""}`}>
+                {payLabel}
               </button>
             )}
+            {returnsLine && <p className={`mt-3 text-center text-sm text-muted ${stepped ? "max-md:hidden" : ""}`}>{returnsLine}</p>}
             <p className="mt-3 flex items-center justify-center gap-2 text-center text-sm text-muted">
               <ShieldIcon size={16} />{" "}
               {provider === "exodus"
@@ -987,7 +1114,7 @@ export function CheckoutView({
         </div>
       )}
 
-      <div className="mt-8 flex justify-between text-sm">
+      <div className={`mt-8 flex justify-between text-sm ${hideUnless(3)}`}>
         <Link href="/shop" className="underline underline-offset-4">
           Continue shopping
         </Link>
@@ -995,6 +1122,33 @@ export function CheckoutView({
           Clear cart
         </button>
       </div>
+
+      {/* Phone: Back / Next (Pay on the last step) fixed at the bottom of every step. */}
+      {checkout && place && rate && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ivory px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          {step === 3 && returnsLine && !paypalOrder && <p className="mb-2 text-center text-xs text-muted">{returnsLine}</p>}
+          {step === 2 && nextBlocked && <p className="mb-2 text-center text-xs text-muted">{quoteBusy ? t("shipFinding") : t("shipPickFirst")}</p>}
+          {Object.keys(fieldErrors).length > 0 && step === 1 && <p role="alert" className="mb-2 text-center text-xs text-sale">Please fix the highlighted fields.</p>}
+          <div className="flex gap-3">
+            {step > 1 && (
+              <button type="button" onClick={() => goTo((step - 1) as 1 | 2)} className="btn btn-outline h-14 flex-1 text-base">
+                Back
+              </button>
+            )}
+            {step < 3 ? (
+              <button type="button" onClick={goNext} disabled={nextBlocked} className="btn btn-primary h-14 flex-[2] text-base">
+                Next
+              </button>
+            ) : (
+              !paypalOrder && (
+                <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || (live && !chosenRate)} className="btn btn-primary h-14 flex-[2] text-base">
+                  {payLabel}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

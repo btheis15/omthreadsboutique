@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
+import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, variantAvailable, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
 import { Price } from "./Price";
 
@@ -52,7 +52,7 @@ export function ProductPurchase({ product, onSiteCheckout }: { product: Product;
 
   return (
     <>
-      <Price price={price} compareAt={variant ? (variant.compareAtPrice ?? (variant.price === undefined ? product.compareAtPrice : undefined)) : product.compareAtPrice} className="mt-3 text-xl font-medium" />
+      <Price price={price} compareAt={variantCompareAt(product, variant)} className="mt-3 text-xl font-medium" />
       {product.saleEndsOn && (
         <p className="mt-1 text-sm text-sale">
           Sale ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
