@@ -1708,3 +1708,9 @@
     padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
   }
 }
+
+@keyframes sale-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
