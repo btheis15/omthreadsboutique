@@ -31,7 +31,7 @@ type Summary = {
   email: string | null;
   emailing: boolean;
   country: string;
-  items: { title: string; option: string | null; quantity: number; unitCents: number }[];
+  items: { title: string; option: string | null; quantity: number; unitCents: number; gift?: boolean }[];
   subtotalCents: number;
   shippingCents: number;
   taxCents: number;
@@ -242,11 +242,12 @@ export default async function SuccessPage({ searchParams }: Props) {
         {summary.items.map((i, n) => (
           <li key={n} className="flex justify-between gap-4 py-4">
             <span>
+              {i.gift && <span className="mb-0.5 block text-xs font-medium uppercase tracking-[0.12em] text-accent">Free gift</span>}
               {i.quantity > 1 ? `${i.quantity} × ` : ""}
               {i.title}
               {i.option && <span className="block text-sm text-muted">{i.option}</span>}
             </span>
-            <span>{dollars(i.unitCents * i.quantity)}</span>
+            <span className={i.gift ? "text-accent" : undefined}>{i.gift ? "Free" : dollars(i.unitCents * i.quantity)}</span>
           </li>
         ))}
       </ul>

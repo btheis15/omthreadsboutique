@@ -22,7 +22,8 @@ import { PayPalButtons } from "./PayPalButtons";
 import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
 import { PieceSpotlight } from "./PieceSpotlight";
 import type { Product } from "@/lib/types";
-import { variantLabel, variantPrice } from "@/lib/variants";
+import { regularKey, variantLabel, variantPrice } from "@/lib/variants";
+import { Price } from "@/components/Price";
 import type { PiecePhotos } from "@/app/api/piece-photos/route";
 
 type Provider = CheckoutInfo["providers"][number];
@@ -70,6 +71,7 @@ export function CheckoutView({
   colorNote = null,
   freeShippingThreshold = 0,
   freeGift = null,
+  regular = {},
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -93,6 +95,8 @@ export function CheckoutView({
   freeShippingThreshold?: number;
   /** The free-gift offer (e.g. a free pouch with 2+ items), when it's on and in stock. Never with a buy-alone piece. */
   freeGift?: FreeGiftOffer | null;
+  /** Regular prices of lines on sale, from the catalog (see regularPrices), shown struck through. */
+  regular?: Record<string, number>;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -113,6 +117,8 @@ export function CheckoutView({
     linkPending && linkCart
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
+  const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
+  const savedCents = items.reduce((n, i) => n + Math.max(0, Math.round((regularOf(i) ?? i.price) * 100) - Math.round(i.price * 100)) * i.qty, 0);
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // The free gift: only with a normal bag (a one-piece or Hot Sale checkout is never eligible).
   const offer = buyAlone || linkPending ? null : freeGift;
@@ -618,7 +624,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · {formatPrice(item.price * item.qty)}
+                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -716,7 +722,7 @@ export function CheckoutView({
                 </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
                 <p className="text-sm text-muted">
-                  Qty {item.qty} · {formatPrice(item.price * item.qty)}
+                  Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>
                 <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="mt-1 text-sm font-medium text-accent underline-offset-4 hover:underline">
                   {photosFor(item, photos[item.slug]).length > 1 ? `See all ${photosFor(item, photos[item.slug]).length} photos` : "See it bigger"}
@@ -1074,6 +1080,12 @@ export function CheckoutView({
             <dl className="grid grid-cols-[1fr_auto] gap-y-1 border-t border-line pt-4 text-[0.95rem]">
               <dt className="text-muted">Items</dt>
               <dd className="text-right">{dollars(subtotalCents)}</dd>
+              {savedCents > 0 && (
+                <>
+                  <dt className="text-muted">Sale savings</dt>
+                  <dd className="text-right text-sale">−{dollars(savedCents)}</dd>
+                </>
+              )}
               {gift && (
                 <>
                   <dt className="text-muted">Free gift{gift.option ? ` · ${gift.option}` : ""}</dt>

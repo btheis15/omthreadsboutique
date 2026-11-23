@@ -14,6 +14,21 @@ export const variantPrice = (p: Product, v?: ProductVariant) => v?.price ?? p.pr
  */
 export const variantCompareAt = (p: Product, v?: ProductVariant) => (v && v.price !== undefined ? v.compareAtPrice : p.compareAtPrice);
 
+/** Regular prices of every sellable line, keyed by `regularKey` (product id + option id), for cart lines that only store the sale price. */
+export const regularKey = (productId: string, variantId?: string) => `${productId}|${variantId ?? ""}`;
+export function regularPrices(products: Product[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of products) {
+    if (hasOptions(p)) {
+      for (const v of p.variants!) {
+        const c = variantCompareAt(p, v);
+        if (c !== undefined && c > variantPrice(p, v)) out[regularKey(p.id, v.id)] = c;
+      }
+    } else if (p.compareAtPrice !== undefined && p.compareAtPrice > p.price) out[regularKey(p.id)] = p.compareAtPrice;
+  }
+  return out;
+}
+
 /** The variant that sets a product's "from" price on listings: the cheapest (the first one on a tie). */
 export const cheapestVariant = (p: Product): ProductVariant | undefined =>
   hasOptions(p) ? p.variants!.reduce((a, b) => (variantPrice(p, b) < variantPrice(p, a) ? b : a)) : undefined;
