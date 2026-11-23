@@ -130,6 +130,8 @@ export type SiteSettings = {
   hotSaleHeading?: string;
   /** The PUBLIC Meta (Facebook / Instagram) pixel id, digits only; absent when the owner hasn't set one (feed `settings.metaPixelId`). */
   metaPixelId?: string;
+  /** Site-wide sale banner (e.g. Black Friday), shown above the top strips. Present in the feed only while it should show (feed `settings.saleBanner`). `endsOn` is YYYY-MM-DD. */
+  saleBanner?: { title: string; text?: string; endsOn?: string };
 };
 
 /** A shipping option at checkout (from the Om Threads admin's Checkout setup). */

@@ -352,12 +352,33 @@ export async function getFeedText(key: string): Promise<string | undefined> {
   return typeof v === "string" && v.trim() ? v : undefined;
 }
 
+/** Defensive shape check for the feed's sale banner: a non-empty title is required, else no banner. */
+function cleanSaleBanner(v: unknown): SiteSettings["saleBanner"] {
+  if (!v || typeof v !== "object") return undefined;
+  const b = v as Record<string, unknown>;
+  if (typeof b.title !== "string" || !b.title.trim()) return undefined;
+  const text = typeof b.text === "string" && b.text.trim() ? b.text.trim() : undefined;
+  const endsOn = typeof b.endsOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endsOn) ? b.endsOn : undefined;
+  return { title: b.title.trim(), ...(text && { text }), ...(endsOn && { endsOn }) };
+}
+
+/** DEV-ONLY local preview: SALE_BANNER_PREVIEW=1 injects a sample banner (never set in production). */
+function devSaleBanner(): SiteSettings["saleBanner"] {
+  if (process.env.SALE_BANNER_PREVIEW !== "1" || process.env.NODE_ENV === "production") return undefined;
+  return { title: "Black Friday Sale", text: "20% off everything · through Cyber Monday", endsOn: "2026-11-30" };
+}
+
 export async function getSettings(): Promise<SiteSettings> {
   if (catalogSource === "shop") {
-    const { heroImages, ...rest } = (await shopCatalog()).settings;
-    return { ...defaultSettings, ...rest, heroImages: cleanHeroImages(heroImages) };
+    const { heroImages, saleBanner, ...rest } = (await shopCatalog()).settings;
+    return {
+      ...defaultSettings,
+      ...rest,
+      heroImages: cleanHeroImages(heroImages),
+      saleBanner: cleanSaleBanner(saleBanner) ?? devSaleBanner(),
+    };
   }
-  if (!client) return defaultSettings;
+  if (!client) return { ...defaultSettings, saleBanner: devSaleBanner() };
   const row = await query<
     (Partial<Omit<SiteSettings, "heroImage">> & { heroImage?: SanityImage }) | null
   >(
