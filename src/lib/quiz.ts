@@ -56,6 +56,28 @@ export type QuizResult = {
 const isSoldOut = (p: Product) => p.stock === 0;
 const norm = (s: string) => s.trim().toLowerCase();
 
+/** Dot colours for names that aren't in the shop's colour list (option names like "Hot Pink"), so every quiz colour gets one. */
+const DOTS: Record<string, string> = {
+  black: "#1f1f1f", white: "#f7f4ec", ivory: "#f3ecd9", cream: "#efe6cf", beige: "#d9c6a5", camel: "#b98b57", tan: "#c19a6b",
+  brown: "#7a5236", bronze: "#9a6b3a", cinnamon: "#a0592d", gray: "#9a9a9a", grey: "#9a9a9a", charcoal: "#4a4a4a", ash: "#8d8a86",
+  red: "#a83a2c", maroon: "#6e1f2a", burgundy: "#6b1f33", rust: "#a4502b", salmon: "#e8907a", peach: "#f2b89a", orange: "#e07b39",
+  mustard: "#c9a227", yellow: "#e8c547", gold: "#c9a24a", pink: "#e6a1b8", rose: "#d98ca0", "hot pink": "#d6336c", "light pink": "#f2c4d0",
+  purple: "#6f4a8e", lilac: "#b9a2d0", blue: "#3f6ea8", navy: "#22345a", sky: "#8fb8de", teal: "#2c7a7b", green: "#4f7f4a",
+  "mint green": "#9fd8bf", mint: "#9fd8bf", sage: "#9caf88", olive: "#7a7d3a", forest: "#2f5d3a",
+};
+const MULTI = "conic-gradient(#a83a2c, #e8c547, #4f7f4a, #3f6ea8, #6f4a8e, #a83a2c)";
+function colorDot(label: string): string {
+  const n = label.toLowerCase().replace(/[^a-z& ]/g, " ").replace(/\s+/g, " ").trim();
+  if (DOTS[n]) return DOTS[n];
+  // "Ocean Blue", "Heather Grey": the colour word, last one first; mixes ("Combo", "Floral", "&", "and") get the multicolour dot.
+  if (/\b(combo|floral|multi|multicolou?r)\b|&| and /.test(n) && !Object.keys(DOTS).some((k) => n === k)) {
+    const words = n.split(" ").filter((w) => DOTS[w]);
+    return words.length === 1 && !/&| and /.test(n) ? DOTS[words[0]] : MULTI;
+  }
+  const word = n.split(" ").reverse().find((w) => DOTS[w]);
+  return word ? DOTS[word] : MULTI;
+}
+
 /** One key per color, whether the piece spells it "grey" (list value), "Gray" (label) or "Teal". */
 export function colorKey(lists: Pick<Lists, "colors">, raw: string): string {
   const n = norm(raw);
@@ -180,7 +202,8 @@ export function buildQuiz(
     .slice(0, 8)
     .map(([key]) => {
       const item = lists.colors.find((c) => norm(c.value) === key);
-      return { key, label: item?.label ?? key.replace(/\b\w/g, (m) => m.toUpperCase()), hex: item?.hex, filter: item?.value };
+      const label = item?.label ?? key.replace(/\b\w/g, (m) => m.toUpperCase());
+      return { key, label, hex: item?.hex || colorDot(label), filter: item?.value };
     });
 
   const bands = priceBands(quizProducts.map((p) => p.price));
