@@ -112,19 +112,6 @@
     "default": "You've unlocked free shipping ✨"
   },
   {
-    "key": "checkoutBagSaved",
-    "group": "Checkout",
-    "label": "Buy now: your bag was set aside",
-    "hint": "{count} is the number of items.",
-    "default": "Checking out just this piece. Your bag ({count}) is saved and comes back after you pay."
-  },
-  {
-    "key": "checkoutBagRestore",
-    "group": "Checkout",
-    "label": "Buy now: button to add the bag back",
-    "default": "Add my bag back"
-  },
-  {
     "key": "checkoutComingSoonTitle",
     "group": "Checkout & cart",
     "label": "Checkout (not yet open): heading",

@@ -161,6 +161,18 @@ export const cart = {
     set({ aside, gift: null });
     cart.replace(items);
   },
+  /** A direct link's pieces join the bag: a piece already in it keeps the larger quantity; anything set aside comes back. */
+  addLink(items: Omit<CartItem, "key">[]) {
+    load();
+    const next = [...state.items, ...state.aside.filter((a) => !state.items.some((i) => i.key === a.key))];
+    for (const l of items) {
+      const key = cartKey(l.productId, l.variantId);
+      const at = next.findIndex((i) => i.key === key);
+      if (at === -1) next.push({ ...l, key, qty: clamp(l.qty, l.maxQty) });
+      else next[at] = { ...next[at], ...l, key, qty: clamp(Math.max(next[at].qty, l.qty), l.maxQty) };
+    }
+    set({ items: next.filter((i) => i.qty > 0), aside: [] });
+  },
   /** Swaps one line for another in the same place (a different colour picked at checkout). */
   swap(key: string, item: Omit<CartItem, "key" | "qty">) {
     load();
