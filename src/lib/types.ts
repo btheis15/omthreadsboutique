@@ -180,5 +180,7 @@ export type CheckoutInfo = {
   /** Typed coupon codes: at least one is switched on, so checkout offers a code box. */
   couponCodes?: boolean;
   /** Sales partners: open for sign-ups (their sales are paid with Bitcoin Cash), at this commission. */
+  /** Free gift with purchase (e.g. a free pouch with 2+ items): present only while the offer is on and the gift is in stock. The product, its options and stock come from the catalog. `endsOn` is YYYY-MM-DD. */
+  freeGift?: { productId: string; minItems: number; endsOn: string | null; label: string };
   partners?: { ratePercent: number; business: { name: string; address: string | null; email: string | null } };
 };

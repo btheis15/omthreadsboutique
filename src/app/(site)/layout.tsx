@@ -8,6 +8,7 @@ import { RevealObserver } from "@/components/motion/RevealObserver";
 import { SaleBanner } from "@/components/SaleBanner";
 import { PartnerRef } from "@/components/PartnerRef";
 import { catalogSource, getCheckout, getLists, getMenus, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
+import { giftOffer } from "@/lib/free-gift";
 import { makeT } from "@/lib/site-text";
 import { carriedCrafts, typesWithProducts } from "@/lib/lists";
 
@@ -64,7 +65,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         text={text}
         menu={menus.footer}
       />
-      <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} text={text} />
+      <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} text={text} freeGift={giftOffer(checkout?.freeGift, products)} />
       <RevealObserver />
       <PartnerRef />
       <MetaPixel pixelId={settings.metaPixelId} />

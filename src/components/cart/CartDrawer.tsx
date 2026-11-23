@@ -7,9 +7,11 @@ import { formatPrice } from "@/lib/site";
 import { makeT } from "@/lib/site-text";
 import { CloseIcon, MinusIcon, PlusIcon } from "../icons";
 import { ProductImage } from "../ProductImage";
+import type { FreeGiftOffer } from "@/lib/free-gift";
+import { FreeGift, GiftGuard } from "./FreeGift";
 import { cart, useCart } from "./store";
 
-export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThreshold: number; text?: Record<string, string> }) {
+export function CartDrawer({ freeShippingThreshold, text, freeGift = null }: { freeShippingThreshold: number; text?: Record<string, string>; freeGift?: FreeGiftOffer | null }) {
   const t = makeT(text);
   const { items, open, subtotal, count } = useCart();
 
@@ -29,6 +31,7 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
 
   return (
     <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+      <GiftGuard offer={freeGift} />
       <div
         className={`absolute inset-0 bg-ink/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`}
         onClick={() => cart.close()}
@@ -79,7 +82,8 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
                 </div>
               </div>
             )}
-            <ul className="flex-1 divide-y divide-line overflow-y-auto px-4 md:px-6">
+            <div className="flex-1 overflow-y-auto">
+            <ul className="divide-y divide-line px-4 md:px-6">
               {items.map((item, i) => (
                 <li
                   key={item.key}
@@ -144,6 +148,8 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
                 </li>
               ))}
             </ul>
+            {freeGift && <FreeGift offer={freeGift} paid={count} focusable={open} className="mx-4 mt-2 mb-4 md:mx-6" />}
+            </div>
             <div className="border-t border-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-6">
               <div className="mb-1 flex justify-between text-lg">
                 <span>Subtotal</span>

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     walletsOnPage?: unknown;
     meta?: unknown;
   } | null;
-  const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
+  const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty), ...(l.gift === true && { gift: true as const }) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Online checkout isn't available yet. Please buy on Etsy." }, { status: 501 });
 

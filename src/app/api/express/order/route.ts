@@ -13,7 +13,7 @@ import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const raw = body?.lines as CheckoutLine[] | undefined;
-  const lines = Array.isArray(raw) ? raw.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
+  const lines = Array.isArray(raw) ? raw.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty), ...(l.gift === true && { gift: true as const }) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Online checkout isn't available yet." }, { status: 501 });
   const str = (v: unknown, n = 200) => (typeof v === "string" ? v.trim().slice(0, n) : "");
