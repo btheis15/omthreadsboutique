@@ -1714,3 +1714,18 @@
     background-position: -200% 0;
   }
 }
+
+/* Sale banner: a glint sweeping across, and twinkling stars. Reduced motion: still. */
+@keyframes sale-glint {
+  0% { transform: translateX(-120%); }
+  45%, 100% { transform: translateX(420%); }
+}
+@keyframes sale-twinkle {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.45; transform: scale(0.7) rotate(45deg); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sale-glint { animation: sale-glint 5s ease-in-out infinite; }
+  .sale-twinkle { animation: sale-twinkle 2.4s ease-in-out infinite; }
+  .sale-twinkle-late { animation-delay: 1.2s; }
+}
