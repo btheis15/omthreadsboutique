@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Bold } from "@/components/Bold";
+import { Price } from "@/components/Price";
 import { formatPrice } from "@/lib/site";
 import { makeT } from "@/lib/site-text";
+import { regularKey } from "@/lib/variants";
 import { CloseIcon, MinusIcon, PlusIcon } from "../icons";
 import { ProductImage } from "../ProductImage";
+import type { FreeGiftOffer } from "@/lib/free-gift";
+import { FreeGift, GiftGuard } from "./FreeGift";
 import { cart, useCart } from "./store";
 
-export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThreshold: number; text?: Record<string, string> }) {
+export function CartDrawer({ freeShippingThreshold, text, freeGift = null, regular = {} }: { freeShippingThreshold: number; text?: Record<string, string>; freeGift?: FreeGiftOffer | null; regular?: Record<string, number> }) {
   const t = makeT(text);
   const { items, open, subtotal, count } = useCart();
 
@@ -24,11 +28,15 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
     };
   }, [open]);
 
+  // Regular price per unit (from the current catalog) of each paid line on sale, and what the sale saves in all.
+  const regularOf = (i: (typeof items)[number]) => regular[regularKey(i.productId, i.variantId)];
+  const saved = items.reduce((n, i) => n + Math.max(0, (regularOf(i) ?? i.price) - i.price) * i.qty, 0);
   const remaining = freeShippingThreshold - subtotal;
   const progress = freeShippingThreshold > 0 ? Math.min(1, subtotal / freeShippingThreshold) : 0;
 
   return (
     <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+      <GiftGuard offer={freeGift} />
       <div
         className={`absolute inset-0 bg-ink/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`}
         onClick={() => cart.close()}
@@ -79,7 +87,8 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
                 </div>
               </div>
             )}
-            <ul className="flex-1 divide-y divide-line overflow-y-auto px-4 md:px-6">
+            <div className="flex-1 overflow-y-auto">
+            <ul className="divide-y divide-line px-4 md:px-6">
               {items.map((item, i) => (
                 <li
                   key={item.key}
@@ -104,7 +113,9 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
                         {item.title}
                         {item.option && <span className="block text-sm text-muted">{item.option}</span>}
                       </p>
-                      <p className="shrink-0 font-medium">{formatPrice(item.price * item.qty)}</p>
+                      <p className="shrink-0 text-right font-medium">
+                        <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="flex-wrap justify-end gap-x-1.5" />
+                      </p>
                     </div>
                     <div className="mt-auto flex items-center justify-between pt-2">
                       <div className="flex items-center rounded-full border border-line">
@@ -144,11 +155,14 @@ export function CartDrawer({ freeShippingThreshold, text }: { freeShippingThresh
                 </li>
               ))}
             </ul>
+            {freeGift && <FreeGift offer={freeGift} paid={count} focusable={open} className="mx-4 mt-2 mb-4 md:mx-6" />}
+            </div>
             <div className="border-t border-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-6">
               <div className="mb-1 flex justify-between text-lg">
                 <span>Subtotal</span>
                 <span className="font-medium">{formatPrice(subtotal)}</span>
               </div>
+              {saved > 0.004 && <p className="mb-1 text-sm font-medium text-sale">You&apos;re saving {formatPrice(saved)}</p>}
               <p className="mb-4 text-sm text-muted">Shipping and taxes calculated at checkout.</p>
               <Link
                 href="/checkout"

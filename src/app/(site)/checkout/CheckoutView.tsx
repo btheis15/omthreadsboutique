@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bold } from "@/components/Bold";
+import { FreeGift, giftLine } from "@/components/cart/FreeGift";
 import { type CartItem, cart, cartKey, useCart } from "@/components/cart/store";
 import { ExternalIcon, ShieldIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
 import { wcProjectId } from "@/lib/bch/walletConnect";
+import type { FreeGiftOffer } from "@/lib/free-gift";
+import type { CheckoutLine } from "@/lib/payments";
 import { shippingCents } from "@/lib/payments-shared";
 import { formatPrice, site } from "@/lib/site";
 import { makeT } from "@/lib/site-text";
@@ -18,7 +22,8 @@ import { PayPalButtons } from "./PayPalButtons";
 import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
 import { PieceSpotlight } from "./PieceSpotlight";
 import type { Product } from "@/lib/types";
-import { variantLabel, variantPrice } from "@/lib/variants";
+import { regularKey, variantLabel, variantPrice } from "@/lib/variants";
+import { Price } from "@/components/Price";
 import type { PiecePhotos } from "@/app/api/piece-photos/route";
 
 type Provider = CheckoutInfo["providers"][number];
@@ -65,6 +70,8 @@ export function CheckoutView({
   soldOutLink = null,
   colorNote = null,
   freeShippingThreshold = 0,
+  freeGift = null,
+  regular = {},
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -86,6 +93,10 @@ export function CheckoutView({
   colorNote?: { text: string; variantId?: string } | null;
   /** The site-wide free standard shipping amount in dollars (0 = none); the shop's own US rate wins when it has one. */
   freeShippingThreshold?: number;
+  /** The free-gift offer (e.g. a free pouch with 2+ items), when it's on and in stock. Never with a buy-alone piece. */
+  freeGift?: FreeGiftOffer | null;
+  /** Regular prices of lines on sale, from the catalog (see regularPrices), shown struck through. */
+  regular?: Record<string, number>;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -106,7 +117,14 @@ export function CheckoutView({
     linkPending && linkCart
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
+  const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
+  const savedCents = items.reduce((n, i) => n + Math.max(0, Math.round((regularOf(i) ?? i.price) * 100) - Math.round(i.price * 100)) * i.qty, 0);
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
+  // The free gift: only with a normal bag (a one-piece or Hot Sale checkout is never eligible).
+  const offer = buyAlone || linkPending ? null : freeGift;
+  const paidCount = items.reduce((n, i) => n + i.qty, 0);
+  const gift = offer && saved.gift && paidCount >= offer.minItems ? saved.gift : null;
+  const router = useRouter();
   // Every photo of the pieces in the cart (the cart keeps one each), for a closer look before paying.
   const [photos, setPhotos] = useState<Record<string, PiecePhotos>>(() =>
     spotlight
@@ -160,7 +178,7 @@ export function CheckoutView({
   // Live carrier rates: every provider gets the address form here, then the shopper picks a quoted option.
   // The shop says when a cart can't be priced live (an export over the AES limit): the flat prices apply to that cart.
   const [flatFor, setFlatFor] = useState<string | null>(null);
-  const flatKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty])]);
+  const flatKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), gift?.variantId ?? gift?.productId ?? null]);
   const live = fulfil === "ship" && place?.live === true && flatFor !== flatKey;
   const needsForm = asksAddress(provider, fulfil) || live;
   // Apple Pay / Google Pay without typing the address: only where the shop prices shipping live and Stripe can take it.
@@ -176,7 +194,7 @@ export function CheckoutView({
   const [quoteBusy, setQuoteBusy] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   // A quote is only good for the cart and address it was asked for; changing either makes it vanish.
-  const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim(), coupon?.code ?? ""]);
+  const quoteKey = JSON.stringify([placeCode, items.map((i) => [i.productId, i.variantId, i.qty]), gift?.variantId ?? gift?.productId ?? null, customer.line1.trim(), customer.line2.trim(), customer.city.trim(), customer.state.trim(), customer.postal_code.trim(), coupon?.code ?? ""]);
   const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
   // Ready to ask the carrier: everything the shop checks (name, email, phone, address) would pass.
   const addr = customer;
@@ -218,7 +236,7 @@ export function CheckoutView({
     couponRef.current = coupon;
   }, [coupon]);
   const couponsOn = Boolean(checkout?.couponCodes);
-  const lines = items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }));
+  const lines: CheckoutLine[] = [...items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty })), ...(gift ? [giftLine(gift)] : [])];
   const linesKey = JSON.stringify(lines);
   // Meta Pixel InitiateCheckout, once, when the page opens with a bag (not for the "Buy on Etsy" view).
   const initiated = useRef(false);
@@ -439,6 +457,14 @@ export function CheckoutView({
         setLoading(false);
         return;
       }
+      if (res.status === 409 && gift && /gift|pouch/i.test(data.error ?? "")) {
+        // The free gift was just taken (or the offer ended): clear it, refresh the stock, and let them pick again.
+        cart.setGift(null);
+        router.refresh();
+        setError(`${data.error} Choose your ${offer?.label.toLowerCase() ?? "gift"} again below, then continue.`);
+        setLoading(false);
+        return;
+      }
       if (data.errors?.coupon) {
         // The admin no longer accepts the code: drop it and say so.
         setCoupon(null);
@@ -598,7 +624,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · {formatPrice(item.price * item.qty)}
+                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -696,7 +722,7 @@ export function CheckoutView({
                 </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
                 <p className="text-sm text-muted">
-                  Qty {item.qty} · {formatPrice(item.price * item.qty)}
+                  Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>
                 <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="mt-1 text-sm font-medium text-accent underline-offset-4 hover:underline">
                   {photosFor(item, photos[item.slug]).length > 1 ? `See all ${photosFor(item, photos[item.slug]).length} photos` : "See it bigger"}
@@ -716,6 +742,8 @@ export function CheckoutView({
           </li>
         ))}
       </ul>
+
+      {onSite && offer && <FreeGift offer={offer} paid={paidCount} className={`mt-5 ${hideUnless(1, 3)}`} />}
 
       {!onSite && (
         <div className="mt-6 flex items-center justify-between text-lg">
@@ -1052,6 +1080,18 @@ export function CheckoutView({
             <dl className="grid grid-cols-[1fr_auto] gap-y-1 border-t border-line pt-4 text-[0.95rem]">
               <dt className="text-muted">Items</dt>
               <dd className="text-right">{dollars(subtotalCents)}</dd>
+              {savedCents > 0 && (
+                <>
+                  <dt className="text-muted">Sale savings</dt>
+                  <dd className="text-right text-sale">−{dollars(savedCents)}</dd>
+                </>
+              )}
+              {gift && (
+                <>
+                  <dt className="text-muted">Free gift{gift.option ? ` · ${gift.option}` : ""}</dt>
+                  <dd className="text-right text-accent">Free</dd>
+                </>
+              )}
               {coupon && (
                 <>
                   <dt className="text-muted">

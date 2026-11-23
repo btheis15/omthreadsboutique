@@ -10,7 +10,7 @@ import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
  */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { lines?: CheckoutLine[]; country?: string; customer?: unknown; coupon?: unknown } | null;
-  const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
+  const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty), ...(l.gift === true && { gift: true as const }) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Online checkout isn't available yet. Please buy on Etsy." }, { status: 501 });
 

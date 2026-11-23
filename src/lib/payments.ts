@@ -15,7 +15,8 @@ import { createHash } from "node:crypto";
 import { getCheckout } from "./catalog";
 import type { CheckoutInfo } from "./types";
 
-export type CheckoutLine = { productId: string; variantId?: string; qty: number };
+/** `gift`: the one free-gift line (see CheckoutInfo.freeGift); the shop checks the offer. */
+export type CheckoutLine = { productId: string; variantId?: string; qty: number; gift?: true };
 
 /** The tester link's cookie (set by /api/tester). */
 export const TESTER_COOKIE = "omthreads-tester";

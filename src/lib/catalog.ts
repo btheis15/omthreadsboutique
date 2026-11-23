@@ -111,9 +111,12 @@ export async function getMenus(): Promise<Menus> {
 
 /** The website checkout's settings, or null when it's off (or the catalog isn't the admin's). */
 export async function getCheckout(): Promise<CheckoutInfo | null> {
-  if (catalogSource !== "shop") return null;
+  if (catalogSource !== "shop") return devCheckout();
   try {
-    return (await shopCatalog()).checkout ?? null;
+    const info = (await shopCatalog()).checkout;
+    if (!info) return null;
+    const { freeGift, ...rest } = info;
+    return { ...rest, ...(cleanFreeGift(freeGift) && { freeGift: cleanFreeGift(freeGift) }) };
   } catch {
     return null;
   }
@@ -263,7 +266,7 @@ export async function getProducts(): Promise<Product[]> {
     const t = makeT(cat.text);
     return cat.products.map((p) => mapShopProduct(p, t));
   }
-  if (!client) return sampleProducts;
+  if (!client) return giftPreview() ? [...sampleProducts, devGiftProduct] : sampleProducts;
   const rows = await query<SanityProduct[]>(
     `*[_type == "product" && defined(slug.current)] | order(publishedAt desc) ${productFields}`,
   );
@@ -276,7 +279,7 @@ export async function getProduct(slug: string): Promise<Product | undefined> {
     const p = cat.products.find((x) => x.slug === slug);
     return p ? mapShopProduct(p, makeT(cat.text)) : undefined;
   }
-  if (!client) return sampleProducts.find((p) => p.slug === slug);
+  if (!client) return (giftPreview() ? [...sampleProducts, devGiftProduct] : sampleProducts).find((p) => p.slug === slug);
   const row = await query<SanityProduct | null>(
     `*[_type == "product" && slug.current == $slug][0] ${productFields}`,
     { slug },
@@ -366,6 +369,58 @@ function cleanSaleBanner(v: unknown): SiteSettings["saleBanner"] {
 function devSaleBanner(): SiteSettings["saleBanner"] {
   if (process.env.SALE_BANNER_PREVIEW !== "1" || process.env.NODE_ENV === "production") return undefined;
   return { title: "Black Friday Sale", text: "20% off everything · through Cyber Monday", endsOn: "2026-11-30" };
+}
+
+/** Defensive shape check for the feed's free gift: a product id is required, else no offer. */
+function cleanFreeGift(v: unknown): CheckoutInfo["freeGift"] {
+  if (!v || typeof v !== "object") return undefined;
+  const g = v as Record<string, unknown>;
+  if (typeof g.productId !== "string" || !g.productId) return undefined;
+  const minItems = typeof g.minItems === "number" && Number.isInteger(g.minItems) && g.minItems >= 1 ? g.minItems : 2;
+  const endsOn = typeof g.endsOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(g.endsOn) ? g.endsOn : null;
+  const label = typeof g.label === "string" && g.label.trim() ? g.label.trim().slice(0, 60) : "Free pouch";
+  return { productId: g.productId, minItems, endsOn, label };
+}
+
+/**
+ * DEV-ONLY local preview: FREE_GIFT_PREVIEW=1 (sample catalog only, never in production) adds a sample pouch with
+ * colour options and a checkout setup with a free gift, so the cart drawer and checkout can be seen without the admin.
+ */
+const giftPreview = () => process.env.FREE_GIFT_PREVIEW === "1" && process.env.NODE_ENV !== "production" && catalogSource === "sample";
+export const devGiftProduct: Product = {
+  id: "dev-pouch",
+  slug: "dev-embroidered-zipper-pouch",
+  title: "Embroidered Zipper Pouch with Threadwork and Gold Sequins",
+  type: "pouch",
+  price: 14,
+  images: [{ alt: "Embroidered zipper pouch", swatch: { base: "#a5282c", accent: "#e3bf80", pattern: "paisley" } }],
+  shortDescription: "A zippered pouch embroidered with threadwork and gold sequins.",
+  colors: [],
+  stock: 9,
+  options: ["Color"],
+  variants: [
+    { id: "pv-red", values: ["Red"], stock: 3, image: { alt: "Red pouch", swatch: { base: "#a5282c", accent: "#e3bf80", pattern: "paisley" } } },
+    { id: "pv-pink", values: ["Light Pink"], stock: 2, image: { alt: "Light Pink pouch", swatch: { base: "#e9b4c4", accent: "#b8873a", pattern: "jaali" } } },
+    { id: "pv-yellow", values: ["Yellow"], stock: 1, image: { alt: "Yellow pouch", swatch: { base: "#e6b93c", accent: "#8e2a18", pattern: "block" } } },
+    { id: "pv-hot", values: ["Hot Pink"], stock: 1, image: { alt: "Hot Pink pouch", swatch: { base: "#c2185b", accent: "#e3bf80", pattern: "weave" } } },
+    { id: "pv-peach", values: ["Peach"], stock: 0, image: { alt: "Peach pouch", swatch: { base: "#f2b48f", accent: "#7c1f42", pattern: "stripe" } } },
+    { id: "pv-mint", values: ["Mint Green"], stock: 1, image: { alt: "Mint Green pouch", swatch: { base: "#a9d8c0", accent: "#23706f", pattern: "paisley" } } },
+  ],
+  collections: [],
+  featured: false,
+  isNew: false,
+  publishedAt: "2026-11-01T00:00:00Z",
+};
+function devCheckout(): CheckoutInfo | null {
+  if (!giftPreview()) return null;
+  return {
+    mode: "live",
+    providers: ["zelle"],
+    zelle: { holdHours: 24 },
+    countries: [{ code: "US", name: "United States", rates: [{ id: "std", label: "Standard shipping", cents: 600, freeOverCents: 12000, minDays: 3, maxDays: 6 }] }],
+    taxAdded: false,
+    freeGift: { productId: devGiftProduct.id, minItems: 2, endsOn: "2026-11-30", label: "Free pouch" },
+  };
 }
 
 export async function getSettings(): Promise<SiteSettings> {

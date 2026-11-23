@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import type { CartItem } from "@/components/cart/store";
-import { getProduct, getSettings, getTextOverrides } from "@/lib/catalog";
+import { getProduct, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
+import { giftOffer } from "@/lib/free-gift";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
 import { american } from "@/lib/american";
 import type { Product } from "@/lib/types";
-import { defaultVariant, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
+import { defaultVariant, regularPrices, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
@@ -120,6 +121,8 @@ export default async function CheckoutPage({ searchParams }: Props) {
     metaShopsCart(params.products),
     params.products === undefined ? directProduct(params.product, params.color) : null,
   ]);
+  const products = await getProducts();
+  const freeGift = checkout ? giftOffer(checkout.freeGift, products) : null;
   const piece = direct && "product" in direct ? direct : null;
   const linkCart = metaCart ?? (piece ? [piece.line] : null);
   const couponParam = Array.isArray(params.coupon) ? params.coupon[0] : params.coupon;
@@ -138,6 +141,8 @@ export default async function CheckoutPage({ searchParams }: Props) {
       soldOutLink={direct && "soldOut" in direct ? direct.soldOut : null}
       colorNote={piece?.colorNote ? { text: piece.colorNote, variantId: piece.line.variantId } : null}
       freeShippingThreshold={settings.freeShippingThreshold}
+      freeGift={freeGift}
+      regular={regularPrices(products)}
     />
   );
 }

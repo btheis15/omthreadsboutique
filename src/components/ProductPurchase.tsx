@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { giftPhrase, type FreeGiftOffer } from "@/lib/free-gift";
 import type { Product, ProductVariant } from "@/lib/types";
 import type { ProductExpress } from "@/lib/payments";
 import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, lowStockLeft, variantAvailable, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
@@ -17,7 +18,7 @@ import { ProductExpressBuy } from "./ProductExpressBuy";
  */
 const noSubscribe = () => () => {};
 
-export function ProductPurchase({ product, onSiteCheckout, express = null }: { product: Product; onSiteCheckout: boolean; express?: ProductExpress | null }) {
+export function ProductPurchase({ product, onSiteCheckout, express = null, giftOffer = null }: { product: Product; onSiteCheckout: boolean; express?: ProductExpress | null; giftOffer?: FreeGiftOffer | null }) {
   const withOptions = hasOptions(product);
   // Opened from a printed tag (/p/<code> → ?option=<id>): that option is chosen, e.g. the colour on the tag.
   // Read after the page loads (the page itself is the same for everyone), until the shopper picks another.
@@ -63,6 +64,12 @@ export function ProductPurchase({ product, onSiteCheckout, express = null }: { p
       {product.saleEndsOn && (
         <p className="mt-1 text-sm text-sale">
           Sale ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+        </p>
+      )}
+      {giftOffer && (
+        <p className="mt-2 text-sm text-zari">
+          <span aria-hidden="true">🎁 </span>Buy {giftOffer.minItems}+, get a {giftPhrase(giftOffer.label)}
+          {giftOffer.endsOn && ` · through ${new Date(`${giftOffer.endsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
         </p>
       )}
       {left !== null && (

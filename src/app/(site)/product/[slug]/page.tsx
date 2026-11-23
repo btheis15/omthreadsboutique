@@ -10,7 +10,8 @@ import { ArtisanCard } from "@/components/ArtisanCard";
 import { EtsyRatingLine } from "@/components/EtsyRatingLine";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { directVideoUrl, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { giftOffer } from "@/lib/free-gift";
 import { liveCheckout, productExpress } from "@/lib/payments";
 import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { siteUrl } from "@/lib/site";
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout, express, lists, t] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT()]);
+  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout()]);
   if (!product) notFound();
 
   const category = typeByValue(lists, product.type);
@@ -106,7 +107,7 @@ export default async function ProductPage({ params }: Props) {
               <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
               <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} />
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
-              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} express={express} />
+              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
               <TrackViewContent slug={product.slug} title={product.title} price={product.price} />
               {/* A sales partner signed in on this device: their link for this piece. */}
               <PartnerShareBar title={product.title} />

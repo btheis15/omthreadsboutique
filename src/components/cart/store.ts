@@ -20,12 +20,24 @@ export type CartItem = {
   maxQty?: number;
 };
 
+/** The shopper's free gift (see lib/free-gift.ts): one option of the gift product, at no charge. `price` is its regular price, shown struck through. */
+export type GiftChoice = {
+  productId: string;
+  variantId?: string;
+  option?: string;
+  slug: string;
+  title: string;
+  price: number;
+  image?: import("@/lib/types").ProductImage;
+};
+
 /** `aside`: the bag set aside while a Hot Sale piece is bought on its own; it comes back after (or on request). */
-type State = { items: CartItem[]; open: boolean; aside: CartItem[] };
+type State = { items: CartItem[]; open: boolean; aside: CartItem[]; gift: GiftChoice | null };
 
 const KEY = "omthreads-cart-v1";
+const GIFT_KEY = "omthreads-cart-gift-v1";
 const ASIDE_KEY = "omthreads-cart-aside-v1";
-const EMPTY: State = { items: [], open: false, aside: [] };
+const EMPTY: State = { items: [], open: false, aside: [], gift: null };
 let state: State = EMPTY;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -39,6 +51,8 @@ function load() {
     if (raw) state = { ...state, items: (JSON.parse(raw) as CartItem[]).map((i) => ({ ...i, key: i.key ?? i.productId })) };
     const aside = window.localStorage.getItem(ASIDE_KEY);
     state = { ...state, aside: aside ? (JSON.parse(aside) as CartItem[]) : [] };
+    const gift = window.localStorage.getItem(GIFT_KEY);
+    state = { ...state, gift: gift ? (JSON.parse(gift) as GiftChoice) : null };
   } catch {
     /* storage unavailable (private mode) — cart still works in memory */
   }
@@ -61,6 +75,14 @@ function set(next: Partial<State>) {
       /* ignore */
     }
   }
+  if (next.gift !== undefined) {
+    try {
+      if (state.gift) window.localStorage.setItem(GIFT_KEY, JSON.stringify(state.gift));
+      else window.localStorage.removeItem(GIFT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
   listeners.forEach((l) => l());
 }
 
@@ -68,7 +90,7 @@ function subscribe(listener: () => void) {
   load();
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => {
-    if (e.key !== KEY && e.key !== ASIDE_KEY) return;
+    if (e.key !== KEY && e.key !== ASIDE_KEY && e.key !== GIFT_KEY) return;
     loaded = false;
     load();
     listeners.forEach((l) => l());
@@ -105,7 +127,12 @@ export const cart = {
     set({ items: state.items.filter((i) => i.key !== key) });
   },
   clear() {
-    set({ items: [] });
+    set({ items: [], gift: null });
+  },
+  /** Chooses (or with null, removes) the free gift. */
+  setGift(gift: GiftChoice | null) {
+    load();
+    set({ gift });
   },
   /** Empties the cart and puts exactly these lines in it (a Meta Shops checkout link). */
   replace(items: Omit<CartItem, "key">[]) {
@@ -130,7 +157,8 @@ export const cart = {
       if (at === -1) aside.push(i);
       else aside[at] = { ...i, qty: clamp(aside[at].qty + i.qty, i.maxQty) };
     }
-    set({ aside });
+    // A Hot Sale piece is bought on its own: no free gift with it.
+    set({ aside, gift: null });
     cart.replace(items);
   },
   /** Swaps one line for another in the same place (a different colour picked at checkout). */

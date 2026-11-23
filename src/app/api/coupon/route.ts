@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { code?: unknown; lines?: CheckoutLine[] } | null;
   const code = typeof body?.code === "string" ? body.code.trim().slice(0, 30) : "";
   if (!code) return NextResponse.json({ error: "Type a coupon code first." }, { status: 400 });
-  const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty) })) : [];
+  const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty), ...(l.gift === true && { gift: true as const }) })) : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Coupon codes aren't available yet." }, { status: 501 });
 
