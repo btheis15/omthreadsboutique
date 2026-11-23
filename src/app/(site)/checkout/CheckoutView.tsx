@@ -83,7 +83,7 @@ export function CheckoutView({
   linkCart?: Omit<CartItem, "key">[] | null;
   /** That link's coupon code, tried once the cart is in place (ignored if it isn't valid). */
   linkCoupon?: string | null;
-  /** A Hot Sale tile's link: the bag is set aside (not emptied) while this piece is bought on its own. */
+  /** A one-piece or Hot Sale link: the piece is added to the bag (the rest of the bag stays). */
   buyAlone?: boolean;
   /** A one-piece link's piece (/checkout?product=): shown large, with its colours, while it's the only thing in the cart. */
   spotlight?: Product | null;
@@ -102,9 +102,14 @@ export function CheckoutView({
   const saved = useCart();
   // Until the link's products are in the cart, show them (not what the cart held before).
   const [linkPending, setLinkPending] = useState(Boolean(linkCart));
+  // A bag set aside by an older version of the site comes straight back: nothing is ever hidden at checkout.
+  useEffect(() => {
+    if (saved.aside.length) cart.bringBack();
+  }, [saved.aside.length]);
   useEffect(() => {
     if (!linkCart) return;
-    if (buyAlone) cart.buyAlone(linkCart);
+    // A one-piece or Hot Sale link adds the piece to the bag (nothing is set aside); a Meta Shops cart replaces it.
+    if (buyAlone) cart.addLink(linkCart);
     else cart.replace(linkCart);
     // Drop Meta's parameters, so reloading keeps the shopper's own changes to the cart.
     const url = new URL(window.location.href);
@@ -120,8 +125,8 @@ export function CheckoutView({
   const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
   const savedCents = items.reduce((n, i) => n + Math.max(0, Math.round((regularOf(i) ?? i.price) * 100) - Math.round(i.price * 100)) * i.qty, 0);
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
-  // The free gift: only with a normal bag (a one-piece or Hot Sale checkout is never eligible).
-  const offer = buyAlone || linkPending ? null : freeGift;
+  // The free gift: with any bag of enough paid items.
+  const offer = linkPending ? null : freeGift;
   const paidCount = items.reduce((n, i) => n + i.qty, 0);
   const gift = offer && saved.gift && paidCount >= offer.minItems ? saved.gift : null;
   const router = useRouter();
@@ -547,11 +552,6 @@ export function CheckoutView({
       <div className="container-page max-w-xl py-20 text-center">
         {testerLink === "on" && <p className="mb-6 rounded-lg bg-sand p-3 text-sm">Tester link accepted: this browser now sees the test checkout. Add something to your cart to try it.</p>}
         <h1 className="text-4xl">Your cart is empty</h1>
-        {saved.aside.length > 0 && (
-          <button type="button" onClick={() => cart.bringBack()} className="btn btn-outline mt-8 mr-3">
-            {t("checkoutBagRestore")}
-          </button>
-        )}
         <Link href="/shop" className="btn btn-primary mt-8">
           Continue shopping
         </Link>
@@ -651,14 +651,6 @@ export function CheckoutView({
         </div>
       )}
       {cancelled && onSite && <p className={`mt-6 rounded-lg bg-sand p-3 text-sm ${hideUnless(1)}`}>Payment canceled. Nothing was charged, and your cart is still here.</p>}
-      {saved.aside.length > 0 && !linkPending && (
-        <p className={`mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-sand p-3 text-sm ${hideUnless(1)}`}>
-          <span>{t("checkoutBagSaved", { count: saved.aside.reduce((n, i) => n + i.qty, 0) })}</span>
-          <button type="button" onClick={() => cart.bringBack()} className="font-medium text-accent underline underline-offset-4">
-            {t("checkoutBagRestore")}
-          </button>
-        </p>
-      )}
 
       {!onSite && (
         <div className="mt-6 rounded-xl border border-line bg-sand p-5">
