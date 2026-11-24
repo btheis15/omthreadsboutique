@@ -112,6 +112,18 @@
     "default": "You've unlocked free shipping ✨"
   },
   {
+    "key": "cartShipTaxNote",
+    "group": "Checkout & cart",
+    "label": "Cart: shipping and tax note",
+    "default": "Shipping and estimated tax are shown at checkout before you pay."
+  },
+  {
+    "key": "cartGiftPickFirst",
+    "group": "Checkout & cart",
+    "label": "Cart: reminder to pick the free gift color",
+    "default": "Pick your free gift color first"
+  },
+  {
     "key": "checkoutComingSoonTitle",
     "group": "Checkout & cart",
     "label": "Checkout (not yet open): heading",
