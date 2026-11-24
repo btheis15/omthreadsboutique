@@ -163,7 +163,7 @@ export function ProductGallery({
               );
             const slide = (
               <div
-                className="relative aspect-[4/5] w-full shrink-0 snap-center overflow-hidden bg-sand"
+                className="relative aspect-[4/5] max-h-[28svh] w-full shrink-0 snap-center overflow-hidden bg-sand md:max-h-none"
                 aria-roledescription="slide"
                 aria-label={`${i + 1} of ${slides.length}`}
               >

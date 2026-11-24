@@ -5,8 +5,6 @@ import { giftPhrase, type FreeGiftOffer } from "@/lib/free-gift";
 import type { Product, ProductVariant } from "@/lib/types";
 import type { ProductExpress } from "@/lib/payments";
 import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, lowStockLeft, variantAvailable, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
-import { AdBuyBar } from "./ad/AdBuyBar";
-import { useAdMode } from "./ad/useAdMode";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
 import { Price } from "./Price";
 import { ProductExpressBuy } from "./ProductExpressBuy";
@@ -18,7 +16,7 @@ import { ProductExpressBuy } from "./ProductExpressBuy";
  */
 const noSubscribe = () => () => {};
 
-export function ProductPurchase({ product, onSiteCheckout, express = null, giftOffer = null }: { product: Product; onSiteCheckout: boolean; express?: ProductExpress | null; giftOffer?: FreeGiftOffer | null }) {
+export function ProductPurchase({ product, onSiteCheckout, express = null, giftOffer = null, afterPrice = null }: { afterPrice?: React.ReactNode; product: Product; onSiteCheckout: boolean; express?: ProductExpress | null; giftOffer?: FreeGiftOffer | null }) {
   const withOptions = hasOptions(product);
   // Opened from a printed tag (/p/<code> → ?option=<id>): that option is chosen, e.g. the colour on the tag.
   // Read after the page loads (the page itself is the same for everyone), until the shopper picks another.
@@ -54,18 +52,17 @@ export function ProductPurchase({ product, onSiteCheckout, express = null, giftO
 
   const price = variantPrice(product, variant);
   const stock = variant ? variant.stock : product.stock;
-  // From an Instagram / Facebook ad: the phone bar is the price and one "Buy now" (only when the shop takes orders itself).
-  const fromAd = useAdMode() && onSiteCheckout;
   const left = lowStockLeft(stock);
 
   return (
     <>
-      <Price price={price} compareAt={variantCompareAt(product, variant)} className="mt-3 text-xl font-medium" />
+      <Price price={price} compareAt={variantCompareAt(product, variant)} className="mt-2 text-xl font-medium md:mt-3" />
       {product.saleEndsOn && (
         <p className="mt-1 text-sm text-sale">
           Sale ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
         </p>
       )}
+      {afterPrice}
       {giftOffer && (
         <p className="mt-2 text-sm text-zari">
           <span aria-hidden="true">🎁 </span>Buy {giftOffer.minItems}+, get a {giftPhrase(giftOffer.label)}
@@ -95,11 +92,7 @@ export function ProductPurchase({ product, onSiteCheckout, express = null, giftO
         {onSiteCheckout && <ProductExpressBuy product={product} variant={variant} express={express} />}
         <AddToCart product={product} variant={variant} onSiteCheckout={onSiteCheckout} />
       </div>
-      {fromAd ? (
-        <AdBuyBar product={product} variant={variant} />
-      ) : (
-        <StickyBuyBar product={product} variant={variant} onSiteCheckout={onSiteCheckout} watchId="buy-buttons" />
-      )}
+      <StickyBuyBar product={product} variant={variant} onSiteCheckout={onSiteCheckout} />
     </>
   );
 }

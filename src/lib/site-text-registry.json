@@ -620,6 +620,33 @@
     "default": "Try removing a filter or two."
   },
   {
+    "key": "productStoryFamily",
+    "group": "Product page",
+    "label": "Product story: family line (under the price)",
+    "default": "Handpicked in India by our family \u2014 a small business in Lake Villa, IL."
+  },
+  {
+    "key": "productStoryWoven",
+    "group": "Product page",
+    "label": "Product story: woven pieces",
+    "hint": "{origin} is where the piece is made. Used when the craft is a weaving craft.",
+    "default": "Handwoven in {origin}."
+  },
+  {
+    "key": "productStoryMade",
+    "group": "Product page",
+    "label": "Product story: other pieces",
+    "hint": "{origin} is where the piece is made.",
+    "default": "Made in {origin}."
+  },
+  {
+    "key": "productTrustLine",
+    "group": "Product page",
+    "label": "Product trust line (under the price)",
+    "hint": "{days} is the return window from Settings. The delivery window here is the US estimate; Settings' shipping time is handling time.",
+    "default": "Ships in 4\u20139 business days (US) \u00b7 {days}-day returns on US orders"
+  },
+  {
     "key": "productPromiseQuality",
     "group": "Product page",
     "label": "Product promise 1",

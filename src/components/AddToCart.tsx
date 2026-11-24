@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import { variantLabel, variantPrice } from "@/lib/variants";
+import { variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
 import { cart } from "./cart/store";
 import { ExternalIcon } from "./icons";
+import { Price } from "./Price";
 
 /** variant: the option chosen, for a product with options. */
 type Props = { product: Product; variant?: ProductVariant; onSiteCheckout: boolean };
@@ -81,40 +82,29 @@ export function AddToCart({ product, variant, onSiteCheckout }: Props) {
   );
 }
 
-/** Slim sticky bar on phones so the main action is always within thumb reach. */
-export function StickyBuyBar({ product, variant, onSiteCheckout, watchId }: Props & { watchId: string }) {
-  // Only show once the main buttons have scrolled out of view.
-  const [visible, setVisible] = useState(false);
+/**
+ * Slim sticky bar on phones, from the first screen for every visitor: the price and one Add to cart (the same
+ * add as the main button, so AddToCart fires). An Etsy-only piece keeps its Etsy link; a sold-out one shows nothing.
+ */
+export function StickyBuyBar({ product, variant, onSiteCheckout }: Props) {
+  const soldOut = (variant ? variant.stock : product.stock) === 0;
+  // Room under the page for the bar, so it never covers the footer's last line.
   useEffect(() => {
-    const el = document.getElementById(watchId);
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) =>
-      setVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0),
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [watchId]);
-
-  if ((variant ? variant.stock : product.stock) === 0) return null;
+    if (soldOut) return;
+    document.documentElement.classList.add("ad-bar");
+    return () => document.documentElement.classList.remove("ad-bar");
+  }, [soldOut]);
+  if (soldOut) return null;
   const primaryIsEtsy = !onSiteCheckout && product.etsyUrl;
   return (
-    <div
-      aria-hidden={!visible}
-      inert={!visible}
-      className={`fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ivory/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur transition-transform duration-300 md:hidden ${
-        visible ? "translate-y-0" : "translate-y-full"
-      }`}
-    >
+    <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-line bg-ivory/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+      <Price price={variantPrice(product, variant)} compareAt={variantCompareAt(product, variant)} className="shrink-0 text-lg font-medium" />
       {primaryIsEtsy ? (
-        <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
+        <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary min-w-0 flex-1">
           Buy on Etsy <ExternalIcon size={16} />
         </a>
       ) : (
-        <button
-          type="button"
-          className="btn btn-primary w-full"
-          onClick={() => addToCart(product, variant)}
-        >
+        <button type="button" className="btn btn-primary min-w-0 flex-1" onClick={() => addToCart(product, variant)}>
           Add to cart
         </button>
       )}

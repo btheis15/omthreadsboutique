@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons";
+import { LeafIcon, ShieldIcon } from "@/components/icons";
 import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
@@ -56,6 +56,16 @@ export default async function ProductPage({ params }: Props) {
     product.colors.length && { label: "Color", value: product.colors.map((c) => colorLabel(lists, c)).join(", ") },
   ].filter(Boolean) as { label: string; value: string }[];
 
+  // Only a weaving craft is called "handwoven"; embroidery, print and the rest are "made in".
+  const woven = craft && /weav|woven|loom|handloom/i.test(`${craft.label} ${craft.summary}`);
+  const story = (
+    <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
+      {product.origin && <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin })}</p>}
+      <p className="text-ink/85">{t("productStoryFamily")}</p>
+      <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>
+    </div>
+  );
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -98,16 +108,16 @@ export default async function ProductPage({ params }: Props) {
             vtName={productVtName(product.slug)}
           />
 
-          <div className="container-page pt-6 md:px-0 md:pt-0">
+          <div className="container-page pt-4 md:px-0 md:pt-0">
             <div className="md:sticky md:top-28">
-              <p className="eyebrow mb-2">
+              <p className="eyebrow mb-1 md:mb-2">
                 {[craft?.label, category?.label].filter(Boolean).join(" · ")}
-                {product.origin && <span className="text-zari"> · {product.origin}</span>}
+                {product.origin && <span className="hidden text-zari md:inline"> · {product.origin}</span>}
               </p>
-              <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
+              <h1 className="text-[1.5rem] leading-tight md:text-5xl">{product.title}</h1>
               <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} />
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
-              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
+              <ProductPurchase afterPrice={story} product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
               <TrackViewContent slug={product.slug} title={product.title} price={product.price} />
               {/* A sales partner signed in on this device: their link for this piece. */}
               <PartnerShareBar title={product.title} />
@@ -115,12 +125,6 @@ export default async function ProductPage({ params }: Props) {
               <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-muted">
                 <li className="flex items-center gap-2">
                   <LeafIcon size={18} /> {t("productPromiseQuality")}
-                </li>
-                <li className="flex items-center gap-2">
-                  <TruckIcon size={18} /> {t("productPromiseShips", { shipsWithin: settings.shipsWithin })}
-                </li>
-                <li className="flex items-center gap-2">
-                  <ReturnIcon size={18} /> {t("promiseReturns", { days: settings.returnDays })}
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldIcon size={18} /> {t("productPromiseSecure")}
