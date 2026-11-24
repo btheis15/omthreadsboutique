@@ -7,14 +7,15 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
 import { TrackViewContent } from "@/components/TrackViewContent";
 import { ArtisanCard } from "@/components/ArtisanCard";
+import { Stars } from "@/components/Stars";
 import { EtsyRatingLine } from "@/components/EtsyRatingLine";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, getTestimonials, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, getTestimonials, getEtsyReviews, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { giftOffer } from "@/lib/free-gift";
 import { liveCheckout, productExpress } from "@/lib/payments";
 import { craftByValue, isWovenCraft, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
-import { formatPrice, siteUrl } from "@/lib/site";
+import { formatPrice, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo, testimonials] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout(), getTestimonials()]);
+  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo, testimonials, etsyReviews] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout(), getTestimonials(), getEtsyReviews()]);
   if (!product) notFound();
 
   const category = typeByValue(lists, product.type);
@@ -70,13 +71,20 @@ export default async function ProductPage({ params }: Props) {
       {pickup && <p className="text-sm text-muted">{pickup.cents === 0 ? t("productPickupFree") : t("productPickupPaid", { price: formatPrice(pickup.cents / 100) })}</p>}
       {review && (
         <figure className="mt-3 rounded-lg bg-sand px-3 py-2 text-sm">
+          {review.rating && <Stars rating={review.rating} className="text-base" />}
           <blockquote className="line-clamp-3 italic">“{review.quote}”</blockquote>
           <figcaption className="mt-1 text-muted">
             — {review.name}
             {review.location && `, ${review.location}`}
+            {review.verified && <span> · Verified buyer</span>}
           </figcaption>
         </figure>
       )}
+      <p className="text-sm">
+        <Link href={`/reviews/new?product=${encodeURIComponent(product.slug)}`} className="underline underline-offset-4">
+          {t("reviewsWriteLink")}
+        </Link>
+      </p>
     </div>
   );
 
@@ -129,7 +137,7 @@ export default async function ProductPage({ params }: Props) {
                 {product.origin && <span className="hidden text-zari md:inline"> · {product.origin}</span>}
               </p>
               <h1 className="text-[1.5rem] leading-tight md:text-5xl">{product.title}</h1>
-              <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} />
+              <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} reviews={etsyReviews} etsyUrl={site.etsyUrl} />
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
               <ProductPurchase afterPrice={story} product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
               <TrackViewContent slug={product.slug} title={product.title} price={product.price} />

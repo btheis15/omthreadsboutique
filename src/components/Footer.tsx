@@ -19,6 +19,7 @@ const groups = (categories: { slug: string; title: string }[]) => [
       { href: "/care-guide", label: "Care guide" },
       { href: "/policies/shipping", label: "Shipping" },
       { href: "/policies/returns", label: "Returns & exchanges" },
+      { href: "/reviews/new", label: "Write a review" },
       { href: "/contact", label: "Contact us" },
     ],
   },

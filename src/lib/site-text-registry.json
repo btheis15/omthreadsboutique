@@ -558,6 +558,36 @@
     "default": "Kind words from our customers"
   },
   {
+    "key": "reviewsWriteLink",
+    "group": "Reviews",
+    "label": "Write a review: link",
+    "default": "Write a review"
+  },
+  {
+    "key": "reviewsEtsyButton",
+    "group": "Reviews",
+    "label": "Read Etsy reviews: link",
+    "default": "Read Etsy reviews"
+  },
+  {
+    "key": "reviewsFormHeading",
+    "group": "Reviews",
+    "label": "Write a review: page heading",
+    "default": "Write a review"
+  },
+  {
+    "key": "reviewsFormIntro",
+    "group": "Reviews",
+    "label": "Write a review: intro",
+    "default": "Bought from us? Tell us how it went. We read every review before it goes up, and we show them as written."
+  },
+  {
+    "key": "reviewsThanks",
+    "group": "Reviews",
+    "label": "Write a review: thank-you",
+    "default": "Thanks! We read every review before it goes up."
+  },
+  {
     "key": "homeOccasionHeading",
     "group": "Home page",
     "label": "Collections: heading",

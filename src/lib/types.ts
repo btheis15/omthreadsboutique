@@ -106,6 +106,21 @@ export type Testimonial = {
   name: string;
   location?: string;
   product?: string;
+  /** Star rating 1-5, when the admin sends one (older feeds don't). */
+  rating?: number;
+  /** The reviewer's email matched a paid website order. */
+  verified?: boolean;
+  source?: "site" | "owner";
+};
+
+/** A review pulled from the Etsy shop. Etsy gives no buyer names, so none is stored. */
+export type EtsyReview = {
+  id: string;
+  rating: number;
+  text: string;
+  date: string;
+  listingTitle?: string;
+  productSlug?: string;
 };
 
 export type SiteSettings = {

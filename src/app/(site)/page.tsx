@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { EtsyReviewsButton } from "@/components/EtsyReviewsButton";
+import { Stars } from "@/components/Stars";
 import { Hero } from "@/components/Hero";
 import { HotSale, hotSalePicks } from "@/components/HotSale";
 import { ArrowIcon, LeafIcon, ReturnIcon, TruckIcon } from "@/components/icons";
@@ -6,7 +8,7 @@ import { Marquee } from "@/components/Marquee";
 import { BorderBand, Divider, JaaliPattern, Mandala, Paisley } from "@/components/ornaments";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
-import { directVideoUrl, getCollections, getLists, getT, getProducts, getSettings, getTestimonials, isSoldOut } from "@/lib/catalog";
+import { directVideoUrl, getCollections, getLists, getT, getProducts, getSettings, getTestimonials, getEtsyReviews, isSoldOut } from "@/lib/catalog";
 import { carriedCrafts } from "@/lib/lists";
 import { liveCheckout } from "@/lib/payments";
 import { site } from "@/lib/site";
@@ -16,11 +18,12 @@ export const revalidate = 300;
 const delay = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
 export default async function HomePage() {
-  const [products, collections, settings, testimonials, lists, t, onSiteCheckout] = await Promise.all([
+  const [products, collections, settings, testimonials, etsyReviews, lists, t, onSiteCheckout] = await Promise.all([
     getProducts(),
     getCollections(),
     getSettings(),
     getTestimonials(),
+    getEtsyReviews(),
     getLists(),
     getT(),
     liveCheckout(),
@@ -220,7 +223,7 @@ export default async function HomePage() {
       )}
 
       {/* Real customer reviews (only shown once added in the admin) */}
-      {testimonials.length > 0 && (
+      {(testimonials.length > 0 || etsyReviews.length > 0) && (
         <section className="mt-20 bg-sand py-16 md:mt-28 md:py-24">
           <div className="container-page">
             <div className="mb-10 text-center" data-reveal>
@@ -228,12 +231,31 @@ export default async function HomePage() {
               <h2 className="text-3xl md:text-5xl">{t("homeReviewsHeading")}</h2>
               {settings.etsyRating && (
                 <p className="mt-3 text-muted">
-                  <span className="text-marigold">★</span> {settings.etsyRating.toFixed(1)} on Etsy
-                  {settings.etsyReviewCount ? ` · ${settings.etsyReviewCount} reviews` : ""}
+                  {etsyReviews.length > 0 ? (
+                    <EtsyReviewsButton reviews={etsyReviews} etsyUrl={site.etsyUrl} className="underline decoration-line underline-offset-4 hover:text-ink">
+                      <span className="text-marigold">★</span> {settings.etsyRating.toFixed(1)} on Etsy
+                      {settings.etsyReviewCount ? ` · ${settings.etsyReviewCount} reviews` : ""}
+                    </EtsyReviewsButton>
+                  ) : (
+                    <>
+                      <span className="text-marigold">★</span> {settings.etsyRating.toFixed(1)} on Etsy
+                      {settings.etsyReviewCount ? ` · ${settings.etsyReviewCount} reviews` : ""}
+                    </>
+                  )}
                 </p>
               )}
+              <p className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                {etsyReviews.length > 0 && (
+                  <EtsyReviewsButton reviews={etsyReviews} etsyUrl={site.etsyUrl} className="btn btn-outline">
+                    {t("reviewsEtsyButton")}
+                  </EtsyReviewsButton>
+                )}
+                <Link href="/reviews/new" className="btn btn-outline">
+                  {t("reviewsWriteLink")}
+                </Link>
+              </p>
             </div>
-            <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-3 md:px-0">
+            {testimonials.length > 0 && <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-3 md:px-0">
               {testimonials.map((t, i) => (
                 <li
                   key={t.id}
@@ -244,15 +266,17 @@ export default async function HomePage() {
                   <p className="font-display text-5xl leading-none text-zari" aria-hidden="true">
                     “
                   </p>
+                  {t.rating && <Stars rating={t.rating} className="mt-1 block text-lg" />}
                   <blockquote className="mt-1 leading-relaxed">{t.quote}</blockquote>
                   <p className="mt-5 text-sm font-medium">
                     {t.name}
                     {t.location && <span className="font-normal text-muted"> · {t.location}</span>}
+                    {t.verified && <span className="font-normal text-muted"> · Verified buyer</span>}
                   </p>
                   {t.product && <p className="text-xs text-muted">{t.product}</p>}
                 </li>
               ))}
-            </ul>
+            </ul>}
           </div>
         </section>
       )}
