@@ -623,7 +623,7 @@
     "key": "productStoryFamily",
     "group": "Product page",
     "label": "Product story: family line (under the price)",
-    "default": "Handpicked in India by our family \u2014 a small business in Lake Villa, IL."
+    "default": "Handpicked in India by our family — a small business in Lake Villa, IL."
   },
   {
     "key": "productStoryWoven",
@@ -644,7 +644,20 @@
     "group": "Product page",
     "label": "Product trust line (under the price)",
     "hint": "{days} is the return window from Settings. The delivery window here is the US estimate; Settings' shipping time is handling time.",
-    "default": "Ships in 4\u20139 business days (US) \u00b7 {days}-day returns on US orders"
+    "default": "Ships in 4–9 business days (US) · {days}-day returns on US orders"
+  },
+  {
+    "key": "productPickupFree",
+    "group": "Product page",
+    "label": "Product page: free local pickup line",
+    "default": "Free local pickup in Lake Villa, IL"
+  },
+  {
+    "key": "productPickupPaid",
+    "group": "Product page",
+    "label": "Product page: local pickup line (when pickup costs something)",
+    "hint": "{price} is the pickup charge from Checkout setup.",
+    "default": "Local pickup in Lake Villa, IL ({price})"
   },
   {
     "key": "productPromiseQuality",

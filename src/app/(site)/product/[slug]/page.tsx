@@ -10,11 +10,11 @@ import { ArtisanCard } from "@/components/ArtisanCard";
 import { EtsyRatingLine } from "@/components/EtsyRatingLine";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, getTestimonials, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { giftOffer } from "@/lib/free-gift";
 import { liveCheckout, productExpress } from "@/lib/payments";
 import { craftByValue, isWovenCraft, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
-import { siteUrl } from "@/lib/site";
+import { formatPrice, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout()]);
+  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo, testimonials] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout(), getTestimonials()]);
   if (!product) notFound();
 
   const category = typeByValue(lists, product.type);
@@ -57,11 +57,26 @@ export default async function ProductPage({ params }: Props) {
   ].filter(Boolean) as { label: string; value: string }[];
 
   const woven = isWovenCraft(craft);
+  // Shops near Lake Villa can skip the wait: local pickup, when the shop offers it.
+  const pickup = onSiteCheckout ? checkoutInfo?.pickup : null;
+  // One real customer review near the price: one written about this piece if there is one, otherwise the newest.
+  const about = (r: (typeof testimonials)[number]) => [product.id, product.slug.toLowerCase(), product.title.toLowerCase()].includes((r.product ?? "").trim().toLowerCase());
+  const review = testimonials.find(about) ?? testimonials[0];
   const story = (
     <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
       <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin || "India" })}</p>
       <p className="text-ink/85">{t("productStoryFamily")}</p>
       <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>
+      {pickup && <p className="text-sm text-muted">{pickup.cents === 0 ? t("productPickupFree") : t("productPickupPaid", { price: formatPrice(pickup.cents / 100) })}</p>}
+      {review && (
+        <figure className="mt-3 rounded-lg bg-sand px-3 py-2 text-sm">
+          <blockquote className="line-clamp-3 italic">“{review.quote}”</blockquote>
+          <figcaption className="mt-1 text-muted">
+            — {review.name}
+            {review.location && `, ${review.location}`}
+          </figcaption>
+        </figure>
+      )}
     </div>
   );
 
