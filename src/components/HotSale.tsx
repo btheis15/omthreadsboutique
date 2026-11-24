@@ -54,7 +54,7 @@ export function HotSale({
                 href={href}
                 prefetch={false}
                 className="group flex h-full items-center gap-2.5 rounded-xl border border-ivory/20 bg-indigo-deep/55 p-1.5 pr-2.5 text-ivory backdrop-blur-md transition duration-500 hover:border-zari-light/70 hover:bg-indigo-deep/75 md:gap-4 md:p-2 md:pr-4"
-                aria-label={`${product.title}${option ? `, ${option}` : ""}, ${formatPrice(price)}${onSale ? `, was ${formatPrice(compareAt!)}` : ""}: ${onSiteCheckout ? t("homeHotBuy") : t("homeHotView")}`}
+                aria-label={`${product.title}${option ? `, ${option}` : ""}, ${formatPrice(price)}${onSale ? `, ${Math.round((1 - price / compareAt!) * 100)}% off` : ""}: ${onSiteCheckout ? t("homeHotBuy") : t("homeHotView")}`}
               >
                 <div className="relative aspect-[4/5] w-12 shrink-0 overflow-hidden rounded-lg bg-sand md:w-20">
                   <ProductImage image={variant?.image ?? product.images[0]} sizes="80px" className="transition duration-[1200ms] ease-soft group-hover:scale-[1.08]" />
@@ -63,7 +63,7 @@ export function HotSale({
                   <p className="line-clamp-2 text-[0.8rem] leading-snug md:text-[0.95rem]">{product.title}</p>
                   <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-[0.85rem] font-medium md:text-base">
                     <span className={onSale ? "text-zari-light" : undefined}>{formatPrice(price)}</span>
-                    {onSale && <s className="text-[0.75rem] font-normal text-ivory/60 md:text-[0.85rem]">{formatPrice(compareAt!)}</s>}
+                    {onSale && <span className="text-[0.7rem] font-normal text-zari-light/90">{Math.round((1 - price / compareAt!) * 100)}% off</span>}
                   </p>
                   <span className="mt-1 hidden items-center gap-1.5 text-xs font-medium text-zari-light md:inline-flex">
                     {onSiteCheckout ? t("homeHotBuy") : t("homeHotView")}

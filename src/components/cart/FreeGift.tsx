@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { formatPrice } from "@/lib/site";
 import { giftPhrase, type FreeGiftOffer } from "@/lib/free-gift";
 import { ProductImage } from "../ProductImage";
 import { cart, useCart, type GiftChoice } from "./store";
@@ -52,7 +51,7 @@ export function FreeGift({ offer, paid, focusable = true, className = "" }: { of
   const chosen = gift && offer.options.find((o) => o.variantId === gift.variantId);
 
   return (
-    <section className={`rounded-xl border border-zari/50 bg-gradient-to-b from-zari-light/25 to-sand/60 p-4 ${className}`} aria-label={offer.label}>
+    <section className={`rounded-xl border-2 border-zari/60 shadow-sm bg-gradient-to-b from-zari-light/25 to-sand/60 p-4 ${className}`} aria-label={offer.label}>
       {gift && (
         <div className="flex items-center gap-3">
           <button
@@ -90,7 +89,6 @@ export function FreeGift({ offer, paid, focusable = true, className = "" }: { of
           </div>
           <p className="shrink-0 text-right">
             <span className="block font-medium text-accent">Free</span>
-            <span className="block text-sm text-muted line-through">{formatPrice(gift.price)}</span>
           </p>
         </div>
       )}
@@ -100,12 +98,13 @@ export function FreeGift({ offer, paid, focusable = true, className = "" }: { of
           {!gift && (
             <>
               <p className="font-display text-xl leading-tight">
-                Choose your {phrase} <span aria-hidden="true">🎁</span>
+                <span aria-hidden="true">🎉</span> You&apos;ve earned a {phrase}
               </p>
-              <p className="mt-0.5 text-sm text-muted">Yours with {offer.minItems}+ pieces, while they last. Tap one.</p>
+              <p className="mt-0.5 text-sm font-medium">{offer.title}: pick your color</p>
+              <p className="text-xs text-muted">While supplies last.</p>
             </>
           )}
-          <div className={`${gift ? "" : "mt-3"} grid grid-cols-4 gap-2`} role="radiogroup" aria-label={`Choose your ${phrase}`}>
+          <div className={`${gift ? "" : "mt-3"} grid grid-cols-4 gap-2`} role="radiogroup" aria-label={`Pick your ${phrase} color`}>
             {offer.options.map((o, i) => {
               const on = Boolean(gift) && gift!.variantId === o.variantId;
               return (

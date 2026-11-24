@@ -368,7 +368,7 @@ function cleanSaleBanner(v: unknown): SiteSettings["saleBanner"] {
 /** DEV-ONLY local preview: SALE_BANNER_PREVIEW=1 injects a sample banner (never set in production). */
 function devSaleBanner(): SiteSettings["saleBanner"] {
   if (process.env.SALE_BANNER_PREVIEW !== "1" || process.env.NODE_ENV === "production") return undefined;
-  return { title: "Black Friday Sale", text: "20% off everything · through Cyber Monday", endsOn: "2026-11-30" };
+  return { title: "Black Friday", text: "20% off everything + a free pouch with 2 or more pieces", endsOn: "2026-11-30" };
 }
 
 /** Defensive shape check for the feed's free gift: a product id is required, else no offer. */
