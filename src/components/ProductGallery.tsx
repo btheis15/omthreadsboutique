@@ -156,7 +156,7 @@ export function ProductGallery({
                     onClick={() => setZoom(zoomImages.indexOf(s))}
                     aria-label={`Enlarge photo ${i + 1}`}
                   >
-                    <ProductImage image={s.image} preload={i === 0} sizes="(min-width: 768px) 50vw, 100vw" />
+                    <ProductImage image={s.image} preload={i === 0} sizes="(min-width: 768px) 50vw, 100vw" className="max-md:!object-contain" />
                   </button>
                   {s.image.live && <LiveMotion src={s.image.live} className="pointer-events-none [&_button]:pointer-events-auto" />}
                 </>
