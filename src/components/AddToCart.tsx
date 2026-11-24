@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import { variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
+import { american } from "@/lib/american";
 import { cart } from "./cart/store";
 import { ExternalIcon } from "./icons";
 import { Price } from "./Price";
@@ -119,7 +120,7 @@ export function StickyBuyBar({ product, variant, onSiteCheckout }: Props) {
         </a>
       ) : (
         <button type="button" className="btn btn-primary min-w-0 flex-1" onClick={() => addToCart(product, variant)}>
-          Add to cart
+          <span className="min-w-0 truncate">Add to cart{variant ? ` · ${american(variantLabel(variant))}` : ""}</span>
         </button>
       )}
     </div>

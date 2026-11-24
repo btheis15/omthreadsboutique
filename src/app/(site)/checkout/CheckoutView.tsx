@@ -246,10 +246,10 @@ export function CheckoutView({
   const couponsOn = Boolean(checkout?.couponCodes);
   const lines: CheckoutLine[] = [...items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty })), ...(gift ? [giftLine(gift)] : [])];
   const linesKey = JSON.stringify(lines);
-  // Meta Pixel InitiateCheckout, once, when the page opens with a bag (not for the "Buy on Etsy" view).
+  // Meta Pixel InitiateCheckout, once per page open, when the shopper actually starts (first typing, Next, or a pay button).
   const initiated = useRef(false);
   const hasBag = Boolean(checkout) && !linkPending && items.length > 0;
-  useEffect(() => {
+  const fireInitiate = useCallback(() => {
     if (!hasBag || initiated.current) return;
     initiated.current = true;
     const n = items.reduce((c, i) => c + i.qty, 0);
@@ -261,8 +261,36 @@ export function CheckoutView({
       value: Math.round(subtotal * 100) / 100,
       currency: "USD",
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per page open
-  }, [hasBag]);
+  }, [hasBag, items, subtotal]);
+  // Reminder opt-in (checked by default). One quiet send per change; unchecking after a send withdraws it.
+  const [remindMe, setRemindMe] = useState(true);
+  const reminderSent = useRef<string | null>(null);
+  const reminderConsented = useRef(false);
+  const reminderEmail = customer.email.trim();
+  const reminderName = customer.name.trim();
+  const reminderCoupon = coupon?.code;
+  const reminderReady = hasBag && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reminderEmail);
+  useEffect(() => {
+    if (!reminderReady) return;
+    if (!remindMe && !reminderConsented.current) return;
+    const key = JSON.stringify([reminderEmail, linesKey, reminderCoupon, remindMe]);
+    if (reminderSent.current === key) return;
+    const id = window.setTimeout(() => {
+      reminderSent.current = key;
+      reminderConsented.current = remindMe;
+      try {
+        fetch("/api/checkout/started", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ email: reminderEmail, name: reminderName || undefined, consent: remindMe, lines: JSON.parse(linesKey), coupon: reminderCoupon }),
+        }).catch(() => {});
+      } catch {
+        // never affects checkout
+      }
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, [reminderReady, reminderEmail, reminderName, reminderCoupon, linesKey, remindMe]);
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
@@ -427,6 +455,7 @@ export function CheckoutView({
   }, [optionsShown]);
 
   async function startCheckout() {
+    fireInitiate();
     setLoading(true);
     setError(null);
     setFieldErrors({});
@@ -525,6 +554,7 @@ export function CheckoutView({
     window.scrollTo({ top: 0 });
   }
   function goNext() {
+    fireInitiate();
     if (step === 1) {
       const e = addressProblems();
       setFieldErrors(e);
@@ -572,6 +602,7 @@ export function CheckoutView({
         {...props}
         value={customer[name]}
         onChange={(e) => {
+          fireInitiate();
           setCustomer({ ...customer, [name]: e.target.value });
           if (fieldErrors[name]) setFieldErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== name)));
         }}
@@ -764,7 +795,7 @@ export function CheckoutView({
       {checkout && place && rate && (
         <div className={`mt-8 space-y-8 ${stepped ? "max-md:mt-4 max-md:space-y-4" : ""}`}>
           {expressOn && checkout?.stripe && (
-            <div className={`${provider === "stripe" ? "" : "hidden"} ${hideUnless(1)}`}>
+            <div className={`${provider === "stripe" ? "" : "hidden"} ${hideUnless(1)}`} onPointerDownCapture={fireInitiate}>
             <ExpressPay
               publishableKey={checkout.stripe.publishableKey}
               lines={lines}
@@ -959,6 +990,10 @@ export function CheckoutView({
               <fieldset disabled={Boolean(paypalOrder)} className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 disabled:opacity-60 md:gap-3 max-md:mt-0">
                 {field("name", "Full name", { autoComplete: "name" })}
                 {field("email", "Email", { type: "email", autoComplete: "email" })}
+                <label className="col-span-2 -mt-1 flex items-start gap-2 text-sm text-muted">
+                  <input type="checkbox" className="mt-0.5" checked={remindMe} onChange={(e) => setRemindMe(e.target.checked)} />
+                  <span>{t("checkoutReminderOptIn")}</span>
+                </label>
                 {field("phone", "Phone", { type: "tel", autoComplete: "tel" }, true, t("checkoutPhoneHelp"))}
                 {fulfil !== "pickup" && (
                   <>
