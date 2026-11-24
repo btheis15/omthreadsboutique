@@ -4,7 +4,7 @@ import Link from "next/link";
 export function SaleBanner({ title, text, endsOn }: { title: string; text?: string; endsOn?: string }) {
   // Parsed at noon so the date doesn't shift with the time zone (same as ProductPurchase).
   const ends = endsOn
-    ? new Date(`${endsOn}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+    ? new Date(`${endsOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })
     : null;
   const label = `${title}${text ? `: ${text}` : ""}${ends ? `. Ends ${ends}` : ""}. Shop the sale`;
   return (
@@ -21,24 +21,18 @@ export function SaleBanner({ title, text, endsOn }: { title: string; text?: stri
         aria-hidden="true"
         className="sale-glint pointer-events-none absolute inset-y-0 left-0 hidden w-1/3 bg-[linear-gradient(100deg,transparent,rgba(227,191,128,0.22)_45%,rgba(255,246,220,0.32)_50%,rgba(227,191,128,0.22)_55%,transparent)] motion-safe:block"
       />
-      <span className="mx-auto flex max-w-6xl items-center justify-center gap-x-3 sm:gap-x-4">
-        <span className="min-w-0 flex-1 text-center sm:flex-none leading-tight sm:flex sm:items-baseline sm:gap-x-3">
-          <span className="font-display text-base tracking-wide whitespace-nowrap sm:text-lg">
+      <span className="mx-auto flex max-w-6xl items-center justify-center gap-x-2 sm:gap-x-4">
+        <span className="flex min-w-0 flex-1 items-baseline justify-center gap-x-1.5 leading-tight sm:flex-none sm:gap-x-3">
+          <span className="font-display text-sm tracking-wide whitespace-nowrap sm:text-lg">
             <span aria-hidden="true" className="sale-twinkle inline-block text-zari-light">✦</span>{" "}
             <span className="bg-[linear-gradient(110deg,var(--color-zari-light)_35%,#fffaf0_50%,var(--color-zari-light)_65%)] bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[sale-shimmer_3.5s_linear_infinite]">
               {title}
             </span>
-            {" "}<span aria-hidden="true" className="sale-twinkle sale-twinkle-late inline-block text-zari-light">✦</span>
           </span>
-          {(text || ends) && (
-            <span className="block truncate text-[11px] text-ivory/90 sm:inline sm:overflow-visible sm:text-sm">
-              {text}
-              {text && ends && <span aria-hidden="true" className="mx-1.5 hidden text-zari-light sm:inline">·</span>}
-              {ends && <span className={`text-zari-light ${text ? "hidden sm:inline" : ""}`}>Ends {ends}</span>}
-            </span>
-          )}
+          {text && <span className="min-w-0 truncate text-[11px] text-ivory/90 sm:overflow-visible sm:text-sm">{text}</span>}
+          {ends && <span className="shrink-0 text-[11px] font-medium whitespace-nowrap text-zari-light sm:text-sm">· ends {ends}</span>}
         </span>
-        <span className="shrink-0 rounded-full bg-rani px-3 py-1 text-[11px] font-medium tracking-wide whitespace-nowrap text-ivory transition group-hover:bg-accent-dark sm:px-4 sm:text-xs">
+        <span className="hidden shrink-0 rounded-full bg-rani px-4 py-1 text-xs font-medium tracking-wide whitespace-nowrap text-ivory transition group-hover:bg-accent-dark sm:inline">
           Shop the sale →
         </span>
       </span>

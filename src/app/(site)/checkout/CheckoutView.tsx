@@ -20,7 +20,7 @@ import type { CheckoutInfo } from "@/lib/types";
 import { ExpressPay } from "./ExpressPay";
 import { PayPalButtons } from "./PayPalButtons";
 import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
-import { PieceSpotlight } from "./PieceSpotlight";
+import { PieceSpotlight, PieceTrust } from "./PieceSpotlight";
 import type { Product } from "@/lib/types";
 import { regularKey, variantLabel, variantPrice } from "@/lib/variants";
 import { Price } from "@/components/Price";
@@ -67,6 +67,7 @@ export function CheckoutView({
   linkCoupon,
   buyAlone = false,
   spotlight = null,
+  spotlightWoven = false,
   soldOutLink = null,
   colorNote = null,
   freeShippingThreshold = 0,
@@ -87,6 +88,8 @@ export function CheckoutView({
   buyAlone?: boolean;
   /** A one-piece link's piece (/checkout?product=): shown large, with its colours, while it's the only thing in the cart. */
   spotlight?: Product | null;
+  /** The spotlight piece's craft is a weave (it says "Handwoven in …"). */
+  spotlightWoven?: boolean;
   /** That link's piece when it has sold out (its title), to say so. */
   soldOutLink?: string | null;
   /** A one-piece link named a colour that's sold out or unknown: what was picked instead. */
@@ -123,7 +126,6 @@ export function CheckoutView({
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
   const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
-  const savedCents = items.reduce((n, i) => n + Math.max(0, Math.round((regularOf(i) ?? i.price) * 100) - Math.round(i.price * 100)) * i.qty, 0);
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // The free gift: with any bag of enough paid items.
   const offer = linkPending ? null : freeGift;
@@ -203,10 +205,10 @@ export function CheckoutView({
   const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
   // Ready to ask the carrier: everything the shop checks (name, email, phone, address) would pass.
   const addr = customer;
-  const addressReady =
+  const phoneOk = /^[+\d][\d\s().-]{6,23}$/.test(addr.phone.trim());
+  const addressReadyNoPhone =
     addr.name.trim() !== "" &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr.email.trim()) &&
-    /^[+\d][\d\s().-]{6,23}$/.test(addr.phone.trim()) &&
     addr.line1.trim() !== "" &&
     addr.city.trim() !== "" &&
     (placeCode === "US"
@@ -214,6 +216,7 @@ export function CheckoutView({
       : placeCode === "IN"
         ? addr.state.trim() !== "" && /^\d{6}$/.test(addr.postal_code.trim())
         : true);
+  const addressReady = phoneOk && addressReadyNoPhone;
   // What the quote would be asked for, contact details included: an error is remembered against it, so it isn't retried on its own.
   const askKey = JSON.stringify([quoteKey, addr.name.trim(), addr.email.trim(), addr.phone.trim()]);
   const [failedKey, setFailedKey] = useState<string | null>(null);
@@ -243,10 +246,10 @@ export function CheckoutView({
   const couponsOn = Boolean(checkout?.couponCodes);
   const lines: CheckoutLine[] = [...items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty })), ...(gift ? [giftLine(gift)] : [])];
   const linesKey = JSON.stringify(lines);
-  // Meta Pixel InitiateCheckout, once, when the page opens with a bag (not for the "Buy on Etsy" view).
+  // Meta Pixel InitiateCheckout, once per page open, when the shopper actually starts (first typing, Next, or a pay button).
   const initiated = useRef(false);
   const hasBag = Boolean(checkout) && !linkPending && items.length > 0;
-  useEffect(() => {
+  const fireInitiate = useCallback(() => {
     if (!hasBag || initiated.current) return;
     initiated.current = true;
     const n = items.reduce((c, i) => c + i.qty, 0);
@@ -258,8 +261,36 @@ export function CheckoutView({
       value: Math.round(subtotal * 100) / 100,
       currency: "USD",
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per page open
-  }, [hasBag]);
+  }, [hasBag, items, subtotal]);
+  // Reminder opt-in (checked by default). One quiet send per change; unchecking after a send withdraws it.
+  const [remindMe, setRemindMe] = useState(true);
+  const reminderSent = useRef<string | null>(null);
+  const reminderConsented = useRef(false);
+  const reminderEmail = customer.email.trim();
+  const reminderName = customer.name.trim();
+  const reminderCoupon = coupon?.code;
+  const reminderReady = hasBag && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reminderEmail);
+  useEffect(() => {
+    if (!reminderReady) return;
+    if (!remindMe && !reminderConsented.current) return;
+    const key = JSON.stringify([reminderEmail, linesKey, reminderCoupon, remindMe]);
+    if (reminderSent.current === key) return;
+    const id = window.setTimeout(() => {
+      reminderSent.current = key;
+      reminderConsented.current = remindMe;
+      try {
+        fetch("/api/checkout/started", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ email: reminderEmail, name: reminderName || undefined, consent: remindMe, lines: JSON.parse(linesKey), coupon: reminderCoupon }),
+        }).catch(() => {});
+      } catch {
+        // never affects checkout
+      }
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, [reminderReady, reminderEmail, reminderName, reminderCoupon, linesKey, remindMe]);
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
@@ -424,6 +455,7 @@ export function CheckoutView({
   }, [optionsShown]);
 
   async function startCheckout() {
+    fireInitiate();
     setLoading(true);
     setError(null);
     setFieldErrors({});
@@ -491,7 +523,7 @@ export function CheckoutView({
   // Mobile steps: which screens an element shows on (everything shows on larger screens).
   const stepped = onSite;
   const hideUnless = (...n: (1 | 2 | 3)[]) => (stepped && !n.includes(step) ? "max-md:hidden" : "");
-  const STEP_NAMES = ["Address", "Shipping", "Review & pay"] as const;
+  const STEP_NAMES = ["Information", "Shipping", "Payment"] as const;
 
   /** What step 1 needs before Next: the same rules the shop applies when the order is placed. */
   function addressProblems(): Record<string, string> {
@@ -522,6 +554,7 @@ export function CheckoutView({
     window.scrollTo({ top: 0 });
   }
   function goNext() {
+    fireInitiate();
     if (step === 1) {
       const e = addressProblems();
       setFieldErrors(e);
@@ -543,7 +576,7 @@ export function CheckoutView({
               ? "Place order and get the Venmo details"
               : "Continue to secure payment";
   // One quiet reassurance by the pay button (US orders; international orders are final sale).
-  const returnsLine = placeCode === "US" ? `${returnDays}-day returns — if it's not right, send it back.` : null;
+  const returnsLine = placeCode === "US" ? `${returnDays}-day returns on US orders — if it's not right, send it back.` : null;
   const showTax = taxCents !== null && (checkout?.taxAdded || taxCents > 0);
   const nextBlocked = step === 2 && live && (quoteBusy || !chosenRate);
 
@@ -559,19 +592,24 @@ export function CheckoutView({
     );
   }
 
-  const field = (name: keyof Customer, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, wide = true) => (
+  const field = (name: keyof Customer, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, wide = true, help?: string) => (
     <label className={`block ${wide ? "col-span-2 sm:col-span-1" : ""}`}>
-      <span className="mb-1 block text-sm">{label}</span>
+      <span className="mb-1 block text-sm">
+        {label}
+        {help && <span className="text-muted"> (required)</span>}
+      </span>
       <input
         {...props}
         value={customer[name]}
         onChange={(e) => {
+          fireInitiate();
           setCustomer({ ...customer, [name]: e.target.value });
           if (fieldErrors[name]) setFieldErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== name)));
         }}
         aria-invalid={Boolean(fieldErrors[name])}
         className={`w-full rounded-lg border bg-ivory px-3 py-2.5 ${fieldErrors[name] ? "border-sale" : "border-line"}`}
       />
+      {help && !fieldErrors[name] && <span className="mt-1 block text-xs text-muted">{help}</span>}
       {fieldErrors[name] && <span className="mt-1 block text-sm text-sale">{fieldErrors[name]}</span>}
     </label>
   );
@@ -588,14 +626,17 @@ export function CheckoutView({
           </p>
           <div className="mt-1.5 flex gap-1.5" aria-hidden="true">
             {[1, 2, 3].map((n) => (
-              <span key={n} className={`h-1 flex-1 rounded-full ${n <= step ? "bg-ink" : "bg-line"}`} />
+              <span key={n} className="flex-1">
+                <span className={`block h-1 rounded-full ${n <= step ? "bg-ink" : "bg-line"}`} />
+                <span className={`mt-1 block text-center text-[0.7rem] ${n === step ? "font-medium text-ink" : "text-muted"}`}>{STEP_NAMES[n - 1]}</span>
+              </span>
             ))}
           </div>
           <p className="mt-2 flex items-baseline justify-between gap-3 text-sm">
             <span className="min-w-0 truncate text-muted">
               {itemCount} {itemCount === 1 ? "item" : "items"}
               {shippingKnown && ` · ${shipping ? `${dollars(shipping)} shipping` : "free shipping"}`}
-              {showTax && ` · ${dollars(taxCents)} est. tax`}
+              {showTax ? ` · ${dollars(taxCents)} est. tax` : placeCode === "US" && fulfil === "ship" ? " · tax at address" : ""}
             </span>
             <span className="shrink-0 font-medium">
               {dollars(total)}
@@ -624,7 +665,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
+                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -633,6 +674,10 @@ export function CheckoutView({
             </li>
           ))}
         </ul>
+      )}
+      {/* Phone, step 1, arrived on a one-piece link: the same reassurance the full piece view has on the last step. */}
+      {checkout && place && rate && step === 1 && spotLine && spotlight && (
+        <PieceTrust product={spotlight} woven={spotlightWoven} t={t} returnDays={returnDays} className="md:hidden" />
       )}
 
       {testerLink === "invalid" && (
@@ -675,6 +720,9 @@ export function CheckoutView({
           product={spotlight}
           line={spotLine}
           photos={photosFor(spotLine, photos[spotlight.slug])}
+          t={t}
+          returnDays={returnDays}
+          woven={spotlightWoven}
           onOpen={(photo) => setViewing({ line: 0, photo })}
           onPick={(v) =>
             cart.swap(spotLine.key, {
@@ -747,7 +795,7 @@ export function CheckoutView({
       {checkout && place && rate && (
         <div className={`mt-8 space-y-8 ${stepped ? "max-md:mt-4 max-md:space-y-4" : ""}`}>
           {expressOn && checkout?.stripe && (
-            <div className={`${provider === "stripe" ? "" : "hidden"} ${hideUnless(1)}`}>
+            <div className={`${provider === "stripe" ? "" : "hidden"} ${hideUnless(1)}`} onPointerDownCapture={fireInitiate}>
             <ExpressPay
               publishableKey={checkout.stripe.publishableKey}
               lines={lines}
@@ -850,9 +898,15 @@ export function CheckoutView({
               )}
             </div>
             {awayFreeCents !== null && (
-              <p className={`mt-3 rounded-lg bg-sand p-3 text-center text-sm ${hideUnless(2)}`}>
+              <div className={`mt-3 rounded-lg bg-sand p-3 text-center text-sm ${hideUnless(2)}`}>
                 {awayFreeCents > 0 ? <Bold text={t("cartAwayFree", { amount: dollars(awayFreeCents) })} /> : t("cartUnlockedFree")}
-              </p>
+                <div className="mx-auto mt-2 h-1 max-w-xs overflow-hidden rounded-full bg-line">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-marigold to-accent transition-[width] duration-700 ease-soft"
+                    style={{ width: `${Math.min(1, Math.max(0, subtotalCents / freeOverCents)) * 100}%` }}
+                  />
+                </div>
+              </div>
             )}
             {!live && (
             <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
@@ -936,7 +990,11 @@ export function CheckoutView({
               <fieldset disabled={Boolean(paypalOrder)} className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 disabled:opacity-60 md:gap-3 max-md:mt-0">
                 {field("name", "Full name", { autoComplete: "name" })}
                 {field("email", "Email", { type: "email", autoComplete: "email" })}
-                {field("phone", "Phone", { type: "tel", autoComplete: "tel" })}
+                <label className="col-span-2 -mt-1 flex items-start gap-2 text-sm text-muted">
+                  <input type="checkbox" className="mt-0.5" checked={remindMe} onChange={(e) => setRemindMe(e.target.checked)} />
+                  <span>{t("checkoutReminderOptIn")}</span>
+                </label>
+                {field("phone", "Phone", { type: "tel", autoComplete: "tel" }, true, t("checkoutPhoneHelp"))}
                 {fulfil !== "pickup" && (
                   <>
                     <div className="hidden sm:block" aria-hidden="true" />
@@ -971,7 +1029,7 @@ export function CheckoutView({
             <section className={hideUnless(2)}>
                 {live && !paypalOrder && (
                   <div>
-                    {!activeQuote && !quoteBusy && <p className="mb-2 text-sm text-muted">{t("shipOptionsHint")}</p>}
+                    {!activeQuote && !quoteBusy && <p className="mb-2 text-sm text-muted">{!phoneOk && addressReadyNoPhone ? t("checkoutPhoneHint") : t("shipOptionsHint")}</p>}
                     {quoteBusy && (
                       <p role="status" aria-live="polite" className="mb-2 flex items-center gap-2 text-sm">
                         <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
@@ -1072,12 +1130,6 @@ export function CheckoutView({
             <dl className="grid grid-cols-[1fr_auto] gap-y-1 border-t border-line pt-4 text-[0.95rem]">
               <dt className="text-muted">Items</dt>
               <dd className="text-right">{dollars(subtotalCents)}</dd>
-              {savedCents > 0 && (
-                <>
-                  <dt className="text-muted">Sale savings</dt>
-                  <dd className="text-right text-sale">−{dollars(savedCents)}</dd>
-                </>
-              )}
               {gift && (
                 <>
                   <dt className="text-muted">Free gift{gift.option ? ` · ${gift.option}` : ""}</dt>
@@ -1100,10 +1152,10 @@ export function CheckoutView({
               )}
               <dt className="text-muted">{fulfil === "pickup" ? "Pickup" : fulfil === "delivery" ? "Delivery" : "Shipping"}</dt>
               <dd className="text-right">{live && !chosenRate ? <span className="text-muted">{t("shipPickFirst")}</span> : shipping ? dollars(shipping) : "Free"}</dd>
-              {live && (showTax || taxCents === null) && (
+              {(!live || showTax || taxCents === null) && placeCode === "US" && fulfil === "ship" && (
                 <>
                   <dt className="text-muted">Estimated tax</dt>
-                  <dd className="text-right">{taxCents !== null ? dollars(taxCents) : <span className="text-muted">{chosenRate ? "Added at payment" : t("shipPickFirst")}</span>}</dd>
+                  <dd className="text-right">{taxCents !== null ? dollars(taxCents) : <span className="text-muted">{live && chosenRate ? "Added at payment" : t("checkoutTaxPending")}</span>}</dd>
                 </>
               )}
               <dt className="text-lg font-medium">Total</dt>

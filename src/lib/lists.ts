@@ -67,6 +67,9 @@ export const materialLabel = (lists: Pick<Lists, "materials">, value?: string) =
 export const craftByValue = (lists: Pick<Lists, "crafts">, value?: string): Craft | undefined =>
   value ? lists.crafts.find((c) => c.value === value) : undefined;
 
+/** Only a weaving craft is called "handwoven"; embroidery, print and the rest are "made in". */
+export const isWovenCraft = (craft?: Pick<Craft, "label" | "summary">) => Boolean(craft && /weav|woven|loom/i.test(`${craft.label} ${craft.summary ?? ""}`));
+
 /** The type's entry for a product (matched by stable value). */
 export const typeByValue = (lists: Pick<Lists, "types">, value?: string) =>
   value ? lists.types.find((t) => t.value === value) : undefined;

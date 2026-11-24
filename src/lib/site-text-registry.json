@@ -112,6 +112,18 @@
     "default": "You've unlocked free shipping ✨"
   },
   {
+    "key": "cartShipTaxNote",
+    "group": "Checkout & cart",
+    "label": "Cart: shipping and tax note",
+    "default": "Shipping and estimated tax are shown at checkout before you pay."
+  },
+  {
+    "key": "cartGiftPickFirst",
+    "group": "Checkout & cart",
+    "label": "Cart: reminder to pick the free gift color",
+    "default": "Pick your free gift color first"
+  },
+  {
     "key": "checkoutComingSoonTitle",
     "group": "Checkout & cart",
     "label": "Checkout (not yet open): heading",
@@ -317,6 +329,62 @@
     "default": "International orders are final sale"
   },
   {
+    "key": "checkoutWovenIn",
+    "group": "Checkout & cart",
+    "label": "Checkout: trust line, woven",
+    "hint": "{origin} is the piece's origin.",
+    "default": "Handwoven in {origin}"
+  },
+  {
+    "key": "checkoutMadeIn",
+    "group": "Checkout & cart",
+    "label": "Checkout: trust line, not woven",
+    "hint": "{origin} is the piece's origin.",
+    "default": "Made in {origin}"
+  },
+  {
+    "key": "checkoutShipTime",
+    "group": "Checkout & cart",
+    "label": "Checkout: trust line, shipping time",
+    "default": "US shipping 4–9 business days"
+  },
+  {
+    "key": "checkoutKeepBrowsing",
+    "group": "Checkout & cart",
+    "label": "Checkout: keep browsing link",
+    "default": "Keep browsing"
+  },
+  {
+    "key": "checkoutSeeDetails",
+    "group": "Checkout & cart",
+    "label": "Checkout: link to the product page",
+    "default": "See photos & details"
+  },
+  {
+    "key": "checkoutReminderOptIn",
+    "group": "Checkout & cart",
+    "label": "Checkout: reminder email checkbox",
+    "default": "Email me one reminder if I don't finish (unsubscribe anytime)"
+  },
+  {
+    "key": "checkoutPhoneHelp",
+    "group": "Checkout & cart",
+    "label": "Checkout: phone helper",
+    "default": "Needed for shipping updates"
+  },
+  {
+    "key": "checkoutPhoneHint",
+    "group": "Checkout & cart",
+    "label": "Checkout: hint while the phone is missing",
+    "default": "Add your phone number to see shipping options and tax"
+  },
+  {
+    "key": "checkoutTaxPending",
+    "group": "Checkout & cart",
+    "label": "Checkout: estimated tax before the address is known",
+    "default": "Shown once we have your address"
+  },
+  {
     "key": "checkoutReturnsUS",
     "group": "Checkout & cart",
     "label": "Checkout: returns link for US orders",
@@ -496,6 +564,36 @@
     "default": "Kind words from our customers"
   },
   {
+    "key": "reviewsWriteLink",
+    "group": "Reviews",
+    "label": "Write a review: link",
+    "default": "Write a review"
+  },
+  {
+    "key": "reviewsEtsyButton",
+    "group": "Reviews",
+    "label": "Read Etsy reviews: link",
+    "default": "Read Etsy reviews"
+  },
+  {
+    "key": "reviewsFormHeading",
+    "group": "Reviews",
+    "label": "Write a review: page heading",
+    "default": "Write a review"
+  },
+  {
+    "key": "reviewsFormIntro",
+    "group": "Reviews",
+    "label": "Write a review: intro",
+    "default": "Bought from us? Tell us how it went. We read every review before it goes up, and we show them as written."
+  },
+  {
+    "key": "reviewsThanks",
+    "group": "Reviews",
+    "label": "Write a review: thank-you",
+    "default": "Thanks! We read every review before it goes up."
+  },
+  {
     "key": "homeOccasionHeading",
     "group": "Home page",
     "label": "Collections: heading",
@@ -556,6 +654,46 @@
     "group": "Shop page",
     "label": "No matching pieces: sentence",
     "default": "Try removing a filter or two."
+  },
+  {
+    "key": "productStoryFamily",
+    "group": "Product page",
+    "label": "Product story: family line (under the price)",
+    "default": "Handpicked in India by our family — a small business in Lake Villa, IL."
+  },
+  {
+    "key": "productStoryWoven",
+    "group": "Product page",
+    "label": "Product story: woven pieces",
+    "hint": "{origin} is where the piece is made. Used when the craft is a weaving craft.",
+    "default": "Handwoven in {origin}."
+  },
+  {
+    "key": "productStoryMade",
+    "group": "Product page",
+    "label": "Product story: other pieces",
+    "hint": "{origin} is where the piece is made.",
+    "default": "Made in {origin}."
+  },
+  {
+    "key": "productTrustLine",
+    "group": "Product page",
+    "label": "Product trust line (under the price)",
+    "hint": "{days} is the return window from Settings. The delivery window here is the US estimate; Settings' shipping time is handling time.",
+    "default": "Ships in 4–9 business days (US) · {days}-day returns on US orders"
+  },
+  {
+    "key": "productPickupFree",
+    "group": "Product page",
+    "label": "Product page: free local pickup line",
+    "default": "Free local pickup in Lake Villa, IL"
+  },
+  {
+    "key": "productPickupPaid",
+    "group": "Product page",
+    "label": "Product page: local pickup line (when pickup costs something)",
+    "hint": "{price} is the pickup charge from Checkout setup.",
+    "default": "Local pickup in Lake Villa, IL ({price})"
   },
   {
     "key": "productPromiseQuality",

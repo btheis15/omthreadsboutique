@@ -24,6 +24,7 @@ import type {
   ProductType,
   SiteSettings,
   Testimonial,
+  EtsyReview,
 } from "./types";
 
 export const CACHE_TAG = "sanity";
@@ -46,6 +47,8 @@ type ShopCatalog = {
   pages: ContentPage[];
   settings: Partial<SiteSettings>;
   testimonials: Testimonial[];
+  /** Newest first. Absent until the admin is updated. */
+  etsyReviews?: unknown;
   /** The admin's editable lists (types, colours, materials, crafts). Absent until the admin is updated. */
   lists?: unknown;
   /** The owner's edited website wording (only the keys they changed). See lib/site-text.ts. */
@@ -368,7 +371,7 @@ function cleanSaleBanner(v: unknown): SiteSettings["saleBanner"] {
 /** DEV-ONLY local preview: SALE_BANNER_PREVIEW=1 injects a sample banner (never set in production). */
 function devSaleBanner(): SiteSettings["saleBanner"] {
   if (process.env.SALE_BANNER_PREVIEW !== "1" || process.env.NODE_ENV === "production") return undefined;
-  return { title: "Black Friday Sale", text: "20% off everything · through Cyber Monday", endsOn: "2026-11-30" };
+  return { title: "Black Friday", text: "20% off everything + a free pouch with 2 or more pieces", endsOn: "2026-11-30" };
 }
 
 /** Defensive shape check for the feed's free gift: a product id is required, else no offer. */
@@ -452,11 +455,42 @@ export async function getSettings(): Promise<SiteSettings> {
 export async function getTestimonials(): Promise<Testimonial[]> {
   // Preview mode shows labelled placeholders so the layout can be seen.
   // Once the admin is connected, only real reviews added there are shown.
-  if (catalogSource === "shop") return (await shopCatalog()).testimonials;
+  if (catalogSource === "shop") return normalizeTestimonials((await shopCatalog()).testimonials);
   if (!client) return samplePlaceholderReviews;
   return query<Testimonial[]>(
     `*[_type == "testimonial"] | order(_createdAt desc)[0...9]{ "id": _id, quote, name, location, product }`,
   );
+}
+
+const star = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 5 ? v : undefined);
+
+/** Testimonials as sent; the new rating/verified/source fields are kept only when well formed. */
+function normalizeTestimonials(raw: unknown): Testimonial[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): Testimonial[] => {
+    const x = r as (Testimonial & Record<string, unknown>) | null;
+    if (!x || typeof x !== "object" || typeof x.quote !== "string") return [];
+    const { rating, verified, source, ...rest } = x;
+    return [{ ...rest, ...(star(rating) && { rating: star(rating) }), ...(verified === true && { verified: true }), ...((source === "site" || source === "owner") && { source }) }];
+  });
+}
+
+/** Etsy reviews from the feed (newest first, every rating). Empty until the admin sends them. */
+export async function getEtsyReviews(): Promise<EtsyReview[]> {
+  if (catalogSource !== "shop") return [];
+  try {
+    const raw = (await shopCatalog()).etsyReviews;
+    if (!Array.isArray(raw)) return [];
+    return raw.flatMap((r): EtsyReview[] => {
+      const x = r as Record<string, unknown> | null;
+      const rating = star(x?.rating);
+      if (!x || !rating) return [];
+      const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : undefined);
+      return [{ id: String(x.id ?? `${x.date}-${rating}`), rating, text: typeof x.text === "string" ? x.text : "", date: str(x.date) ?? "", listingTitle: str(x.listingTitle), productSlug: str(x.productSlug) }];
+    });
+  } catch {
+    return [];
+  }
 }
 
 // ---------------------------------------------------------------------------

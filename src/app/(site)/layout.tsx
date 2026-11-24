@@ -9,7 +9,6 @@ import { SaleBanner } from "@/components/SaleBanner";
 import { PartnerRef } from "@/components/PartnerRef";
 import { catalogSource, getCheckout, getLists, getMenus, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
 import { giftOffer } from "@/lib/free-gift";
-import { regularPrices } from "@/lib/variants";
 import { makeT } from "@/lib/site-text";
 import { carriedCrafts, typesWithProducts } from "@/lib/lists";
 
@@ -46,13 +45,19 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         </div>
       )}
       {settings.saleBanner && <SaleBanner {...settings.saleBanner} />}
+      {/* Phones: free shipping and the announcement share one strip, so the page starts higher on a small screen. */}
+      {settings.freeShippingThreshold > 0 && settings.announcement && (
+        <div className="truncate bg-marigold px-3 py-1.5 text-center text-[11px] font-medium tracking-wide text-ink md:hidden">
+          Free shipping ${settings.freeShippingThreshold}+ <span aria-hidden="true">·</span> {settings.announcement}
+        </div>
+      )}
       {settings.freeShippingThreshold > 0 && (
-        <div className="bg-marigold px-4 py-1.5 text-center text-xs font-medium tracking-wide text-ink">
+        <div className={`bg-marigold px-4 py-1.5 text-center text-xs font-medium tracking-wide text-ink ${settings.announcement ? "max-md:hidden" : ""}`}>
           Free shipping on orders ${settings.freeShippingThreshold}+
         </div>
       )}
       {settings.announcement && (
-        <div className="bg-indigo-deep px-4 py-2 text-center text-xs tracking-wide text-ivory/90">
+        <div className={`bg-indigo-deep px-4 py-2 text-center text-xs tracking-wide text-ivory/90 ${settings.freeShippingThreshold > 0 ? "max-md:hidden" : ""}`}>
           <span className="font-deva mr-2 text-zari-light">ॐ</span>
           {settings.announcement}
         </div>
@@ -66,7 +71,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         text={text}
         menu={menus.footer}
       />
-      <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} text={text} freeGift={giftOffer(checkout?.freeGift, products)} regular={regularPrices(products)} />
+      <CartDrawer freeShippingThreshold={settings.freeShippingThreshold} text={text} freeGift={giftOffer(checkout?.freeGift, products)} />
       <RevealObserver />
       <PartnerRef />
       <MetaPixel pixelId={settings.metaPixelId} />

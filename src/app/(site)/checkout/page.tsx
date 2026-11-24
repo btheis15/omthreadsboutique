@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import type { CartItem } from "@/components/cart/store";
-import { getProduct, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
+import { getLists, getProduct, getProducts, getSettings, getTextOverrides } from "@/lib/catalog";
+import { craftByValue, isWovenCraft } from "@/lib/lists";
 import { giftOffer } from "@/lib/free-gift";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
 import { american } from "@/lib/american";
@@ -121,7 +122,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
     metaShopsCart(params.products),
     params.products === undefined ? directProduct(params.product, params.color) : null,
   ]);
-  const products = await getProducts();
+  const [products, lists] = await Promise.all([getProducts(), getLists()]);
   const freeGift = checkout ? giftOffer(checkout.freeGift, products) : null;
   const piece = direct && "product" in direct ? direct : null;
   const linkCart = metaCart ?? (piece ? [piece.line] : null);
@@ -138,6 +139,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
       linkCoupon={linkCoupon}
       buyAlone={Boolean(piece) || params.cart_origin === "hot_sale"}
       spotlight={piece?.product ?? null}
+      spotlightWoven={isWovenCraft(craftByValue(lists, piece?.product.craft))}
       soldOutLink={direct && "soldOut" in direct ? direct.soldOut : null}
       colorNote={piece?.colorNote ? { text: piece.colorNote, variantId: piece.line.variantId } : null}
       freeShippingThreshold={settings.freeShippingThreshold}

@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LeafIcon, ReturnIcon, ShieldIcon, TruckIcon } from "@/components/icons";
+import { LeafIcon, ShieldIcon } from "@/components/icons";
 import { ProductGrid, productVtName } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchase } from "@/components/ProductPurchase";
 import { TrackViewContent } from "@/components/TrackViewContent";
 import { ArtisanCard } from "@/components/ArtisanCard";
+import { Stars } from "@/components/Stars";
 import { EtsyRatingLine } from "@/components/EtsyRatingLine";
 import { PartnerShareBar } from "@/components/partners/PartnerShareBar";
 import { RichText } from "@/components/RichText";
-import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
+import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, getTestimonials, getEtsyReviews, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { giftOffer } from "@/lib/free-gift";
 import { liveCheckout, productExpress } from "@/lib/payments";
-import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
-import { siteUrl } from "@/lib/site";
+import { craftByValue, isWovenCraft, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
+import { formatPrice, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout()]);
+  const [product, all, settings, onSiteCheckout, express, lists, t, checkoutInfo, testimonials, etsyReviews] = await Promise.all([getProduct(slug), getProducts(), getSettings(), liveCheckout(), productExpress(), getLists(), getT(), getCheckout(), getTestimonials(), getEtsyReviews()]);
   if (!product) notFound();
 
   const category = typeByValue(lists, product.type);
@@ -55,6 +56,37 @@ export default async function ProductPage({ params }: Props) {
     product.dimensions && { label: "Size", value: product.dimensions },
     product.colors.length && { label: "Color", value: product.colors.map((c) => colorLabel(lists, c)).join(", ") },
   ].filter(Boolean) as { label: string; value: string }[];
+
+  const woven = isWovenCraft(craft);
+  // Shops near Lake Villa can skip the wait: local pickup, when the shop offers it.
+  const pickup = onSiteCheckout ? checkoutInfo?.pickup : null;
+  // One real customer review near the price: one written about this piece if there is one, otherwise the newest.
+  const about = (r: (typeof testimonials)[number]) => [product.id, product.slug.toLowerCase(), product.title.toLowerCase()].includes((r.product ?? "").trim().toLowerCase());
+  const review = testimonials.find(about) ?? testimonials[0];
+  const story = (
+    <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
+      <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin || "India" })}</p>
+      <p className="text-ink/85">{t("productStoryFamily")}</p>
+      <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>
+      {pickup && <p className="text-sm text-muted">{pickup.cents === 0 ? t("productPickupFree") : t("productPickupPaid", { price: formatPrice(pickup.cents / 100) })}</p>}
+      {review && (
+        <figure className="mt-3 rounded-lg bg-sand px-3 py-2 text-sm">
+          {review.rating && <Stars rating={review.rating} className="text-base" />}
+          <blockquote className="line-clamp-3 italic">“{review.quote}”</blockquote>
+          <figcaption className="mt-1 text-muted">
+            — {review.name}
+            {review.location && `, ${review.location}`}
+            {review.verified && <span> · Verified buyer</span>}
+          </figcaption>
+        </figure>
+      )}
+      <p className="text-sm">
+        <Link href={`/reviews/new?product=${encodeURIComponent(product.slug)}`} className="underline underline-offset-4">
+          {t("reviewsWriteLink")}
+        </Link>
+      </p>
+    </div>
+  );
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -98,16 +130,16 @@ export default async function ProductPage({ params }: Props) {
             vtName={productVtName(product.slug)}
           />
 
-          <div className="container-page pt-6 md:px-0 md:pt-0">
+          <div className="container-page pt-4 md:px-0 md:pt-0">
             <div className="md:sticky md:top-28">
-              <p className="eyebrow mb-2">
+              <p className="eyebrow mb-1 md:mb-2">
                 {[craft?.label, category?.label].filter(Boolean).join(" · ")}
-                {product.origin && <span className="text-zari"> · {product.origin}</span>}
+                {product.origin && <span className="hidden text-zari md:inline"> · {product.origin}</span>}
               </p>
-              <h1 className="text-[2rem] md:text-5xl">{product.title}</h1>
-              <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} />
+              <h1 className="text-[1.5rem] leading-tight md:text-5xl">{product.title}</h1>
+              <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} reviews={etsyReviews} etsyUrl={site.etsyUrl} />
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
-              <ProductPurchase product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
+              <ProductPurchase afterPrice={story} product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
               <TrackViewContent slug={product.slug} title={product.title} price={product.price} />
               {/* A sales partner signed in on this device: their link for this piece. */}
               <PartnerShareBar title={product.title} />
@@ -115,12 +147,6 @@ export default async function ProductPage({ params }: Props) {
               <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-muted">
                 <li className="flex items-center gap-2">
                   <LeafIcon size={18} /> {t("productPromiseQuality")}
-                </li>
-                <li className="flex items-center gap-2">
-                  <TruckIcon size={18} /> {t("productPromiseShips", { shipsWithin: settings.shipsWithin })}
-                </li>
-                <li className="flex items-center gap-2">
-                  <ReturnIcon size={18} /> {t("promiseReturns", { days: settings.returnDays })}
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldIcon size={18} /> {t("productPromiseSecure")}

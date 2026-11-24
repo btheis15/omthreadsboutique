@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import { variantLabel, variantPrice } from "@/lib/variants";
+import { variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
+import { american } from "@/lib/american";
 import { cart } from "./cart/store";
 import { ExternalIcon } from "./icons";
+import { Price } from "./Price";
 
 /** variant: the option chosen, for a product with options. */
 type Props = { product: Product; variant?: ProductVariant; onSiteCheckout: boolean };
@@ -81,41 +83,44 @@ export function AddToCart({ product, variant, onSiteCheckout }: Props) {
   );
 }
 
-/** Slim sticky bar on phones so the main action is always within thumb reach. */
-export function StickyBuyBar({ product, variant, onSiteCheckout, watchId }: Props & { watchId: string }) {
-  // Only show once the main buttons have scrolled out of view.
-  const [visible, setVisible] = useState(false);
+/**
+ * Slim sticky bar on phones, from the first screen for every visitor: the price and one Add to cart (the same
+ * add as the main button, so AddToCart fires). An Etsy-only piece keeps its Etsy link; a sold-out one shows nothing.
+ */
+export function StickyBuyBar({ product, variant, onSiteCheckout }: Props) {
+  const soldOut = (variant ? variant.stock : product.stock) === 0;
+  // Room under the page for the bar, so it never covers the footer's last line.
   useEffect(() => {
-    const el = document.getElementById(watchId);
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) =>
-      setVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0),
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [watchId]);
-
-  if ((variant ? variant.stock : product.stock) === 0) return null;
+    if (soldOut) return;
+    document.documentElement.classList.add("ad-bar");
+    return () => document.documentElement.classList.remove("ad-bar");
+  }, [soldOut]);
+  // Slides in once the shopper starts scrolling, so the first screen keeps the photo, price and story in view.
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (soldOut || shown) return;
+    const onScroll = () => {
+      if (window.scrollY > 24) setShown(true);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [soldOut, shown]);
+  if (soldOut) return null;
   const primaryIsEtsy = !onSiteCheckout && product.etsyUrl;
   return (
     <div
-      aria-hidden={!visible}
-      inert={!visible}
-      className={`fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ivory/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur transition-transform duration-300 md:hidden ${
-        visible ? "translate-y-0" : "translate-y-full"
-      }`}
+      inert={!shown}
+      className={`fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-line bg-ivory/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur transition-transform duration-300 ease-out md:hidden ${shown ? "translate-y-0" : "translate-y-full"}`}
     >
+      <Price price={variantPrice(product, variant)} compareAt={variantCompareAt(product, variant)} className="shrink-0 text-lg font-medium" />
       {primaryIsEtsy ? (
-        <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
+        <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary min-w-0 flex-1">
           Buy on Etsy <ExternalIcon size={16} />
         </a>
       ) : (
-        <button
-          type="button"
-          className="btn btn-primary w-full"
-          onClick={() => addToCart(product, variant)}
-        >
-          Add to cart
+        <button type="button" className="btn btn-primary min-w-0 flex-1" onClick={() => addToCart(product, variant)}>
+          <span className="min-w-0 truncate">Add to cart{variant ? ` · ${american(variantLabel(variant))}` : ""}</span>
         </button>
       )}
     </div>
