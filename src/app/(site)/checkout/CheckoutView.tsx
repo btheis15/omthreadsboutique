@@ -20,7 +20,7 @@ import type { CheckoutInfo } from "@/lib/types";
 import { ExpressPay } from "./ExpressPay";
 import { PayPalButtons } from "./PayPalButtons";
 import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
-import { PieceSpotlight } from "./PieceSpotlight";
+import { PieceSpotlight, PieceTrust } from "./PieceSpotlight";
 import type { Product } from "@/lib/types";
 import { regularKey, variantLabel, variantPrice } from "@/lib/variants";
 import { Price } from "@/components/Price";
@@ -634,7 +634,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
+                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -643,6 +643,10 @@ export function CheckoutView({
             </li>
           ))}
         </ul>
+      )}
+      {/* Phone, step 1, arrived on a one-piece link: the same reassurance the full piece view has on the last step. */}
+      {checkout && place && rate && step === 1 && spotLine && spotlight && (
+        <PieceTrust product={spotlight} woven={spotlightWoven} t={t} returnDays={returnDays} className="md:hidden" />
       )}
 
       {testerLink === "invalid" && (

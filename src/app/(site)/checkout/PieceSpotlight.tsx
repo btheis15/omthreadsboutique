@@ -45,7 +45,6 @@ export function PieceSpotlight({
   const compareAt = variantCompareAt(product, variant);
   const stock = variant ? variant.stock : product.stock;
   const choices = product.variants && product.variants.length > 1 ? product.variants : null;
-  const originLine = product.origin ? t(woven ? "checkoutWovenIn" : "checkoutMadeIn", { origin: product.origin }) : "Handmade in India";
   const optionName = product.options?.join(" / ") || "Color";
 
   return (
@@ -125,22 +124,44 @@ export function PieceSpotlight({
           </label>
         )}
 
-        <ul className="mt-4 space-y-1 rounded-lg bg-sand p-3 text-sm" aria-label="Good to know">
-          <li>{originLine}</li>
-          <li>{t("checkoutReturnsUS", { days: returnDays })} on US orders</li>
-          <li>{t("checkoutShipTime")}</li>
-        </ul>
-        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium">
-          <Link href="/shop" className="underline underline-offset-4">
-            {t("checkoutKeepBrowsing")}
-          </Link>
-          <Link href={`/product/${product.slug}`} className="underline underline-offset-4">
-            {t("checkoutSeeDetails")}
-          </Link>
-        </p>
+        <PieceTrust product={product} woven={woven} t={t} returnDays={returnDays} />
 
         {product.shortDescription && <p className="mt-5 line-clamp-4 leading-relaxed text-ink/80">{product.shortDescription}</p>}
       </div>
     </section>
+  );
+}
+
+/** For a shopper who came straight to checkout: where the piece is from, returns, shipping time, and a way back to browse. */
+export function PieceTrust({
+  product,
+  woven,
+  t,
+  returnDays,
+  className = "",
+}: {
+  product: Product;
+  woven: boolean;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+  returnDays: number;
+  className?: string;
+}) {
+  const originLine = product.origin ? t(woven ? "checkoutWovenIn" : "checkoutMadeIn", { origin: product.origin }) : "Handmade in India";
+  return (
+    <div className={className}>
+      <ul className="mt-4 space-y-1 rounded-lg bg-sand p-3 text-sm" aria-label="Good to know">
+        <li>{originLine}</li>
+        <li>{t("checkoutReturnsUS", { days: returnDays })} on US orders</li>
+        <li>{t("checkoutShipTime")}</li>
+      </ul>
+      <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium">
+        <Link href="/shop" className="underline underline-offset-4">
+          {t("checkoutKeepBrowsing")}
+        </Link>
+        <Link href={`/product/${product.slug}`} className="underline underline-offset-4">
+          {t("checkoutSeeDetails")}
+        </Link>
+      </p>
+    </div>
   );
 }

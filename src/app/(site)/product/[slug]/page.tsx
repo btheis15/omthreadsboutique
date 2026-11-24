@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: Props) {
   const woven = isWovenCraft(craft);
   const story = (
     <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
-      {product.origin && <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin })}</p>}
+      <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin || "India" })}</p>
       <p className="text-ink/85">{t("productStoryFamily")}</p>
       <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>
     </div>
