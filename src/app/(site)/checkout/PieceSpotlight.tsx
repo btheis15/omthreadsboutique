@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { CartItem } from "@/components/cart/store";
 import { Price } from "@/components/Price";
@@ -25,6 +26,8 @@ export function PieceSpotlight({
   photos,
   onOpen,
   onPick,
+  t,
+  returnDays,
 }: {
   product: Product;
   line: CartItem;
@@ -32,12 +35,16 @@ export function PieceSpotlight({
   photos: Img[];
   onOpen: (photo: number) => void;
   onPick: (variant: ProductVariant) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+  returnDays: number;
 }) {
   const [at, setAt] = useState(0);
   const variant = product.variants?.find((v) => v.id === line.variantId);
   const compareAt = variantCompareAt(product, variant);
   const stock = variant ? variant.stock : product.stock;
   const choices = product.variants && product.variants.length > 1 ? product.variants : null;
+  const woven = ["pashmina", "kani", "jamawar", "kullu", "lohi", "banarasi"].includes(product.craft ?? "");
+  const originLine = product.origin ? t(woven ? "checkoutWovenIn" : "checkoutMadeIn", { origin: product.origin }) : "Handmade in India";
   const optionName = product.options?.join(" / ") || "Color";
 
   return (
@@ -116,6 +123,20 @@ export function PieceSpotlight({
             </select>
           </label>
         )}
+
+        <ul className="mt-4 space-y-1 rounded-lg bg-sand p-3 text-sm" aria-label="Good to know">
+          <li>{originLine}</li>
+          <li>{t("checkoutReturnsUS", { days: returnDays })} on US orders</li>
+          <li>{t("checkoutShipTime")}</li>
+        </ul>
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium">
+          <Link href="/shop" className="underline underline-offset-4">
+            {t("checkoutKeepBrowsing")}
+          </Link>
+          <Link href={`/product/${product.slug}`} className="underline underline-offset-4">
+            {t("checkoutSeeDetails")}
+          </Link>
+        </p>
 
         {product.shortDescription && <p className="mt-5 line-clamp-4 leading-relaxed text-ink/80">{product.shortDescription}</p>}
       </div>
