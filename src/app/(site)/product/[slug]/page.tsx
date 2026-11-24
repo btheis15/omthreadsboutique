@@ -13,7 +13,7 @@ import { RichText } from "@/components/RichText";
 import { directVideoUrl, getCheckout, getLists, getProduct, getT, getProducts, getSettings, isSoldOut, relatedProducts } from "@/lib/catalog";
 import { giftOffer } from "@/lib/free-gift";
 import { liveCheckout, productExpress } from "@/lib/payments";
-import { craftByValue, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
+import { craftByValue, isWovenCraft, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
 import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
@@ -56,8 +56,7 @@ export default async function ProductPage({ params }: Props) {
     product.colors.length && { label: "Color", value: product.colors.map((c) => colorLabel(lists, c)).join(", ") },
   ].filter(Boolean) as { label: string; value: string }[];
 
-  // Only a weaving craft is called "handwoven"; embroidery, print and the rest are "made in".
-  const woven = craft && /weav|woven|loom|handloom/i.test(`${craft.label} ${craft.summary}`);
+  const woven = isWovenCraft(craft);
   const story = (
     <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
       {product.origin && <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin })}</p>}

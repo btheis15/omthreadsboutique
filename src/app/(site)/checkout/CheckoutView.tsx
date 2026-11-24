@@ -67,6 +67,7 @@ export function CheckoutView({
   linkCoupon,
   buyAlone = false,
   spotlight = null,
+  spotlightWoven = false,
   soldOutLink = null,
   colorNote = null,
   freeShippingThreshold = 0,
@@ -87,6 +88,8 @@ export function CheckoutView({
   buyAlone?: boolean;
   /** A one-piece link's piece (/checkout?product=): shown large, with its colours, while it's the only thing in the cart. */
   spotlight?: Product | null;
+  /** The spotlight piece's craft is a weave (it says "Handwoven in …"). */
+  spotlightWoven?: boolean;
   /** That link's piece when it has sold out (its title), to say so. */
   soldOutLink?: string | null;
   /** A one-piece link named a colour that's sold out or unknown: what was picked instead. */
@@ -684,6 +687,7 @@ export function CheckoutView({
           photos={photosFor(spotLine, photos[spotlight.slug])}
           t={t}
           returnDays={returnDays}
+          woven={spotlightWoven}
           onOpen={(photo) => setViewing({ line: 0, photo })}
           onPick={(v) =>
             cart.swap(spotLine.key, {

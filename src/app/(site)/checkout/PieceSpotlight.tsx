@@ -28,6 +28,7 @@ export function PieceSpotlight({
   onPick,
   t,
   returnDays,
+  woven,
 }: {
   product: Product;
   line: CartItem;
@@ -37,13 +38,13 @@ export function PieceSpotlight({
   onPick: (variant: ProductVariant) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   returnDays: number;
+  woven: boolean;
 }) {
   const [at, setAt] = useState(0);
   const variant = product.variants?.find((v) => v.id === line.variantId);
   const compareAt = variantCompareAt(product, variant);
   const stock = variant ? variant.stock : product.stock;
   const choices = product.variants && product.variants.length > 1 ? product.variants : null;
-  const woven = ["pashmina", "kani", "jamawar", "kullu", "lohi", "banarasi"].includes(product.craft ?? "");
   const originLine = product.origin ? t(woven ? "checkoutWovenIn" : "checkoutMadeIn", { origin: product.origin }) : "Handmade in India";
   const optionName = product.options?.join(" / ") || "Color";
 

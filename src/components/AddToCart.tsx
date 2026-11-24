@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import { variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
 import { cart } from "./cart/store";
@@ -94,10 +94,24 @@ export function StickyBuyBar({ product, variant, onSiteCheckout }: Props) {
     document.documentElement.classList.add("ad-bar");
     return () => document.documentElement.classList.remove("ad-bar");
   }, [soldOut]);
+  // Slides in once the shopper starts scrolling, so the first screen keeps the photo, price and story in view.
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (soldOut || shown) return;
+    const onScroll = () => {
+      if (window.scrollY > 24) setShown(true);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [soldOut, shown]);
   if (soldOut) return null;
   const primaryIsEtsy = !onSiteCheckout && product.etsyUrl;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-line bg-ivory/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+    <div
+      inert={!shown}
+      className={`fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-line bg-ivory/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur transition-transform duration-300 ease-out md:hidden ${shown ? "translate-y-0" : "translate-y-full"}`}
+    >
       <Price price={variantPrice(product, variant)} compareAt={variantCompareAt(product, variant)} className="shrink-0 text-lg font-medium" />
       {primaryIsEtsy ? (
         <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary min-w-0 flex-1">
