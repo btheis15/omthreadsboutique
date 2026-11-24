@@ -317,6 +317,56 @@
     "default": "International orders are final sale"
   },
   {
+    "key": "checkoutWovenIn",
+    "group": "Checkout & cart",
+    "label": "Checkout: trust line, woven",
+    "hint": "{origin} is the piece's origin.",
+    "default": "Handwoven in {origin}"
+  },
+  {
+    "key": "checkoutMadeIn",
+    "group": "Checkout & cart",
+    "label": "Checkout: trust line, not woven",
+    "hint": "{origin} is the piece's origin.",
+    "default": "Made in {origin}"
+  },
+  {
+    "key": "checkoutShipTime",
+    "group": "Checkout & cart",
+    "label": "Checkout: trust line, shipping time",
+    "default": "US shipping 4–9 business days"
+  },
+  {
+    "key": "checkoutKeepBrowsing",
+    "group": "Checkout & cart",
+    "label": "Checkout: keep browsing link",
+    "default": "Keep browsing"
+  },
+  {
+    "key": "checkoutSeeDetails",
+    "group": "Checkout & cart",
+    "label": "Checkout: link to the product page",
+    "default": "See photos & details"
+  },
+  {
+    "key": "checkoutPhoneHelp",
+    "group": "Checkout & cart",
+    "label": "Checkout: phone helper",
+    "default": "Needed for shipping updates"
+  },
+  {
+    "key": "checkoutPhoneHint",
+    "group": "Checkout & cart",
+    "label": "Checkout: hint while the phone is missing",
+    "default": "Add your phone number to see shipping options and tax"
+  },
+  {
+    "key": "checkoutTaxPending",
+    "group": "Checkout & cart",
+    "label": "Checkout: estimated tax before the address is known",
+    "default": "Shown once we have your address"
+  },
+  {
     "key": "checkoutReturnsUS",
     "group": "Checkout & cart",
     "label": "Checkout: returns link for US orders",
