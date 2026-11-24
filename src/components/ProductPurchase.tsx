@@ -56,12 +56,15 @@ export function ProductPurchase({ product, onSiteCheckout, express = null, giftO
 
   return (
     <>
-      <Price price={price} compareAt={variantCompareAt(product, variant)} className="mt-2 text-xl font-medium md:mt-3" />
-      {product.saleEndsOn && (
-        <p className="mt-1 text-sm text-sale">
-          Sale ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
-        </p>
-      )}
+      {/* Price, its "N% off" tag and the sale's end date on one line, so the story below stays on the first screen. */}
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-2 md:mt-3">
+        <Price price={price} compareAt={variantCompareAt(product, variant)} className="text-xl font-medium" />
+        {product.saleEndsOn && (
+          <span className="text-sm text-sale">
+            · ends {new Date(`${product.saleEndsOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        )}
+      </p>
       {afterPrice}
       {giftOffer && (
         <p className="mt-2 text-sm text-zari">
