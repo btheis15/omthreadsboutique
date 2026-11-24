@@ -361,6 +361,12 @@
     "default": "See photos & details"
   },
   {
+    "key": "checkoutReminderOptIn",
+    "group": "Checkout & cart",
+    "label": "Checkout: reminder email checkbox",
+    "default": "Email me one reminder if I don't finish (unsubscribe anytime)"
+  },
+  {
     "key": "checkoutPhoneHelp",
     "group": "Checkout & cart",
     "label": "Checkout: phone helper",
