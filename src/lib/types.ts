@@ -38,6 +38,8 @@ export type ProductVariant = {
   /** On a website sale: the regular price, shown struck through */
   compareAtPrice?: number;
   image?: ProductImage;
+  /** Where this option ships from; absent/null = same as the product. Feed field, may not exist yet. */
+  shipsFrom?: "US" | "IN" | null;
 };
 
 export type Product = {
@@ -69,6 +71,8 @@ export type Product = {
   /** Option names, e.g. ["Color"] (up to three), when the piece comes in options */
   options?: string[];
   variants?: ProductVariant[];
+  /** "IN" = stored in India: flat shipping, arranged by hand. Absent/null = ships from the US shop. */
+  shipsFrom?: "IN" | null;
   etsyUrl?: string;
   collections: string[];
   featured: boolean;
@@ -186,6 +190,8 @@ export type CheckoutInfo = {
   /** Local pickup, when the shop offers it (the charge replaces shipping). */
   pickup?: { label: string; cents: number; details: string } | null;
   /** Personal delivery within `miles` of the shop, when offered. */
+  /** Flat shipping for an order with a piece that ships from India (cents); absent = 1500. */
+  india?: { cents: number } | null;
   delivery?: { label: string; cents: number; miles: number; from?: string | null; note: string } | null;
   /** Sales tax is added on the payment page (Stripe Tax). */
   taxAdded: boolean;

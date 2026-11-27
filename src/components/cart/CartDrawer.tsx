@@ -28,6 +28,8 @@ export function CartDrawer({ freeShippingThreshold, text, freeGift = null }: { f
   }, [open]);
 
   const remaining = freeShippingThreshold - subtotal;
+  // Free shipping is for US-shipped orders; a piece shipping from India makes the order's shipping the India flat rate.
+  const hasIndia = items.some((i) => i.fromIndia);
   const progress = freeShippingThreshold > 0 ? Math.min(1, subtotal / freeShippingThreshold) : 0;
 
   return (
@@ -68,7 +70,7 @@ export function CartDrawer({ freeShippingThreshold, text, freeGift = null }: { f
           </div>
         ) : (
           <>
-            {freeShippingThreshold > 0 && (
+            {freeShippingThreshold > 0 && !hasIndia && (
               <div className="border-b border-line bg-sand px-4 py-3 text-center text-sm md:px-6">
                 {remaining > 0 ? (
                   <Bold text={t("cartAwayFree", { amount: formatPrice(remaining) })} />
@@ -109,6 +111,7 @@ export function CartDrawer({ freeShippingThreshold, text, freeGift = null }: { f
                       <p className="text-[0.95rem] leading-snug">
                         {item.title}
                         {item.option && <span className="block text-sm text-muted">{item.option}</span>}
+                        {item.fromIndia && <span className="block text-xs text-muted">Ships from India</span>}
                       </p>
                       <p className="shrink-0 text-right font-medium">
                         <Price price={item.price * item.qty} className="flex-wrap justify-end gap-x-1.5" />

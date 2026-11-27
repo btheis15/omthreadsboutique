@@ -7,7 +7,7 @@ import { giftOffer } from "@/lib/free-gift";
 import { TESTER_COOKIE, checkoutFor } from "@/lib/payments";
 import { american } from "@/lib/american";
 import type { Product } from "@/lib/types";
-import { defaultVariant, regularPrices, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
+import { defaultVariant, indiaLines, regularPrices, variantAvailable, variantLabel, variantPrice } from "@/lib/variants";
 import { CheckoutView } from "./CheckoutView";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
@@ -145,6 +145,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
       freeShippingThreshold={settings.freeShippingThreshold}
       freeGift={freeGift}
       regular={regularPrices(products)}
+      india={indiaLines(products)}
     />
   );
 }

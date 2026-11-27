@@ -17,7 +17,7 @@ import { liveCheckout, productExpress } from "@/lib/payments";
 import { craftByValue, isWovenCraft, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { formatPrice, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
-import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
+import { defaultVariant, hasOptions, priceRange, shipsFromIndia, variantAvailable } from "@/lib/variants";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -63,11 +63,13 @@ export default async function ProductPage({ params }: Props) {
   // One real customer review near the price: one written about this piece if there is one, otherwise the newest.
   const about = (r: (typeof testimonials)[number]) => [product.id, product.slug.toLowerCase(), product.title.toLowerCase()].includes((r.product ?? "").trim().toLowerCase());
   const review = testimonials.find(about) ?? testimonials[0];
+  // The US delivery/returns line doesn't fit a piece that only ships from India (its own note is under the price).
+  const onlyFromIndia = hasOptions(product) ? (product.variants ?? []).every((v) => shipsFromIndia(product, v)) : shipsFromIndia(product);
   const story = (
     <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
       <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin || "India" })}</p>
       <p className="text-ink/85">{t("productStoryFamily")}</p>
-      <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>
+      {!onlyFromIndia && <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>}
       {pickup && <p className="text-sm text-muted">{pickup.cents === 0 ? t("productPickupFree") : t("productPickupPaid", { price: formatPrice(pickup.cents / 100) })}</p>}
       {review && (
         <figure className="mt-3 rounded-lg bg-sand px-3 py-2 text-sm">

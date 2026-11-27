@@ -73,6 +73,7 @@ export function CheckoutView({
   freeShippingThreshold = 0,
   freeGift = null,
   regular = {},
+  india = {},
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -100,6 +101,8 @@ export function CheckoutView({
   freeGift?: FreeGiftOffer | null;
   /** Regular prices of lines on sale, from the catalog (see regularPrices), shown struck through. */
   regular?: Record<string, number>;
+  /** Lines that ship from India, from the catalog (see indiaLines); falls back to the cart line's own flag. */
+  india?: Record<string, boolean>;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -125,6 +128,10 @@ export function CheckoutView({
     linkPending && linkCart
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
+  // The catalog decides when it knows the line; the flag saved in the cart is only for a piece no longer listed.
+  const fromIndia = (i: CartItem) => india[regularKey(i.productId, i.variantId)] ?? Boolean(i.fromIndia);
+  const indiaCart = items.some(fromIndia);
+  const indiaCents = checkout?.india?.cents ?? 1500;
   const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // The free gift: with any bag of enough paid items.
@@ -179,7 +186,7 @@ export function CheckoutView({
   const rate = place?.rates.find((r) => r.id === rateId) ?? place?.rates[0];
   const pickup = checkout?.pickup ?? null;
   const delivery = checkout?.delivery ?? null;
-  const fulfil: Fulfil = how === "pickup" && pickup ? "pickup" : how === "delivery" && delivery ? "delivery" : "ship";
+  const fulfil: Fulfil = indiaCart ? "ship" : how === "pickup" && pickup ? "pickup" : how === "delivery" && delivery ? "delivery" : "ship";
   // Pickup and delivery are US-only, so the country and shipping rate don't apply.
   const placeCode = fulfil === "ship" ? (place?.code ?? "US") : "US";
   // Live carrier rates: every provider gets the address form here, then the shopper picks a quoted option.
@@ -231,7 +238,9 @@ export function CheckoutView({
         ? (delivery?.cents ?? 0)
         : live
           ? (chosenRate?.cents ?? 0)
-          : rate
+          : indiaCart
+            ? indiaCents
+            : rate
             ? shippingCents(rate, subtotalCents, itemCount)
             : 0;
 
@@ -295,7 +304,8 @@ export function CheckoutView({
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
-  const freeShip = Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
+  // Never for a cart with a piece shipping from India: its flat shipping is always charged.
+  const freeShip = !indiaCart && Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
   const shipping = freeShip ? 0 : shippingFull;
   // Estimated sales tax: the shop works it out for the chosen option and address exactly as the order will be priced.
   const taxCents = live && chosenRate && typeof chosenRate.taxCents === "number" ? chosenRate.taxCents : null;
@@ -303,7 +313,7 @@ export function CheckoutView({
   const shippingKnown = fulfil !== "ship" || !live || Boolean(chosenRate);
   // Free standard shipping (US, by merchandise subtotal): the shop's own US rate decides, else the site-wide amount.
   const freeOverCents = checkout?.countries.find((c) => c.code === "US")?.rates.find((r) => r.freeOverCents !== null && r.freeOverCents !== undefined)?.freeOverCents ?? Math.round(freeShippingThreshold * 100);
-  const awayFreeCents = fulfil === "ship" && placeCode === "US" && freeOverCents > 0 ? freeOverCents - subtotalCents : null;
+  const awayFreeCents = !indiaCart && fulfil === "ship" && placeCode === "US" && freeOverCents > 0 ? freeOverCents - subtotalCents : null;
 
   async function checkCoupon(code: string): Promise<Coupon | string | { error: string; gone: boolean }> {
     try {
@@ -409,13 +419,13 @@ export function CheckoutView({
           customer: { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } },
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
+      const data = (await res.json().catch(() => ({}))) as { quoteId?: string | null; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
       if (reqId !== quoteReqId.current) return;
       if (res.ok && data.fallback === true) {
         setQuote(null);
         setFlatFor(flatKey);
-      } else if (res.ok && data.quoteId && Array.isArray(data.rates) && data.rates.length) {
-        setQuote({ id: data.quoteId, rates: data.rates, forKey });
+      } else if (res.ok && data.quoteId !== undefined && Array.isArray(data.rates) && data.rates.length) {
+        setQuote({ id: data.quoteId ?? "", rates: data.rates, forKey });
         // The cheapest option to the shopper comes first: when free shipping is earned, that's the free one (ties keep the shop's order).
         setQuoteRateId(data.rates.reduce((best, r) => (r.cents < best.cents ? r : best), data.rates[0]).id);
       } else {
@@ -667,7 +677,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
+                  {item.option ? `${item.option} · ` : ""}{fromIndia(item) ? "Ships from India · " : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -763,6 +773,7 @@ export function CheckoutView({
                   {item.title}
                 </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
+                {fromIndia(item) && <p className="text-sm text-muted">Ships from India</p>}
                 <p className="text-sm text-muted">
                   Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>
@@ -812,7 +823,7 @@ export function CheckoutView({
             </div>
           )}
 
-          {(pickup || delivery) && (
+          {(pickup || delivery) && !indiaCart && (
             <section className={hideUnless(1)}>
               <h2 className="text-xl">How would you like to get it?</h2>
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="How would you like to get it?">
@@ -882,6 +893,10 @@ export function CheckoutView({
               </label>
               {live ? (
                 <div className="hidden" />
+              ) : indiaCart ? (
+                <div className={`self-end pb-2.5 text-[0.95rem] ${hideUnless(2)}`}>
+                  Ships from India · {shipping ? dollars(shipping) : "Free"} · delivers within 2 weeks
+                </div>
               ) : place.rates.length > 1 ? (
                 <label className={`block ${hideUnless(2)}`}>
                   <span className="mb-1 block text-sm">Delivery</span>
@@ -910,7 +925,7 @@ export function CheckoutView({
                 </div>
               </div>
             )}
-            {!live && (
+            {!live && !indiaCart && (
             <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
               Arrives in about {rate.minDays}–{rate.maxDays} business days after it ships.
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}

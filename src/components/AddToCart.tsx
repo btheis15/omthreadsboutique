@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import { variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
+import { shipsFromIndia, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
 import { american } from "@/lib/american";
 import { cart } from "./cart/store";
 import { ExternalIcon } from "./icons";
@@ -22,6 +22,7 @@ const addToCart = (product: Product, variant?: ProductVariant) =>
     image: variant?.image ?? product.images[0],
     etsyUrl: product.etsyUrl,
     maxQty: variant ? variant.stock : product.stock,
+    fromIndia: shipsFromIndia(product, variant) || undefined,
   });
 
 /**
