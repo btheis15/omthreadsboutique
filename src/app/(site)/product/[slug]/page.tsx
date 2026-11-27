@@ -64,7 +64,7 @@ export default async function ProductPage({ params }: Props) {
   const about = (r: (typeof testimonials)[number]) => [product.id, product.slug.toLowerCase(), product.title.toLowerCase()].includes((r.product ?? "").trim().toLowerCase());
   const review = testimonials.find(about) ?? testimonials[0];
   // The US delivery/returns line doesn't fit a piece that only ships from India (its own note is under the price).
-  const onlyFromIndia = hasOptions(product) ? product.variants.every((v) => shipsFromIndia(product, v)) : shipsFromIndia(product);
+  const onlyFromIndia = hasOptions(product) ? (product.variants ?? []).every((v) => shipsFromIndia(product, v)) : shipsFromIndia(product);
   const story = (
     <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
       <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin || "India" })}</p>
