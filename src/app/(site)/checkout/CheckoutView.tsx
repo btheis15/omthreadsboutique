@@ -418,13 +418,13 @@ export function CheckoutView({
           customer: { name: customer.name, email: customer.email, phone: customer.phone, address: { line1: customer.line1, line2: customer.line2, city: customer.city, state: customer.state, postal_code: customer.postal_code } },
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { quoteId?: string; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
+      const data = (await res.json().catch(() => ({}))) as { quoteId?: string | null; rates?: LiveRate[]; fallback?: boolean; error?: string; errors?: Record<string, string> };
       if (reqId !== quoteReqId.current) return;
       if (res.ok && data.fallback === true) {
         setQuote(null);
         setFlatFor(flatKey);
-      } else if (res.ok && data.quoteId && Array.isArray(data.rates) && data.rates.length) {
-        setQuote({ id: data.quoteId, rates: data.rates, forKey });
+      } else if (res.ok && data.quoteId !== undefined && Array.isArray(data.rates) && data.rates.length) {
+        setQuote({ id: data.quoteId ?? "", rates: data.rates, forKey });
         // The cheapest option to the shopper comes first: when free shipping is earned, that's the free one (ties keep the shop's order).
         setQuoteRateId(data.rates.reduce((best, r) => (r.cents < best.cents ? r : best), data.rates[0]).id);
       } else {
