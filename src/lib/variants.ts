@@ -3,6 +3,22 @@ import type { Product, ProductVariant } from "./types";
 /** "Teal" or "Teal / Large". */
 export const variantLabel = (v: Pick<ProductVariant, "values">) => v.values.join(" / ");
 
+/** Where a line ships from: the option's own setting, else the product's, else the US shop. */
+export const shipsFromIndia = (p: Pick<Product, "shipsFrom">, v?: Pick<ProductVariant, "shipsFrom">) => (v?.shipsFrom ?? p.shipsFrom ?? "US") === "IN";
+
+/** Cart lines that ship from India, keyed by `regularKey` (product id + option id), from the catalog. */
+export function indiaLines(products: Product[]): Record<string, true> {
+  const out: Record<string, true> = {};
+  for (const p of products) {
+    if (hasOptions(p)) for (const v of p.variants!) { if (shipsFromIndia(p, v)) out[regularKey(p.id, v.id)] = true; }
+    else if (shipsFromIndia(p)) out[regularKey(p.id)] = true;
+  }
+  return out;
+}
+
+export const INDIA_NOTE = "Ships from India";
+export const INDIA_PRODUCT_NOTE = "Ships from India \u00b7 $15 flat shipping \u00b7 allow 2\u20133 weeks for delivery";
+
 export const hasOptions = (p: Product) => Boolean(p.options?.length && p.variants?.length);
 
 export const variantPrice = (p: Product, v?: ProductVariant) => v?.price ?? p.price;

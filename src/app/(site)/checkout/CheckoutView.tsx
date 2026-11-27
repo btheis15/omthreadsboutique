@@ -73,6 +73,7 @@ export function CheckoutView({
   freeShippingThreshold = 0,
   freeGift = null,
   regular = {},
+  india = {},
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -100,6 +101,8 @@ export function CheckoutView({
   freeGift?: FreeGiftOffer | null;
   /** Regular prices of lines on sale, from the catalog (see regularPrices), shown struck through. */
   regular?: Record<string, number>;
+  /** Lines that ship from India, from the catalog (see indiaLines); falls back to the cart line's own flag. */
+  india?: Record<string, true>;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -125,6 +128,7 @@ export function CheckoutView({
     linkPending && linkCart
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
+  const fromIndia = (i: CartItem) => Object.keys(india).length ? Boolean(india[regularKey(i.productId, i.variantId)]) : Boolean(i.fromIndia);
   const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // The free gift: with any bag of enough paid items.
@@ -667,7 +671,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
+                  {item.option ? `${item.option} · ` : ""}{fromIndia(item) ? "Ships from India · " : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -763,6 +767,7 @@ export function CheckoutView({
                   {item.title}
                 </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
+                {fromIndia(item) && <p className="text-sm text-muted">Ships from India</p>}
                 <p className="text-sm text-muted">
                   Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>

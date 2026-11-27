@@ -38,6 +38,8 @@ export type ProductVariant = {
   /** On a website sale: the regular price, shown struck through */
   compareAtPrice?: number;
   image?: ProductImage;
+  /** Where this option ships from; absent/null = same as the product. Feed field, may not exist yet. */
+  shipsFrom?: "US" | "IN" | null;
 };
 
 export type Product = {
@@ -69,6 +71,8 @@ export type Product = {
   /** Option names, e.g. ["Color"] (up to three), when the piece comes in options */
   options?: string[];
   variants?: ProductVariant[];
+  /** "IN" = stored in India: flat shipping, arranged by hand. Absent/null = ships from the US shop. */
+  shipsFrom?: "IN" | null;
   etsyUrl?: string;
   collections: string[];
   featured: boolean;

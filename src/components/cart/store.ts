@@ -18,6 +18,8 @@ export type CartItem = {
   etsyUrl?: string;
   qty: number;
   maxQty?: number;
+  /** Ships from India (flat shipping, arranged by hand); set when added, refreshed from the catalog at checkout. */
+  fromIndia?: boolean;
 };
 
 /** The shopper's free gift (see lib/free-gift.ts): one option of the gift product, at no charge. `price` is its regular price, shown struck through. */

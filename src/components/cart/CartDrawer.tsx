@@ -109,6 +109,7 @@ export function CartDrawer({ freeShippingThreshold, text, freeGift = null }: { f
                       <p className="text-[0.95rem] leading-snug">
                         {item.title}
                         {item.option && <span className="block text-sm text-muted">{item.option}</span>}
+                        {item.fromIndia && <span className="block text-xs text-muted">Ships from India</span>}
                       </p>
                       <p className="shrink-0 text-right font-medium">
                         <Price price={item.price * item.qty} className="flex-wrap justify-end gap-x-1.5" />

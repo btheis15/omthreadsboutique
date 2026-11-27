@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { giftPhrase, type FreeGiftOffer } from "@/lib/free-gift";
 import type { Product, ProductVariant } from "@/lib/types";
 import type { ProductExpress } from "@/lib/payments";
-import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, lowStockLeft, variantAvailable, variantCompareAt, variantLabel, variantPrice } from "@/lib/variants";
+import { INDIA_PRODUCT_NOTE, SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT, defaultVariant, hasOptions, lowStockLeft, variantAvailable, variantCompareAt, shipsFromIndia, variantLabel, variantPrice } from "@/lib/variants";
 import { AddToCart, StickyBuyBar } from "./AddToCart";
 import { Price } from "./Price";
 import { ProductExpressBuy } from "./ProductExpressBuy";
@@ -65,6 +65,7 @@ export function ProductPurchase({ product, onSiteCheckout, express = null, giftO
           </span>
         )}
       </p>
+      {shipsFromIndia(product, variant) && <p className="mt-2 text-sm font-medium text-zari">{INDIA_PRODUCT_NOTE}</p>}
       {afterPrice}
       {giftOffer && (
         <p className="mt-2 text-sm text-zari">
