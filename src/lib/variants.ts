@@ -6,12 +6,12 @@ export const variantLabel = (v: Pick<ProductVariant, "values">) => v.values.join
 /** Where a line ships from: the option's own setting, else the product's, else the US shop. */
 export const shipsFromIndia = (p: Pick<Product, "shipsFrom">, v?: Pick<ProductVariant, "shipsFrom">) => (v?.shipsFrom ?? p.shipsFrom ?? "US") === "IN";
 
-/** Cart lines that ship from India, keyed by `regularKey` (product id + option id), from the catalog. */
-export function indiaLines(products: Product[]): Record<string, true> {
-  const out: Record<string, true> = {};
+/** Every catalog line (keyed by `regularKey`: product id + option id): true when it ships from India. A line missing here is not in the catalog. */
+export function indiaLines(products: Product[]): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
   for (const p of products) {
-    if (hasOptions(p)) for (const v of p.variants!) { if (shipsFromIndia(p, v)) out[regularKey(p.id, v.id)] = true; }
-    else if (shipsFromIndia(p)) out[regularKey(p.id)] = true;
+    if (hasOptions(p)) for (const v of p.variants!) out[regularKey(p.id, v.id)] = shipsFromIndia(p, v);
+    else out[regularKey(p.id)] = shipsFromIndia(p);
   }
   return out;
 }
