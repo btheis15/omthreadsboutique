@@ -6,15 +6,51 @@ export const variantLabel = (v: Pick<ProductVariant, "values">) => v.values.join
 /** Where a line ships from: the option's own setting, else the product's, else the US shop. */
 export const shipsFromIndia = (p: Pick<Product, "shipsFrom">, v?: Pick<ProductVariant, "shipsFrom">) => (v?.shipsFrom ?? p.shipsFrom ?? "US") === "IN";
 
-/** Every catalog line (keyed by `regularKey`: product id + option id): true when it ships from India. A line missing here is not in the catalog. */
-export function indiaLines(products: Product[]): Record<string, boolean> {
-  const out: Record<string, boolean> = {};
+/** Where a line's stock is: `stock` is the total (undefined = made to order), `stockIn` the part in India, `mto` where a made-to-order piece ships from. */
+export type StockSplit = { stock?: number; stockIn: number; mto: "US" | "IN" };
+export type Place = "US" | "IN";
+
+/**
+ * Every catalog line (keyed by `regularKey`: product id + option id): its stock in the US and in India. A line missing here is not in the catalog.
+ * An older feed with no `stockIn` falls back to the "ships from" flag (all of a counted option's stock is in India, or none).
+ */
+export function stockSplit(products: Product[]): Record<string, StockSplit> {
+  const one = (stock: number | undefined, stockIn: number | undefined, india: boolean): StockSplit => ({
+    stock,
+    stockIn: stock === undefined ? 0 : Math.min(stock, stockIn ?? (india ? stock : 0)),
+    mto: india ? "IN" : "US",
+  });
+  const out: Record<string, StockSplit> = {};
   for (const p of products) {
-    if (hasOptions(p)) for (const v of p.variants!) out[regularKey(p.id, v.id)] = shipsFromIndia(p, v);
-    else out[regularKey(p.id)] = shipsFromIndia(p);
+    if (hasOptions(p)) for (const v of p.variants!) out[regularKey(p.id, v.id)] = one(v.stock, v.stockIn, shipsFromIndia(p, v));
+    else out[regularKey(p.id)] = one(p.stock, p.stockIn, shipsFromIndia(p));
   }
   return out;
 }
+
+/** Which places to take a line from, first choice first. Website: an Indian address takes India stock first; pickup and delivery are US only. Mirrors the shop's allocation. */
+export const preferFor = ({ pickupOrDelivery = false, dest = "US" }: { pickupOrDelivery?: boolean; dest?: string }): Place[] => (pickupOrDelivery ? ["US"] : dest === "IN" ? ["IN", "US"] : ["US", "IN"]);
+
+/**
+ * How many of `qty` ship from the US and from India. Made to order: all from where it is made. Counted stock: take from the
+ * first place in `prefer` up to its count, then the next listed; anything beyond the total goes to the first place.
+ */
+export function allocateLine(line: StockSplit, qty: number, prefer: Place[]): { us: number; in: number } {
+  if (line.stock === undefined) return line.mto === "IN" ? { us: 0, in: qty } : { us: qty, in: 0 };
+  const left = { US: Math.max(0, line.stock - line.stockIn), IN: Math.max(0, line.stockIn) };
+  const got = { US: 0, IN: 0 };
+  let rest = qty;
+  for (const place of prefer) {
+    const n = Math.min(rest, left[place]);
+    got[place] += n;
+    rest -= n;
+  }
+  if (rest > 0) got[prefer[0]] += rest;
+  return { us: got.US, in: got.IN };
+}
+
+/** True when the US alone can't cover `qty` of the line (made-to-order in India, or more than the US count). Pickup and delivery refuse such a bag. */
+export const usShort = (line: StockSplit, qty: number) => (line.stock === undefined ? line.mto === "IN" : qty > line.stock - line.stockIn);
 
 export const INDIA_NOTE = "Ships from India";
 export const INDIA_PRODUCT_NOTE = "Ships from India \u00b7 $15 flat shipping \u00b7 delivers within 2 weeks";

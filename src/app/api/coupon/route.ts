@@ -9,16 +9,18 @@ import { type CheckoutLine, TESTER_COOKIE } from "@/lib/payments";
  * is priced), so this only passes the question along.
  */
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as { code?: unknown; lines?: CheckoutLine[] } | null;
+  const body = (await request.json().catch(() => null)) as { code?: unknown; lines?: CheckoutLine[]; country?: unknown } | null;
   const code = typeof body?.code === "string" ? body.code.trim().slice(0, 30) : "";
   if (!code) return NextResponse.json({ error: "Type a coupon code first." }, { status: 400 });
   const lines = Array.isArray(body?.lines) ? body.lines.map((l) => ({ productId: String(l.productId ?? ""), variantId: l.variantId ? String(l.variantId) : undefined, qty: Number(l.qty), ...(l.gift === true && { gift: true as const }) })) : [];
+  // Where it ships, so the shop can allocate stock (an Indian address is served from India first). Optional: the shop assumes the US.
+  const country = typeof body?.country === "string" && /^[A-Za-z]{2}$/.test(body.country) ? body.country.toUpperCase() : undefined;
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   if (catalogSource !== "shop") return NextResponse.json({ error: "Coupon codes aren't available yet." }, { status: 501 });
 
   const testerKey = (await cookies()).get(TESTER_COOKIE)?.value;
   try {
-    const { status, data } = await shopApi("/api/coupon", { method: "POST", shopperIp: shopperIp(request.headers), body: { code, lines, testerKey } });
+    const { status, data } = await shopApi("/api/coupon", { method: "POST", shopperIp: shopperIp(request.headers), body: { code, lines, testerKey, ...(country && { country }) } });
     if (status === 200 && typeof data.discountCents === "number") {
       return NextResponse.json({ code: data.code, label: data.label, discountCents: data.discountCents, text: data.text, ...(data.freeShipping === true ? { freeShipping: true, ...(typeof data.state === "string" ? { state: data.state } : {}) } : {}) });
     }

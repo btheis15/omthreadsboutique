@@ -22,7 +22,7 @@ import { PayPalButtons } from "./PayPalButtons";
 import { PiecePhotosViewer, photosFor } from "./PiecePhotos";
 import { PieceSpotlight, PieceTrust } from "./PieceSpotlight";
 import type { Product } from "@/lib/types";
-import { regularKey, variantLabel, variantPrice } from "@/lib/variants";
+import { type StockSplit, allocateLine, preferFor, regularKey, usShort, variantLabel, variantPrice } from "@/lib/variants";
 import { Price } from "@/components/Price";
 import type { PiecePhotos } from "@/app/api/piece-photos/route";
 
@@ -36,6 +36,10 @@ const EMPTY: Customer = { name: "", email: "", phone: "", line1: "", line2: "", 
 const dollars = (cents: number) => formatPrice(cents / 100);
 /** A live carrier rate from the shop (see /api/shipping-rates). */
 type LiveRate = { id: string; label: string; cents: number; /** Estimated sales tax for this option (null when the shop couldn't work it out). */ taxCents?: number | null; minDays?: number | null; maxDays?: number | null; carrier?: string };
+/** A cart line's stock in the US and India: the catalog's, else (a piece no longer listed) the line's own "ships from India" flag. */
+const splitFor = (stock: Record<string, StockSplit>, i: { productId: string; variantId?: string; fromIndia?: boolean }): StockSplit =>
+  stock[regularKey(i.productId, i.variantId)] ?? { stock: undefined, stockIn: 0, mto: i.fromIndia ? "IN" : "US" };
+
 type Quote = { id: string; rates: LiveRate[]; forKey: string };
 const daysText = (r: LiveRate) => {
   const a = r.minDays ?? null;
@@ -73,7 +77,7 @@ export function CheckoutView({
   freeShippingThreshold = 0,
   freeGift = null,
   regular = {},
-  india = {},
+  stock = {},
 }: {
   checkout: CheckoutInfo | null;
   cancelled: boolean;
@@ -101,8 +105,8 @@ export function CheckoutView({
   freeGift?: FreeGiftOffer | null;
   /** Regular prices of lines on sale, from the catalog (see regularPrices), shown struck through. */
   regular?: Record<string, number>;
-  /** Lines that ship from India, from the catalog (see indiaLines); falls back to the cart line's own flag. */
-  india?: Record<string, boolean>;
+  /** Each line's stock in the US and in India, from the catalog (see stockSplit); a piece no longer listed falls back to the cart line's own flag. */
+  stock?: Record<string, StockSplit>;
 }) {
   const t = makeT(text);
   const saved = useCart();
@@ -129,8 +133,6 @@ export function CheckoutView({
       ? linkCart.map((i) => ({ ...i, key: cartKey(i.productId, i.variantId), qty: Math.min(i.qty, i.maxQty ?? 10) })).filter((i) => i.qty > 0)
       : saved.items;
   // The catalog decides when it knows the line; the flag saved in the cart is only for a piece no longer listed.
-  const fromIndia = (i: CartItem) => india[regularKey(i.productId, i.variantId)] ?? Boolean(i.fromIndia);
-  const indiaCart = items.some(fromIndia);
   const indiaCents = checkout?.india?.cents ?? 1500;
   // Shipping within India for the pieces that ship from India (absent = free).
   const domesticCents = checkout?.india?.domesticCents ?? 0;
@@ -191,13 +193,23 @@ export function CheckoutView({
   const delivery = checkout?.delivery ?? null;
   // To an Indian address: the India pieces ship within India, and any US-origin pieces ship at the normal India-destination rate.
   const toIndia = (place?.code ?? "US") === "IN";
-  const usItems = items.filter((i) => !fromIndia(i));
-  const mixedToIndia = indiaCart && toIndia && usItems.length > 0;
-  const usSubtotalCents = usItems.reduce((n, i) => n + Math.round(i.price * 100) * i.qty, 0);
-  const usItemCount = usItems.reduce((n, i) => n + i.qty, 0);
-  const fulfil: Fulfil = indiaCart ? "ship" : how === "pickup" && pickup ? "pickup" : how === "delivery" && delivery ? "delivery" : "ship";
+  // Pickup and delivery only when the US stock covers the whole bag (the rest of a piece may be in India).
+  const usCovers = !items.some((i) => usShort(splitFor(stock, i), i.qty));
+  const fulfil: Fulfil = usCovers && how === "pickup" && pickup ? "pickup" : usCovers && how === "delivery" && delivery ? "delivery" : "ship";
   // Pickup and delivery are US-only, so the country and shipping rate don't apply.
   const placeCode = fulfil === "ship" ? (place?.code ?? "US") : "US";
+  // Which pieces ship from where: an Indian address takes India stock first, but only when the shop sells India stock there (otherwise US stock only, and an India-only shortfall is blocked below).
+  const usStockOnly = fulfil !== "ship" || (placeCode === "IN" && !domesticSales);
+  const alloc = items.map((i) => allocateLine(splitFor(stock, i), i.qty, usStockOnly ? ["US"] : preferFor({ dest: placeCode })));
+  const indiaUnitCount = alloc.reduce((n, a) => n + a.in, 0);
+  const indiaCart = indiaUnitCount > 0;
+  // The US part of the bag: its own subtotal's pieces and count, priced as its own parcel. (The free-shipping threshold uses the whole subtotal.)
+  const usItemCount = alloc.reduce((n, a) => n + a.us, 0);
+  const hasUs = usItemCount > 0;
+  // What the India part adds: shipping within India, or the flat India rate to anywhere else.
+  const indiaPartCents = indiaCart ? (toIndia ? domesticCents : indiaCents) : 0;
+  /** A line's note: "Ships from India" when all of it does, "1 of 2 ships from India" when only part does. */
+  const indiaNote = (index: number, qty: number) => (alloc[index].in === 0 ? null : alloc[index].in >= qty ? "Ships from India" : `${alloc[index].in} of ${qty} ships from India`);
   // Live carrier rates: every provider gets the address form here, then the shopper picks a quoted option.
   // The shop says when a cart can't be priced live (an export over the AES limit): the flat prices apply to that cart.
   const [flatFor, setFlatFor] = useState<string | null>(null);
@@ -240,6 +252,8 @@ export function CheckoutView({
   const quoteReqId = useRef(0);
   const optionsRef = useRef<HTMLDivElement>(null);
   const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates.reduce((best, r) => (r.cents < best.cents ? r : best), activeQuote.rates[0])) : undefined;
+  // The US part by the chosen rate (the free-over amount counts the whole paid subtotal); none when every piece ships from India.
+  const usPartCents = (r: typeof rate) => (r && hasUs ? shippingCents(r, subtotalCents, usItemCount) : 0);
   const shippingFull =
     fulfil === "pickup"
       ? (pickup?.cents ?? 0)
@@ -247,13 +261,7 @@ export function CheckoutView({
         ? (delivery?.cents ?? 0)
         : live
           ? (chosenRate?.cents ?? 0)
-          : indiaCart && toIndia
-            ? domesticCents + (rate && usItems.length > 0 ? shippingCents(rate, usSubtotalCents, usItemCount) : 0)
-            : indiaCart
-            ? indiaCents
-            : rate
-            ? shippingCents(rate, subtotalCents, itemCount)
-            : 0;
+          : usPartCents(rate) + indiaPartCents;
 
   // Typed coupon code: shown here for the shopper; the admin checks it again when the order is priced.
   const [couponOpen, setCouponOpen] = useState(false);
@@ -315,20 +323,20 @@ export function CheckoutView({
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
-  // Never for a cart with a piece shipping from India: its flat shipping is always charged.
-  const freeShip = !indiaCart && Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
-  const shipping = freeShip ? 0 : shippingFull;
+  // It waives the US part only: the India part's shipping is always charged, and a bag with only India pieces gets nothing (the shop refuses the code).
+  const freeShip = hasUs && Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
+  const shipping = !freeShip ? shippingFull : fulfil === "ship" ? indiaPartCents : 0;
   // Estimated sales tax: the shop works it out for the chosen option and address exactly as the order will be priced.
   const taxCents = live && chosenRate && typeof chosenRate.taxCents === "number" ? chosenRate.taxCents : null;
   const total = subtotalCents - discount + shipping + (taxCents ?? 0);
   const shippingKnown = fulfil !== "ship" || !live || Boolean(chosenRate);
   // Free standard shipping (US, by merchandise subtotal): the shop's own US rate decides, else the site-wide amount.
   const freeOverCents = checkout?.countries.find((c) => c.code === "US")?.rates.find((r) => r.freeOverCents !== null && r.freeOverCents !== undefined)?.freeOverCents ?? Math.round(freeShippingThreshold * 100);
-  const awayFreeCents = !indiaCart && fulfil === "ship" && placeCode === "US" && freeOverCents > 0 ? freeOverCents - subtotalCents : null;
+  const awayFreeCents = hasUs && fulfil === "ship" && placeCode === "US" && freeOverCents > 0 ? freeOverCents - subtotalCents : null;
 
   async function checkCoupon(code: string): Promise<Coupon | string | { error: string; gone: boolean }> {
     try {
-      const res = await fetch("/api/coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, lines: JSON.parse(linesKey) }) });
+      const res = await fetch("/api/coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, lines: JSON.parse(linesKey), country: placeCode }) });
       const data = (await res.json().catch(() => ({}))) as Partial<Coupon> & { error?: string };
       if (res.ok && typeof data.discountCents === "number") return { code: data.code ?? code, label: data.label ?? "", discountCents: data.discountCents, text: data.text ?? "", ...(data.freeShipping ? { freeShipping: true, ...(typeof data.state === "string" ? { state: data.state } : {}) } : {}) };
       return { error: data.error ?? "That coupon code isn't valid.", gone: res.status === 404 || res.status === 409 };
@@ -368,7 +376,7 @@ export function CheckoutView({
       stale = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linesKey]);
+  }, [linesKey, placeCode]);
 
   // A Meta Shops link's coupon: tried once the link's cart is in place; no message if it isn't valid.
   const linkCouponTried = useRef(false);
@@ -402,7 +410,7 @@ export function CheckoutView({
   }, [fulfil, zip5, zipRetry]);
   const zipAnswer = zipCheck && zipCheck.zip === zip5 ? zipCheck : null;
   // Pieces stored in India can't be sold to Indian addresses until the owner switches it on.
-  const indiaBlocked = indiaCart && toIndia && !domesticSales;
+  const indiaBlocked = toIndia && !domesticSales && items.some((i) => usShort(splitFor(stock, i), i.qty));
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
   /** The shop (or carrier) complained about something: show the screen it's on. */
@@ -690,7 +698,7 @@ export function CheckoutView({
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{item.title}</p>
                 <p className="truncate text-muted">
-                  {item.option ? `${item.option} · ` : ""}{fromIndia(item) ? "Ships from India · " : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
+                  {item.option ? `${item.option} · ` : ""}{indiaNote(index, item.qty) ? `${indiaNote(index, item.qty)} · ` : ""}Qty {item.qty} · <Price price={item.price * item.qty} className="gap-1.5" />
                 </p>
               </div>
               <button type="button" onClick={() => setViewing({ line: index, photo: 0 })} className="shrink-0 text-sm font-medium text-accent underline underline-offset-4">
@@ -786,7 +794,7 @@ export function CheckoutView({
                   {item.title}
                 </button>
                 {item.option && <p className="text-sm text-muted">{item.option}</p>}
-                {fromIndia(item) && <p className="text-sm text-muted">Ships from India</p>}
+                {indiaNote(index, item.qty) && <p className="text-sm text-muted">{indiaNote(index, item.qty)}</p>}
                 <p className="text-sm text-muted">
                   Qty {item.qty} · <Price price={item.price * item.qty} compareAt={regularOf(item) !== undefined ? regularOf(item)! * item.qty : undefined} className="gap-1.5" />
                 </p>
@@ -836,7 +844,7 @@ export function CheckoutView({
             </div>
           )}
 
-          {(pickup || delivery) && !indiaCart && (
+          {(pickup || delivery) && usCovers && (
             <section className={hideUnless(1)}>
               <h2 className="text-xl">How would you like to get it?</h2>
               <div className="mt-3 grid gap-2" role="radiogroup" aria-label="How would you like to get it?">
@@ -906,7 +914,7 @@ export function CheckoutView({
               </label>
               {live ? (
                 <div className="hidden" />
-              ) : indiaCart && !mixedToIndia ? (
+              ) : indiaCart && !hasUs ? (
                 <div className={`self-end pb-2.5 text-[0.95rem] ${hideUnless(2)}`}>
                   {toIndia
                     ? shipping
@@ -922,7 +930,7 @@ export function CheckoutView({
                     {place.rates.map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.label} · {(() => {
-                          const c = mixedToIndia ? domesticCents + shippingCents(r, usSubtotalCents, usItemCount) : shippingCents(r, subtotalCents, itemCount);
+                          const c = usPartCents(r) + indiaPartCents;
                           return c && !freeShip ? dollars(c) : "Free";
                         })()}
                       </option>
@@ -946,12 +954,14 @@ export function CheckoutView({
                 </div>
               </div>
             )}
-            {!live && mixedToIndia && (
+            {!live && indiaCart && hasUs && (
               <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
-                {domesticCents ? `The pieces that ship from India add ${dollars(domesticCents)} for shipping within India; the rest ships from the US at the rate above.` : "The pieces that ship from India ship free within India; the rest ships from the US at the rate above."}
+                {indiaPartCents
+                  ? `The ${indiaUnitCount === 1 ? "piece" : "pieces"} that ship from India add ${dollars(indiaPartCents)} for shipping${toIndia ? " within India" : ""}; the rest ships from the US at the rate above.`
+                  : `The ${indiaUnitCount === 1 ? "piece" : "pieces"} that ship from India ship free within India; the rest ships from the US at the rate above.`}
               </p>
             )}
-            {!live && (!indiaCart || mixedToIndia) && (
+            {!live && hasUs && (
             <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
               Arrives in about {rate.minDays}–{rate.maxDays} business days after it ships.
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
