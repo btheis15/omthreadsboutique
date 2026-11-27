@@ -3,7 +3,7 @@ import { getCheckout } from "@/lib/catalog";
 import { TESTER_COOKIE, isTester } from "@/lib/payments";
 
 /**
- * The tester link from the Om Threads admin (Orders → Checkout setup):
+ * The tester link from the Om Threads admin (Settings → Payments → Website checkout):
  * /api/tester?key=… lets this browser see the checkout while it's in test
  * mode. /api/tester?off=1 forgets it.
  */

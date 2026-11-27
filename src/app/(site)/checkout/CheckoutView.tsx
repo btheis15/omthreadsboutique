@@ -714,7 +714,7 @@ export function CheckoutView({
       )}
 
       {testerLink === "invalid" && (
-        <p className={`mt-6 rounded-lg bg-sale/10 p-3 text-sm text-sale ${hideUnless(1)}`}>That tester link is out of date. Copy the current one from the admin (Orders → Checkout setup).</p>
+        <p className={`mt-6 rounded-lg bg-sale/10 p-3 text-sm text-sale ${hideUnless(1)}`}>That tester link is out of date. Copy the current one from the admin (Settings → Payments → Website checkout).</p>
       )}
       {checkout?.mode === "test" && (
         <div className={`mt-6 rounded-xl border border-dashed border-zari bg-sand p-4 text-[0.95rem] ${hideUnless(1)}`}>
