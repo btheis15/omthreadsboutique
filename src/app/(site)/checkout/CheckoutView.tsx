@@ -66,6 +66,7 @@ export function CheckoutView({
   cancelled,
   testerLink,
   returnDays,
+  shipsWithin = "1–2 business days",
   text,
   linkCart,
   linkCoupon,
@@ -83,6 +84,7 @@ export function CheckoutView({
   cancelled: boolean;
   testerLink: "on" | "invalid" | null;
   returnDays: number;
+  shipsWithin?: string;
   /** The owner's text overrides (feed `text`). */
   text?: Record<string, string>;
   /** A Meta Shops checkout link's products: they replace the cart (null when the link has none). */
@@ -710,7 +712,7 @@ export function CheckoutView({
       )}
       {/* Phone, step 1, arrived on a one-piece link: the same reassurance the full piece view has on the last step. */}
       {checkout && place && rate && step === 1 && spotLine && spotlight && (
-        <PieceTrust product={spotlight} woven={spotlightWoven} t={t} returnDays={returnDays} className="md:hidden" />
+        <PieceTrust product={spotlight} woven={spotlightWoven} t={t} returnDays={returnDays} shipsWithin={shipsWithin} className="md:hidden" />
       )}
 
       {testerLink === "invalid" && (
@@ -755,6 +757,7 @@ export function CheckoutView({
           photos={photosFor(spotLine, photos[spotlight.slug])}
           t={t}
           returnDays={returnDays}
+          shipsWithin={shipsWithin}
           woven={spotlightWoven}
           onOpen={(photo) => setViewing({ line: 0, photo })}
           onPick={(v) =>
