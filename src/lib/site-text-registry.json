@@ -370,13 +370,13 @@
     "key": "checkoutPhoneHelp",
     "group": "Checkout & cart",
     "label": "Checkout: phone helper",
-    "default": "Needed for shipping updates"
+    "default": "For delivery updates"
   },
   {
     "key": "checkoutPhoneHint",
     "group": "Checkout & cart",
-    "label": "Checkout: hint while the phone is missing",
-    "default": "Add your phone number to see shipping options and tax"
+    "label": "Checkout: hint while the phone number looks wrong",
+    "default": "Check the phone number, or leave it empty, to see shipping options and tax"
   },
   {
     "key": "checkoutTaxPending",

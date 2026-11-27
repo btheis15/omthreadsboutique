@@ -205,7 +205,8 @@ export function CheckoutView({
   const activeQuote = live && quote && quote.forKey === quoteKey ? quote : null;
   // Ready to ask the carrier: everything the shop checks (name, email, phone, address) would pass.
   const addr = customer;
-  const phoneOk = /^[+\d][\d\s().-]{6,23}$/.test(addr.phone.trim());
+  // The phone is optional: only a number that was typed has to look like one.
+  const phoneOk = addr.phone.trim() === "" || /^[+\d][\d\s().-]{6,23}$/.test(addr.phone.trim());
   const addressReadyNoPhone =
     addr.name.trim() !== "" &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr.email.trim()) &&
@@ -222,7 +223,7 @@ export function CheckoutView({
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const quoteReqId = useRef(0);
   const optionsRef = useRef<HTMLDivElement>(null);
-  const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates[0]) : undefined;
+  const chosenRate = activeQuote ? (activeQuote.rates.find((r) => r.id === quoteRateId) ?? activeQuote.rates.reduce((best, r) => (r.cents < best.cents ? r : best), activeQuote.rates[0])) : undefined;
   const shippingFull =
     fulfil === "pickup"
       ? (pickup?.cents ?? 0)
@@ -415,7 +416,8 @@ export function CheckoutView({
         setFlatFor(flatKey);
       } else if (res.ok && data.quoteId && Array.isArray(data.rates) && data.rates.length) {
         setQuote({ id: data.quoteId, rates: data.rates, forKey });
-        setQuoteRateId(data.rates[0].id);
+        // The cheapest option to the shopper comes first: when free shipping is earned, that's the free one (ties keep the shop's order).
+        setQuoteRateId(data.rates.reduce((best, r) => (r.cents < best.cents ? r : best), data.rates[0]).id);
       } else {
         setQuote(null);
         setQuoteError(data.error ?? "Couldn't get shipping options. Please try again.");
@@ -532,7 +534,7 @@ export function CheckoutView({
     const c = customer;
     if (!c.name.trim()) e.name = "Enter your full name.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim())) e.email = "Enter a valid email address.";
-    if (!/^[+\d][\d\s().-]{6,23}$/.test(c.phone.trim())) e.phone = "Enter a phone number.";
+    if (c.phone.trim() && !/^[+\d][\d\s().-]{6,23}$/.test(c.phone.trim())) e.phone = "That doesn't look like a phone number. You can leave it empty.";
     if (fulfil !== "pickup") {
       if (!c.line1.trim()) e.line1 = "Enter your street address.";
       if (!c.city.trim()) e.city = "Enter your city.";
@@ -592,11 +594,11 @@ export function CheckoutView({
     );
   }
 
-  const field = (name: keyof Customer, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, wide = true, help?: string) => (
+  const field = (name: keyof Customer, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, wide = true, help?: string, optional = false) => (
     <label className={`block ${wide ? "col-span-2 sm:col-span-1" : ""}`}>
       <span className="mb-1 block text-sm">
         {label}
-        {help && <span className="text-muted"> (required)</span>}
+        {optional && <span className="text-muted"> (optional)</span>}
       </span>
       <input
         {...props}
@@ -994,7 +996,7 @@ export function CheckoutView({
                   <input type="checkbox" className="mt-0.5" checked={remindMe} onChange={(e) => setRemindMe(e.target.checked)} />
                   <span>{t("checkoutReminderOptIn")}</span>
                 </label>
-                {field("phone", "Phone", { type: "tel", autoComplete: "tel" }, true, t("checkoutPhoneHelp"))}
+                {field("phone", "Phone", { type: "tel", autoComplete: "tel" }, true, t("checkoutPhoneHelp"), true)}
                 {fulfil !== "pickup" && (
                   <>
                     <div className="hidden sm:block" aria-hidden="true" />
@@ -1063,7 +1065,7 @@ export function CheckoutView({
                               />
                               <span className="block font-medium">
                                 {r.label} — {freeShip || r.cents === 0 ? "Free" : dollars(r.cents)}
-                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) })}</span>}
+                                {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) }).replace(/^1 business days/, "1 business day")}</span>}
                               </span>
                             </label>
                           ))}
