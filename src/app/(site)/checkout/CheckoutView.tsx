@@ -134,6 +134,7 @@ export function CheckoutView({
   const indiaCents = checkout?.india?.cents ?? 1500;
   // Shipping within India for the pieces that ship from India (absent = free).
   const domesticCents = checkout?.india?.domesticCents ?? 0;
+  const domesticSales = checkout?.india?.domesticSales === true;
   const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // The free gift: with any bag of enough paid items.
@@ -400,6 +401,8 @@ export function CheckoutView({
     };
   }, [fulfil, zip5, zipRetry]);
   const zipAnswer = zipCheck && zipCheck.zip === zip5 ? zipCheck : null;
+  // Pieces stored in India can't be sold to Indian addresses until the owner switches it on.
+  const indiaBlocked = indiaCart && toIndia && !domesticSales;
   const deliveryBlocked = fulfil === "delivery" && !(zipAnswer && zipAnswer.ok === true);
 
   /** The shop (or carrier) complained about something: show the screen it's on. */
@@ -600,7 +603,7 @@ export function CheckoutView({
   // One quiet reassurance by the pay button (US orders; international orders are final sale).
   const returnsLine = placeCode === "US" ? `${returnDays}-day returns on US orders — if it's not right, send it back.` : null;
   const showTax = taxCents !== null && (checkout?.taxAdded || taxCents > 0);
-  const nextBlocked = step === 2 && live && (quoteBusy || !chosenRate);
+  const nextBlocked = indiaBlocked || (step === 2 && live && (quoteBusy || !chosenRate));
 
   if (items.length === 0) {
     return (
@@ -954,6 +957,15 @@ export function CheckoutView({
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
             </p>
             )}
+            {indiaBlocked && (
+              <p role="alert" className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm leading-relaxed text-red-900">
+                Pieces stored in India can&apos;t be delivered to Indian addresses yet. Please{" "}
+                <Link href="/contact" className="underline underline-offset-4">
+                  contact us
+                </Link>{" "}
+                to order.
+              </p>
+            )}
             {placeCode === "IN" && (
               <p className={`mt-3 rounded-lg bg-sand p-3 text-sm leading-relaxed ${hideUnless(2)}`}>
                 {t("checkoutIndiaNote")}
@@ -1077,7 +1089,7 @@ export function CheckoutView({
                       </p>
                     )}
                     {!activeQuote && (
-                      <button type="button" onClick={showShippingOptions} disabled={quoteBusy} className="btn btn-primary w-full">
+                      <button type="button" onClick={showShippingOptions} disabled={quoteBusy || indiaBlocked} className="btn btn-primary w-full">
                         {t("shipShowOptions")}
                       </button>
                     )}
@@ -1256,7 +1268,7 @@ export function CheckoutView({
                 </button>
               </>
             ) : (
-              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || (live && !chosenRate)} className={`btn btn-primary mt-6 w-full ${stepped ? "max-md:hidden" : ""}`}>
+              <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || indiaBlocked || (live && !chosenRate)} className={`btn btn-primary mt-6 w-full ${stepped ? "max-md:hidden" : ""}`}>
                 {payLabel}
               </button>
             )}
@@ -1315,7 +1327,7 @@ export function CheckoutView({
               </button>
             ) : (
               !paypalOrder && (
-                <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || (live && !chosenRate)} className="btn btn-primary h-14 flex-[2] text-base">
+                <button type="button" onClick={startCheckout} disabled={loading || deliveryBlocked || indiaBlocked || (live && !chosenRate)} className="btn btn-primary h-14 flex-[2] text-base">
                   {payLabel}
                 </button>
               )
