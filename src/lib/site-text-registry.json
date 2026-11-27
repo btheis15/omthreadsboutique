@@ -346,7 +346,8 @@
     "key": "checkoutShipTime",
     "group": "Checkout & cart",
     "label": "Checkout: trust line, shipping time",
-    "default": "US shipping 4–9 business days"
+    "hint": "{shipsWithin} is the shipping time from Settings → Shipping & delivery. Pieces that only ship from India show the India note instead.",
+    "default": "Ships in {shipsWithin}"
   },
   {
     "key": "checkoutKeepBrowsing",

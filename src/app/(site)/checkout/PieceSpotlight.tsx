@@ -1,4 +1,5 @@
 "use client";
+import { INDIA_PRODUCT_NOTE, shipsFromIndia } from "@/lib/variants";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -28,6 +29,7 @@ export function PieceSpotlight({
   onPick,
   t,
   returnDays,
+  shipsWithin = "1–2 business days",
   woven,
 }: {
   product: Product;
@@ -38,6 +40,7 @@ export function PieceSpotlight({
   onPick: (variant: ProductVariant) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   returnDays: number;
+  shipsWithin?: string;
   woven: boolean;
 }) {
   const [at, setAt] = useState(0);
@@ -124,7 +127,7 @@ export function PieceSpotlight({
           </label>
         )}
 
-        <PieceTrust product={product} woven={woven} t={t} returnDays={returnDays} />
+        <PieceTrust product={product} woven={woven} t={t} returnDays={returnDays} shipsWithin={shipsWithin} />
 
         {product.shortDescription && <p className="mt-5 line-clamp-4 leading-relaxed text-ink/80">{product.shortDescription}</p>}
       </div>
@@ -138,12 +141,14 @@ export function PieceTrust({
   woven,
   t,
   returnDays,
+  shipsWithin = "1–2 business days",
   className = "",
 }: {
   product: Product;
   woven: boolean;
   t: (key: string, vars?: Record<string, string | number>) => string;
   returnDays: number;
+  shipsWithin?: string;
   className?: string;
 }) {
   const originLine = product.origin ? t(woven ? "checkoutWovenIn" : "checkoutMadeIn", { origin: product.origin }) : "Handmade in India";
@@ -152,7 +157,7 @@ export function PieceTrust({
       <ul className="mt-4 space-y-1 rounded-lg bg-sand p-3 text-sm" aria-label="Good to know">
         <li>{originLine}</li>
         <li>{t("checkoutReturnsUS", { days: returnDays })} on US orders</li>
-        <li>{t("checkoutShipTime")}</li>
+        <li>{shipsFromIndia(product) ? INDIA_PRODUCT_NOTE : t("checkoutShipTime", { shipsWithin })}</li>
       </ul>
       <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium">
         <Link href="/shop" className="underline underline-offset-4">

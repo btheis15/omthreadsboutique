@@ -134,6 +134,7 @@ export default async function CheckoutPage({ searchParams }: Props) {
       cancelled={params.cancelled === "1"}
       testerLink={params.tester === "on" ? "on" : params.tester === "invalid" ? "invalid" : null}
       returnDays={settings.returnDays}
+      shipsWithin={settings.shipsWithin}
       text={text}
       linkCart={linkCart}
       linkCoupon={linkCoupon}
