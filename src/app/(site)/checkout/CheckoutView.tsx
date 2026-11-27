@@ -1003,7 +1003,7 @@ export function CheckoutView({
                     {field("line1", "Address", { autoComplete: "address-line1" })}
                     {field("line2", "Apt, suite (optional)", { autoComplete: "address-line2" }, false)}
                     {field("city", "City", { autoComplete: "address-level2" }, false)}
-                    {field("state", placeCode === "US" ? "State" : "State / region", { autoComplete: "address-level1", placeholder: placeCode === "US" ? "IL" : undefined }, false)}
+                    {field("state", placeCode === "US" ? "State" : "State / region", { autoComplete: "address-level1" }, false)}
                     {field("postal_code", placeCode === "US" ? "ZIP code" : placeCode === "IN" ? "PIN code" : "Postal code", { autoComplete: "postal-code", inputMode: placeCode === "US" || placeCode === "IN" ? "numeric" : undefined }, false)}
                     {fulfil === "delivery" && zip5 && (
                       <p className={`col-span-2 text-sm ${zipAnswer?.ok === true ? "text-ink" : zipAnswer ? "text-sale" : "text-muted"}`} role="status">
