@@ -132,6 +132,8 @@ export function CheckoutView({
   const fromIndia = (i: CartItem) => india[regularKey(i.productId, i.variantId)] ?? Boolean(i.fromIndia);
   const indiaCart = items.some(fromIndia);
   const indiaCents = checkout?.india?.cents ?? 1500;
+  // Shipping within India for the pieces that ship from India (absent = free).
+  const domesticCents = checkout?.india?.domesticCents ?? 0;
   const regularOf = (i: CartItem) => regular[regularKey(i.productId, i.variantId)];
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   // The free gift: with any bag of enough paid items.
@@ -186,6 +188,12 @@ export function CheckoutView({
   const rate = place?.rates.find((r) => r.id === rateId) ?? place?.rates[0];
   const pickup = checkout?.pickup ?? null;
   const delivery = checkout?.delivery ?? null;
+  // To an Indian address: the India pieces ship within India, and any US-origin pieces ship at the normal India-destination rate.
+  const toIndia = (place?.code ?? "US") === "IN";
+  const usItems = items.filter((i) => !fromIndia(i));
+  const mixedToIndia = indiaCart && toIndia && usItems.length > 0;
+  const usSubtotalCents = usItems.reduce((n, i) => n + Math.round(i.price * 100) * i.qty, 0);
+  const usItemCount = usItems.reduce((n, i) => n + i.qty, 0);
   const fulfil: Fulfil = indiaCart ? "ship" : how === "pickup" && pickup ? "pickup" : how === "delivery" && delivery ? "delivery" : "ship";
   // Pickup and delivery are US-only, so the country and shipping rate don't apply.
   const placeCode = fulfil === "ship" ? (place?.code ?? "US") : "US";
@@ -238,7 +246,9 @@ export function CheckoutView({
         ? (delivery?.cents ?? 0)
         : live
           ? (chosenRate?.cents ?? 0)
-          : indiaCart
+          : indiaCart && toIndia
+            ? domesticCents + (rate && usItems.length > 0 ? shippingCents(rate, usSubtotalCents, usItemCount) : 0)
+            : indiaCart
             ? indiaCents
             : rate
             ? shippingCents(rate, subtotalCents, itemCount)
@@ -893,9 +903,14 @@ export function CheckoutView({
               </label>
               {live ? (
                 <div className="hidden" />
-              ) : indiaCart ? (
+              ) : indiaCart && !mixedToIndia ? (
                 <div className={`self-end pb-2.5 text-[0.95rem] ${hideUnless(2)}`}>
-                  Ships from India · {shipping ? dollars(shipping) : "Free"} · delivers within 2 weeks
+                  {toIndia
+                    ? shipping
+                      ? `Ships within India · ${dollars(shipping)}`
+                      : "Free shipping within India"
+                    : `Ships from India · ${shipping ? dollars(shipping) : "Free"}`}{" "}
+                  · delivers within 2 weeks
                 </div>
               ) : place.rates.length > 1 ? (
                 <label className={`block ${hideUnless(2)}`}>
@@ -903,7 +918,10 @@ export function CheckoutView({
                   <select value={rate.id} onChange={(e) => setRateId(e.target.value)} className="w-full rounded-lg border border-line bg-ivory px-3 py-2.5">
                     {place.rates.map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.label} · {shippingCents(r, subtotalCents, itemCount) && !freeShip ? dollars(shippingCents(r, subtotalCents, itemCount)) : "Free"}
+                        {r.label} · {(() => {
+                          const c = mixedToIndia ? domesticCents + shippingCents(r, usSubtotalCents, usItemCount) : shippingCents(r, subtotalCents, itemCount);
+                          return c && !freeShip ? dollars(c) : "Free";
+                        })()}
                       </option>
                     ))}
                   </select>
@@ -925,7 +943,12 @@ export function CheckoutView({
                 </div>
               </div>
             )}
-            {!live && !indiaCart && (
+            {!live && mixedToIndia && (
+              <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
+                {domesticCents ? `The pieces that ship from India add ${dollars(domesticCents)} for shipping within India; the rest ships from the US at the rate above.` : "The pieces that ship from India ship free within India; the rest ships from the US at the rate above."}
+              </p>
+            )}
+            {!live && (!indiaCart || mixedToIndia) && (
             <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
               Arrives in about {rate.minDays}–{rate.maxDays} business days after it ships.
               {rate.multiCents !== null && rate.multiCents !== undefined && rate.multiCents !== rate.cents && shipping > 0 && ` Shipping is ${dollars(rate.cents)} for one item, ${dollars(rate.multiCents)} for two or more.`}
