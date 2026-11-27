@@ -103,13 +103,13 @@
     "group": "Checkout & cart",
     "label": "Cart: free-shipping nudge",
     "hint": "{amount} is the dollars still needed. Put **double asterisks** around words to make them bold.",
-    "default": "You're **{amount}** away from free shipping"
+    "default": "You're **{amount}** away from free US shipping"
   },
   {
     "key": "cartUnlockedFree",
     "group": "Checkout & cart",
     "label": "Cart: free shipping unlocked",
-    "default": "You've unlocked free shipping ✨"
+    "default": "You've unlocked free US shipping ✨"
   },
   {
     "key": "cartShipTaxNote",
@@ -426,7 +426,7 @@
     "group": "Home page",
     "label": "Promise strip: free shipping",
     "hint": "{amount} is the free-shipping amount from Settings.",
-    "default": "Free shipping ${amount}+"
+    "default": "Free US shipping ${amount}+"
   },
   {
     "key": "promiseReturns",

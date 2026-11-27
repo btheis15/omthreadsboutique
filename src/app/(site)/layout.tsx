@@ -48,12 +48,12 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       {/* Phones: free shipping and the announcement share one strip, so the page starts higher on a small screen. */}
       {settings.freeShippingThreshold > 0 && settings.announcement && (
         <div className="truncate bg-marigold px-3 py-1.5 text-center text-[11px] font-medium tracking-wide text-ink md:hidden">
-          Free shipping ${settings.freeShippingThreshold}+ <span aria-hidden="true">·</span> {settings.announcement}
+          Free US shipping ${settings.freeShippingThreshold}+ <span aria-hidden="true">·</span> {settings.announcement}
         </div>
       )}
       {settings.freeShippingThreshold > 0 && (
         <div className={`bg-marigold px-4 py-1.5 text-center text-xs font-medium tracking-wide text-ink ${settings.announcement ? "max-md:hidden" : ""}`}>
-          Free shipping on orders ${settings.freeShippingThreshold}+
+          Free US shipping on orders ${settings.freeShippingThreshold}+
         </div>
       )}
       {settings.announcement && (
