@@ -28,8 +28,8 @@ export function CartDrawer({ freeShippingThreshold, text, freeGift = null }: { f
   }, [open]);
 
   const remaining = freeShippingThreshold - subtotal;
-  // Free shipping is for US-shipped orders; a piece shipping from India makes the order's shipping the India flat rate.
-  const hasIndia = items.some((i) => i.fromIndia);
+  // Free shipping is for US-shipped orders; the hint is hidden only when every piece ships from India (a mixed bag still has US pieces).
+  const hasIndia = items.length > 0 && items.every((i) => i.fromIndia);
   const progress = freeShippingThreshold > 0 ? Math.min(1, subtotal / freeShippingThreshold) : 0;
 
   return (

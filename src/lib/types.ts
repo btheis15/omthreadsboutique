@@ -35,6 +35,8 @@ export type ProductVariant = {
   values: string[];
   /** undefined = made to order, 0 = sold out */
   stock?: number;
+  /** How many of `stock` are in India (the rest are in the US). Absent = none (or, from an older feed, see shipsFrom). Feed field. */
+  stockIn?: number;
   /** When absent, the product's price */
   price?: number;
   /** On a website sale: the regular price, shown struck through */
@@ -70,6 +72,8 @@ export type Product = {
   care?: string;
   /** undefined = made to order / unlimited, 0 = sold out. With options, the total of theirs. */
   stock?: number;
+  /** How many of `stock` are in India (the rest are in the US); absent = none. With options, the total of theirs. Feed field. */
+  stockIn?: number;
   /** Option names, e.g. ["Color"] (up to three), when the piece comes in options */
   options?: string[];
   variants?: ProductVariant[];
