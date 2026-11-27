@@ -304,7 +304,8 @@ export function CheckoutView({
   const discount = coupon ? Math.min(coupon.discountCents, subtotalCents) : 0;
   // A free-shipping code (the admin decides; it also covers personal delivery): every shipping price below shows as Free.
   // A code limited to a state only counts once the shopper's address is in it (the admin checks again when the order is priced).
-  const freeShip = Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
+  // Never for a cart with a piece shipping from India: its flat shipping is always charged.
+  const freeShip = !indiaCart && Boolean(coupon?.freeShipping) && (!coupon?.state || fulfil === "pickup" || (placeCode === "US" && addr.state.trim().toUpperCase() === coupon.state));
   const shipping = freeShip ? 0 : shippingFull;
   // Estimated sales tax: the shop works it out for the chosen option and address exactly as the order will be priced.
   const taxCents = live && chosenRate && typeof chosenRate.taxCents === "number" ? chosenRate.taxCents : null;
