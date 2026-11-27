@@ -957,8 +957,8 @@ export function CheckoutView({
             {!live && indiaCart && hasUs && (
               <p className={`mt-2 text-sm text-muted ${hideUnless(2)}`}>
                 {indiaPartCents
-                  ? `The ${indiaUnitCount === 1 ? "piece" : "pieces"} that ship from India add ${dollars(indiaPartCents)} for shipping${toIndia ? " within India" : ""}; the rest ships from the US at the rate above.`
-                  : `The ${indiaUnitCount === 1 ? "piece" : "pieces"} that ship from India ship free within India; the rest ships from the US at the rate above.`}
+                  ? `The ${indiaUnitCount === 1 ? "piece" : "pieces"} that ${indiaUnitCount === 1 ? "ships" : "ship"} from India ${indiaUnitCount === 1 ? "adds" : "add"} ${dollars(indiaPartCents)} for shipping${toIndia ? " within India" : ""}; the rest ships from the US at the rate above.`
+                  : `The ${indiaUnitCount === 1 ? "piece" : "pieces"} that ${indiaUnitCount === 1 ? "ships" : "ship"} from India ${indiaUnitCount === 1 ? "ships" : "ship"} free within India; the rest ships from the US at the rate above.`}
               </p>
             )}
             {!live && hasUs && (
@@ -1124,7 +1124,7 @@ export function CheckoutView({
                                 }}
                               />
                               <span className="block font-medium">
-                                {r.label} — {freeShip || r.cents === 0 ? "Free" : dollars(r.cents)}
+                                {r.label} — {freeShip ? (indiaPartCents > 0 ? dollars(indiaPartCents) : "Free") : r.cents === 0 ? "Free" : dollars(r.cents)}
                                 {daysText(r) && <span className="font-normal text-muted"> · {t("shipDays", { days: daysText(r) }).replace(/^1 business days/, "1 business day")}</span>}
                               </span>
                             </label>
