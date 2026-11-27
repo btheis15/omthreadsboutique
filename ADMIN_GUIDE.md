@@ -74,7 +74,11 @@ reviews, the Inbox and page photos).
 
 ## 4. Settings you may want to change
 
-Most shop settings are in the admin under **Settings** (see above).
+Most shop settings are in the admin under **Settings**: parts down the side (Shop & contact,
+Website, Sales & marketing, Payments, Bitcoin Cash & rewards, Shipping & delivery, Sales tax,
+Emails, Etsy, and for the owner Product choices and People & sign-in), with **Find a setting**
+at the top of every page (press **/**) and **Overview** listing what's still needed. Pages
+(About, FAQ, care guide, policies) are under **Settings → Website → Pages**.
 The rest live in [`src/lib/site.ts`](src/lib/site.ts) (a developer, or Claude,
 can change them in a minute):
 
@@ -96,8 +100,8 @@ has a **Buy on Etsy** button, and the cart's checkout page links each item to
 its Etsy listing.
 
 The website's own checkout runs on the Om Threads admin (Mac mini), not here:
-**Orders → Checkout setup** switches it **Off**, **Test** or **Live**, and lists
-what's still needed. The admin re-checks every price and stock count, then takes
+**Settings → Payments → Website checkout** switches it **Off**, **Test** or **Live**, and
+**Settings → Overview** lists what's still needed. The admin re-checks every price and stock count, then takes
 the payment: Stripe's page (cards, Apple Pay, Google Pay, and UPI for shoppers in
 India), Exodus's (USDC/USDT stablecoins), PayPal or Venmo, Zelle, or **Bitcoin
 Cash** into the shop's own wallet. No payment keys live on this site.
@@ -108,12 +112,12 @@ taken off) and **Any wallet** (QR code or link). It needs one setting here,
 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (see `.env.example`); without it, shoppers
 pay by QR code. Everything else (the wallet, coupons, rewards, minting the Om
 Threads token, what wallets show for it) is set up in the admin under
-**Checkout setup → Bitcoin Cash**, and explained in
+**Settings → Bitcoin Cash & rewards**, and explained in
 [omthreads-admin → docs/CHECKOUT.md](https://github.com/btheis15/omthreads-admin/blob/main/docs/CHECKOUT.md#bitcoin-cash-in-detail).
 The site passes `/bcmr/*` (what wallets show for the token) on to the Mac mini.
 
-**Sales partners.** When they're turned on in the admin (**Checkout setup →
-Bitcoin Cash → Sales partners**), anyone can sign up at `/partners` for their own
+**Sales partners.** When they're turned on in the admin (**Settings →
+Bitcoin Cash & rewards → Sales partners**), anyone can sign up at `/partners` for their own
 link (`/?s=<code>`, or on any page). The site keeps the code for 30 days and
 passes it on with a Bitcoin Cash checkout, so the partner earns their commission.
 Partners see their sales and commissions at `/partners/me`, and our emails'

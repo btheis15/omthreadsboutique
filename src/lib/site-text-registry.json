@@ -692,7 +692,7 @@
     "key": "productPickupPaid",
     "group": "Product page",
     "label": "Product page: local pickup line (when pickup costs something)",
-    "hint": "{price} is the pickup charge from Checkout setup.",
+    "hint": "{price} is the pickup charge from Settings → Shipping & delivery.",
     "default": "Local pickup in Lake Villa, IL ({price})"
   },
   {
