@@ -20,6 +20,8 @@ export type ProductImage = {
   lqip?: string;
   /** Live Photo: a short silent clip that plays once over the still */
   live?: string;
+  /** The option value (e.g. a color) this photo shows; no tag = shown for every option */
+  color?: string;
   swatch?: { base: string; accent: string; pattern: SwatchPattern };
 };
 
