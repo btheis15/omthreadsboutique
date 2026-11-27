@@ -16,7 +16,7 @@ import { ProductExpressBuy } from "./ProductExpressBuy";
  */
 const noSubscribe = () => () => {};
 
-export function ProductPurchase({ product, onSiteCheckout, express = null, giftOffer = null, afterPrice = null }: { afterPrice?: React.ReactNode; product: Product; onSiteCheckout: boolean; express?: ProductExpress | null; giftOffer?: FreeGiftOffer | null }) {
+export function ProductPurchase({ product, onSiteCheckout, express = null, giftOffer = null, afterPrice = null, usShipLine = null }: { afterPrice?: React.ReactNode; usShipLine?: string | null; product: Product; onSiteCheckout: boolean; express?: ProductExpress | null; giftOffer?: FreeGiftOffer | null }) {
   const withOptions = hasOptions(product);
   // Opened from a printed tag (/p/<code> → ?option=<id>): that option is chosen, e.g. the colour on the tag.
   // Read after the page loads (the page itself is the same for everyone), until the shopper picks another.
@@ -65,7 +65,7 @@ export function ProductPurchase({ product, onSiteCheckout, express = null, giftO
           </span>
         )}
       </p>
-      {shipsFromIndia(product, variant) && <p className="mt-2 text-sm font-medium text-zari">{INDIA_PRODUCT_NOTE}</p>}
+      {shipsFromIndia(product, variant) ? <p className="mt-2 text-sm font-medium text-zari">{INDIA_PRODUCT_NOTE}</p> : usShipLine && <p className="mt-2 text-sm text-muted">{usShipLine}</p>}
       {afterPrice}
       {giftOffer && (
         <p className="mt-2 text-sm text-zari">

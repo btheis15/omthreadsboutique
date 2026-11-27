@@ -17,7 +17,7 @@ import { liveCheckout, productExpress } from "@/lib/payments";
 import { craftByValue, isWovenCraft, colorLabel, materialLabel, typeByValue } from "@/lib/lists";
 import { formatPrice, site, siteUrl } from "@/lib/site";
 import type { Product } from "@/lib/types";
-import { defaultVariant, hasOptions, priceRange, shipsFromIndia, variantAvailable } from "@/lib/variants";
+import { defaultVariant, hasOptions, priceRange, variantAvailable } from "@/lib/variants";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -63,13 +63,12 @@ export default async function ProductPage({ params }: Props) {
   // One real customer review near the price: one written about this piece if there is one, otherwise the newest.
   const about = (r: (typeof testimonials)[number]) => [product.id, product.slug.toLowerCase(), product.title.toLowerCase()].includes((r.product ?? "").trim().toLowerCase());
   const review = testimonials.find(about) ?? testimonials[0];
-  // The US delivery/returns line doesn't fit a piece that only ships from India (its own note is under the price).
-  const onlyFromIndia = hasOptions(product) ? (product.variants ?? []).every((v) => shipsFromIndia(product, v)) : shipsFromIndia(product);
+  // Shown under the price for the picked colour when it has stock in the US (India-only colours get the India note instead).
+  const usShipLine = t("productTrustLine", { days: settings.returnDays, shipsWithin: settings.shipsWithin || "1–2 business days" });
   const story = (
     <div className="mt-3 space-y-1 text-[0.95rem] leading-snug">
       <p className="font-medium">{t(woven ? "productStoryWoven" : "productStoryMade", { origin: product.origin || "India" })}</p>
       <p className="text-ink/85">{t("productStoryFamily")}</p>
-      {!onlyFromIndia && <p className="text-sm text-muted">{t("productTrustLine", { days: settings.returnDays })}</p>}
       {pickup && <p className="text-sm text-muted">{pickup.cents === 0 ? t("productPickupFree") : t("productPickupPaid", { price: formatPrice(pickup.cents / 100) })}</p>}
       {review && (
         <figure className="mt-3 rounded-lg bg-sand px-3 py-2 text-sm">
@@ -141,7 +140,7 @@ export default async function ProductPage({ params }: Props) {
               <h1 className="text-[1.5rem] leading-tight md:text-5xl">{product.title}</h1>
               <EtsyRatingLine rating={settings.etsyRating} count={settings.etsyReviewCount} reviews={etsyReviews} etsyUrl={site.etsyUrl} />
               {/* Price, stock, the option picker (colours…) and the buy buttons. */}
-              <ProductPurchase afterPrice={story} product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
+              <ProductPurchase afterPrice={story} usShipLine={usShipLine} product={product} onSiteCheckout={onSiteCheckout} express={express} giftOffer={onSiteCheckout && product ? giftOffer(checkoutInfo?.freeGift, all) : null} />
               <TrackViewContent slug={product.slug} title={product.title} price={product.price} />
               {/* A sales partner signed in on this device: their link for this piece. */}
               <PartnerShareBar title={product.title} />

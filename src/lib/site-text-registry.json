@@ -679,8 +679,8 @@
     "key": "productTrustLine",
     "group": "Product page",
     "label": "Product trust line (under the price)",
-    "hint": "{days} is the return window from Settings. The delivery window here is the US estimate; Settings' shipping time is handling time.",
-    "default": "Ships in 4–9 business days (US) · {days}-day returns on US orders"
+    "hint": "Shown under the price when the picked colour has stock in the US. {shipsWithin} is the shipping time from Settings → Shipping & delivery; {days} is the return window.",
+    "default": "Ships in {shipsWithin} · {days}-day returns on US orders"
   },
   {
     "key": "productPickupFree",
