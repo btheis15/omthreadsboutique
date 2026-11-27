@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, ViewTransition } from "react";
+import { useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 import type { ProductImage as Img } from "@/lib/types";
 import { SELECT_VARIANT_EVENT, SHOW_IMAGE_EVENT } from "@/lib/variants";
 import { CloseIcon } from "./icons";
@@ -16,7 +16,7 @@ type Slide = { kind: "image"; image: Img } | { kind: "video"; url: string; poste
  * product card via a shared view transition.
  */
 export function ProductGallery({
-  images,
+  images: allImages,
   title,
   videos: allVideos = [],
   initialValues = [],
@@ -47,6 +47,14 @@ export function ProductGallery({
     return () => window.removeEventListener(SELECT_VARIANT_EVENT, onPick);
   }, [view]);
   const videos = allVideos.filter((v) => !v.color || picked.includes(v.color));
+  // Photos work the same way: one made for a color shows only while that color is picked. If that would leave none, show them all.
+  const images = useMemo(() => {
+    const some = allImages.filter((img) => !img.color || picked.includes(img.color));
+    return some.length ? some : allImages;
+  }, [allImages, picked]);
+  const imagesKey = images.map((img) => img.url ?? "").join("|");
+  // The photo an option asked for may only appear once the color's filter has applied, so it is kept briefly.
+  const pendingUrl = useRef<string | null>(null);
   const pendingSlide = useRef(0);
   const showVideos = view === "videos" && videos.length > 0;
   const slides: Slide[] = showVideos
@@ -71,21 +79,37 @@ export function ProductGallery({
   };
 
   // Picking an option (e.g. a colour) with its own photo shows that photo.
+  const showImage = (url: string | null | undefined) => {
+    const i = images.findIndex((img) => img.url === url);
+    const el = track.current;
+    if (i < 0 || !el) return false;
+    // Looking at the videos: go back to the photos, then to that photo.
+    if (view === "videos") {
+      pendingSlide.current = i;
+      switchTo("photos");
+    } else el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    return true;
+  };
   useEffect(() => {
     const onShow = (e: Event) => {
       const url = (e as CustomEvent<{ url: string }>).detail?.url;
-      const i = images.findIndex((img) => img.url === url);
-      const el = track.current;
-      if (i < 0 || !el) return;
-      // Looking at the videos: go back to the photos, then to that photo.
-      if (view === "videos") {
-        pendingSlide.current = i;
-        switchTo("photos");
-      } else el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+      pendingUrl.current = url;
+      setTimeout(() => {
+        if (pendingUrl.current === url) pendingUrl.current = null;
+      }, 400);
+      showImage(url);
     };
     window.addEventListener(SHOW_IMAGE_EVENT, onShow);
     return () => window.removeEventListener(SHOW_IMAGE_EVENT, onShow);
-  }, [images, view]);
+  });
+  // The photo list changed (another color picked): go to the photo that was asked for, else the first.
+  useEffect(() => {
+    const url = pendingUrl.current;
+    if (url && showImage(url)) return;
+    if (view === "photos") track.current?.scrollTo({ left: 0 });
+    setActive(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imagesKey]);
 
   useEffect(() => {
     if (zoom === null) return;
