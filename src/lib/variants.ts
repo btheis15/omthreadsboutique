@@ -17,7 +17,7 @@ export function indiaLines(products: Product[]): Record<string, true> {
 }
 
 export const INDIA_NOTE = "Ships from India";
-export const INDIA_PRODUCT_NOTE = "Ships from India \u00b7 $15 flat shipping \u00b7 allow 2\u20133 weeks for delivery";
+export const INDIA_PRODUCT_NOTE = "Ships from India \u00b7 $15 flat shipping \u00b7 delivers within 2 weeks";
 
 export const hasOptions = (p: Product) => Boolean(p.options?.length && p.variants?.length);
 
