@@ -193,7 +193,7 @@ export type CheckoutInfo = {
   pickup?: { label: string; cents: number; details: string } | null;
   /** Personal delivery within `miles` of the shop, when offered. */
   /** Flat shipping for an order with a piece that ships from India (cents); absent = 1500. */
-  india?: { cents: number } | null;
+  india?: { cents: number; /** Shipping within India for the pieces that ship from India (cents); absent = 0 (free). */ domesticCents?: number } | null;
   delivery?: { label: string; cents: number; miles: number; from?: string | null; note: string } | null;
   /** Sales tax is added on the payment page (Stripe Tax). */
   taxAdded: boolean;
