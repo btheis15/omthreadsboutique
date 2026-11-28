@@ -434,7 +434,7 @@
     "group": "Home page",
     "label": "Promise strip: free shipping on every order",
     "hint": "Shown instead of the one above when the free-shipping amount in Settings is under $1.",
-    "default": "Free US shipping on every order"
+    "default": "Free USPS Ground shipping on every US order"
   },
   {
     "key": "promiseReturns",
