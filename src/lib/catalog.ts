@@ -177,6 +177,9 @@ function mapShopProduct({ carePreset, care, ...p }: ShopProduct, t: T): Product 
     // Option names in American spelling (the admin, Etsy and Meta keep theirs; see american.ts).
     options: p.options?.map(american),
     variants: p.variants?.map((v) => ({ ...v, values: v.values.map(american) })),
+    // Photo and video color tags too, so a "Heather Grey" photo still matches the "Heather Gray" option.
+    images: p.images?.map((img) => (img.color ? { ...img, color: american(img.color) } : img)),
+    videos: p.videos?.map((v) => (v.color ? { ...v, color: american(v.color) } : v)),
     care: carePreset === "custom" ? care : carePreset ? carePresetText(carePreset, t) : undefined,
     isNew: isNewArrival(p.publishedAt, t),
   };
