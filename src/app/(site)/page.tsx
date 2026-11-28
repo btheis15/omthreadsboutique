@@ -70,7 +70,7 @@ export default async function HomePage() {
           </li>
           {settings.freeShippingThreshold > 0 && (
             <li className="flex flex-col items-center gap-1.5 md:flex-row md:justify-center md:gap-2" data-reveal style={delay(1)}>
-              <TruckIcon size={20} className="text-zari" /> {t("promiseFreeShipping", { amount: settings.freeShippingThreshold })}
+              <TruckIcon size={20} className="text-zari" /> {(settings.freeShippingThreshold < 1 ? t("promiseFreeShippingAll") : t("promiseFreeShipping", { amount: settings.freeShippingThreshold }))}
             </li>
           )}
           <li className="flex flex-col items-center gap-1.5 md:flex-row md:justify-center md:gap-2" data-reveal style={delay(2)}>

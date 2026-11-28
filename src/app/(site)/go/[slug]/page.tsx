@@ -55,7 +55,7 @@ export default async function CampaignPage({ params }: Props) {
     : null;
   const from = shipsFrom(settings.announcement);
   const trust = [
-    settings.freeShippingThreshold > 0 && { icon: <TruckIcon size={18} />, text: t("promiseFreeShipping", { amount: settings.freeShippingThreshold }) },
+    settings.freeShippingThreshold > 0 && { icon: <TruckIcon size={18} />, text: (settings.freeShippingThreshold < 1 ? t("promiseFreeShippingAll") : t("promiseFreeShipping", { amount: settings.freeShippingThreshold })) },
     settings.returnDays > 0 && { icon: <ReturnIcon size={18} />, text: t("promiseReturns", { days: settings.returnDays }) },
     settings.shipsWithin && { icon: <LeafIcon size={18} />, text: t("productPromiseShips", { shipsWithin: settings.shipsWithin }) },
     from && { icon: <TruckIcon size={18} />, text: from },
