@@ -430,6 +430,13 @@
     "default": "Free US shipping ${amount}+"
   },
   {
+    "key": "promiseFreeShippingAll",
+    "group": "Home page",
+    "label": "Promise strip: free shipping on every order",
+    "hint": "Shown instead of the one above when the free-shipping amount in Settings is under $1.",
+    "default": "Free US shipping on every order"
+  },
+  {
     "key": "promiseReturns",
     "group": "Home page",
     "label": "Promise: returns (home and product page)",
